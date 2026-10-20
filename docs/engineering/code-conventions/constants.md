@@ -24,17 +24,15 @@ Constantes dão nome a valores que representam uma regra, um contrato externo ou
 Antes:
 
 ```python
-if days_since_contact <= 7:
-    column = "Essa semana"
+Friend.objects.create(name=name, contact_frequency_days=30)
 ```
 
 Depois:
 
 ```python
-ESSA_SEMANA_MAX_DAYS = 7
+DEFAULT_CONTACT_FREQUENCY_DAYS = 30
 
-if days_since_contact <= ESSA_SEMANA_MAX_DAYS:
-    column = "Essa semana"
+Friend.objects.create(name=name, contact_frequency_days=DEFAULT_CONTACT_FREQUENCY_DAYS)
 ```
 
 O nome precisa explicar a função do valor. Não crie uma constante para um literal usado uma única vez e que já seja autoexplicativo.
