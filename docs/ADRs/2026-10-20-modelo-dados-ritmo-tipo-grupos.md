@@ -8,6 +8,10 @@ Status: Aceito
 
 Precisamos definir como representar o ritmo de contato desejado, o tipo de cada contato e a organização de amigos em grupos.
 
+## Problema
+
+Ritmo só em dias perde semântica ("30 dias" não é "1 mês" na interface). Cor livre de grupo pode gerar problemas de contraste. Relacionamento 1:N ou N:N para grupos tem trade-offs.
+
 ## Decisão
 
 ### Ritmo
@@ -22,15 +26,13 @@ Guardados como o usuário escolheu. O service converte para dias só no momento 
 - mês = 30
 - ano = 365
 
-Guardar só em dias perderia a semântica "1 mês" na tela de edição.
-
 ### Tipo de contato
 
 `TextChoices` fixo: `mensagem`, `ligacao`, `encontro`.
 
 ### Grupo
 
-Model próprio `Grupo` com `name`, `cor`, `owner`. Ligado ao `Amigo` por `ManyToManyField` opcional (`blank=True`).
+Model próprio `Grupo` com `nome`, `cor`, `owner`. Ligado ao `Amigo` por `ManyToManyField` opcional (`blank=True`).
 
 Escolha do Vinicius: amigos podem estar em múltiplos grupos (ex: "família" e "faculdade").
 

@@ -8,6 +8,10 @@ Status: Aceito
 
 O Quadro mostra amigos em 4 colunas conforme o tempo desde o último contato: "Falei agora", "Faz um tempinho", "Essa semana", "Em dia". Cada amigo tem um ritmo de contato desejado.
 
+## Problema
+
+Guardar a coluna no banco fica obsoleto com a passagem do tempo, exigindo tarefa diária para atualizar. Guardar `ultimo_contato` cria duas fontes de verdade (ficaria dessincrono ao apagar um contato). Calcular no frontend duplica a regra e dificulta testes.
+
 ## Decisão
 
 A coluna de cada amigo **não é guardada no banco**. Um service Django (`QuadroService`) calcula a coluna na leitura e a API devolve o campo pronto (`coluna: "essa_semana"`). O Vue apenas desenha.
@@ -20,21 +24,11 @@ annotate(ultimo=Max("contatos__data"))
 
 Índice em `(amigo, data)` na tabela `Contato` garante performance.
 
-### Por que calcular em vez de guardar
-
-- **Coluna guardada fica obsoleta** com a passagem do tempo, exigiria tarefa diária
-- **`ultimo_contato` guardado** ficaria dessincrono ao apagar um contato (duas fontes de verdade)
-- **Regra no service é testável** com pytest, incluindo o caso de ritmo ≤9 dias que pula direto de "Falei agora" para "Essa semana"
-- **Sem duplicação**: se surgir outro cliente, usa o mesmo cálculo
-
-### Alternativas descartadas
-
-- Calcular no frontend: duplica a regra, dificulta testes
-- Desnormalizar `ultimo_contato`: só se justificaria por desempenho (não é o caso no MVP)
-
 ## Consequências
 
 - Service `QuadroService` concentra a lógica das colunas
 - Testes cobrem todos os casos de ritmo, incluindo transição "Falei agora" → "Essa semana" para ritmos de até 9 dias
 - Query única com `annotate` e `Max` evita N+1
 - Sem jobs agendados no MVP
+- Regra testável e reutilizável se surgir outro cliente
+- Nenhuma tarefa de manutenção para manter dados sincronizados

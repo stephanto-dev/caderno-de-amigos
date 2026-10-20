@@ -6,7 +6,11 @@ Status: Aceito
 
 ## Contexto
 
-Os dados do CRM (notas sobre amigos) são privados. O código é open source, mas os dados não. Precisamos garantir backup seguro fora do servidor de produção.
+Os dados do CRM (notas sobre amigos) são privados. O código é open source, mas os dados não.
+
+## Problema
+
+Um backup que fica só no mesmo servidor some junto com ele em caso de falha de hardware, ransomware ou erro humano.
 
 ## Decisão
 
@@ -17,18 +21,15 @@ Usar **backup agendado do próprio Coolify** (`pg_dump`):
 
 Armazenamento escolhido: **Cloudflare R2** (plano grátis), configurado uma vez no Coolify sem código.
 
-### Por que fora do servidor
-
-Um backup que fica só no mesmo servidor some junto com ele em caso de falha de hardware, ransomware ou erro humano.
-
 ### Verificação
 
 Fazer uma **restauração de teste** antes de considerar o backup pronto. Conferir que o dump restaura corretamente em ambiente local.
 
 ## Consequências
 
-- Configuração única no Coolify (sem código)
+- Configuração única no Coolify (sem código no projeto)
 - Backups diários automáticos
 - 7 dias de retenção
 - Dados privados ficam seguros fora do servidor de produção
 - Necessário testar restauração periodicamente
+- Recuperação de desastre viável

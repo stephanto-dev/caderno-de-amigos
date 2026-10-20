@@ -6,7 +6,11 @@ Status: Aceito
 
 ## Contexto
 
-A arquitetura inicial (16/10/2026) previa dois serviços separados no Coolify: um para o backend Django e outro para o frontend Vue. Isso gerava complexidade de deploy, configuração de CORS e gestão de cookies entre origens.
+A arquitetura inicial (16/10/2026) previa dois serviços separados no Coolify: um para o backend Django e outro para o frontend Vue.
+
+## Problema
+
+Dois serviços geram complexidade de deploy, configuração de CORS, gestão de cookies entre origens, e coordenação de deploys independentes.
 
 ## Decisão
 

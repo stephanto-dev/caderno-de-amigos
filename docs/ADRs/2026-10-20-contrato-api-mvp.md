@@ -8,6 +8,10 @@ Status: Aceito
 
 Definição dos endpoints da API REST do Django REST Framework que o frontend Vue consome.
 
+## Problema
+
+Sem contrato claro, frontend e backend evoluem de forma descoordenada, gerando retrabalho e bugs de integração.
+
 ## Decisão
 
 ### Autenticação (sessão)
@@ -53,3 +57,4 @@ Sem endpoint próprio. O Vue agrupa a lista de amigos pelo campo `coluna` retorn
 - Nested routes deixam claro que contato pertence a amigo
 - DELETE de contato permite "desfazer" um clique errado
 - Último contato derivado atualiza automaticamente após DELETE
+- Frontend e backend podem evoluir com contrato estável

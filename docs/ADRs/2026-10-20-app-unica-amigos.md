@@ -1,4 +1,4 @@
-# App Django única `amigos` para Friend e Contact
+# App Django única `amigos` para Amigo e Contato
 
 Responsável: Vinicius
 Data: 2026-10-20
@@ -6,7 +6,11 @@ Status: Aceito
 
 ## Contexto
 
-O sistema tem dois modelos principais: `Amigo` (pessoa com ritmo de contato) e `Contato` (registro de interação). Precisamos decidir se criamos uma ou duas apps Django.
+O sistema tem dois modelos principais: `Amigo` (pessoa com ritmo de contato) e `Contato` (registro de interação).
+
+## Problema
+
+Separar em duas apps Django criaria importação cruzada, pois Contato depende de Amigo e as regras de negócio (calcular coluna do Quadro, registrar contato) usam os dois modelos juntos.
 
 ## Decisão
 
@@ -15,12 +19,7 @@ O sistema tem dois modelos principais: `Amigo` (pessoa com ritmo de contato) e `
 - Services em `services/` (ex: `RegistrarContatoService`, cálculo da coluna do Quadro)
 - Views e serializers finos, delegando lógica para services
 
-### Por que uma app em vez de duas
-
-- Contato não existe sem Amigo (`on_delete=CASCADE`)
-- As regras usam os dois modelos juntos
-- Separar em duas apps criaria importação cruzada
-- Separa-se quando as partes mudam de forma independente, não é o caso aqui
+Contato não existe sem Amigo (`on_delete=CASCADE`). Separa-se quando as partes mudam de forma independente, não é o caso aqui.
 
 ## Consequências
 

@@ -6,7 +6,11 @@ Status: Aceito
 
 ## Contexto
 
-O sistema tem grupos (`Grupo`) para organizar amigos. Precisamos decidir como criar, editar e apagar grupos no MVP.
+O sistema tem grupos (`Grupo`) para organizar amigos. Precisamos definir o fluxo de criação, edição e exclusão de grupos.
+
+## Problema
+
+Uma tela dedicada de gestão de grupos no MVP adicionaria complexidade e telas adicionais sem valor claro no início.
 
 ## Decisão
 
@@ -26,3 +30,4 @@ Editar ou apagar grupo **fica para depois do MVP**.
 - Sem tela dedicada de gestão de grupos no MVP
 - Grupos órfãos (sem amigos) podem existir, mas não há fluxo para listá-los
 - Futura edição/exclusão de grupos precisa considerar amigos associados
+- Alinhamento com a régua de simplicidade

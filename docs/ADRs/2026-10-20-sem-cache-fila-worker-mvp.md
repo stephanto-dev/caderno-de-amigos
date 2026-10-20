@@ -6,18 +6,17 @@ Status: Aceito
 
 ## Contexto
 
-Projetos Django comumente usam Redis para cache, RabbitMQ ou Redis para filas, e Celery para workers de segundo plano. Precisamos decidir se incluímos essas ferramentas no MVP.
+Projetos Django comumente usam Redis para cache, RabbitMQ ou Redis para filas, e Celery para workers de segundo plano.
+
+## Problema
+
+Cada ferramenta adicional é um serviço para configurar, monitorar e manter. Para um usuário e poucos dados, o overhead não se justifica.
 
 ## Decisão
 
 **O MVP não tem cache, fila nem worker**. Apenas Django e Postgres.
 
-### Por que não
-
-- Um usuário apenas
-- Poucos dados
-- Nenhuma tarefa em segundo plano no MVP (sem email, sem jobs agendados)
-- Cada peça adicional é um serviço para configurar, monitorar e manter
+Nenhuma tarefa em segundo plano no MVP (sem email, sem jobs agendados).
 
 ### Futuro (notificações, fora do MVP)
 
@@ -34,3 +33,4 @@ Celery com Redis só entra se:
 - Menos overhead operacional no MVP
 - Fácil adicionar depois se necessário
 - Sem job agendado, então sem envio automático de lembretes (decisão de produto aceita)
+- Alinhamento com a régua de simplicidade
