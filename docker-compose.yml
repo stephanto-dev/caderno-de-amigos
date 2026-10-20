@@ -2,28 +2,27 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: caderno
-      POSTGRES_USER: caderno
-      POSTGRES_PASSWORD: caderno
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U caderno -d caderno"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT}:5432"
 
   web:
     build: .
     command: sh -c "python src/manage.py migrate && python src/manage.py runserver 0.0.0.0:8000"
+    env_file: .env
     environment:
       DJANGO_DEBUG: "1"
-      POSTGRES_DB: caderno
-      POSTGRES_USER: caderno
-      POSTGRES_PASSWORD: caderno
       POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
     volumes:
       - ./backend/src:/app/backend/src
     ports:

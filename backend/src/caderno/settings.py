@@ -1,25 +1,29 @@
 """Django settings for the Caderno de amigos backend."""
 
-import os
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
 
+from caderno.env_vars import EnvironmentSettings
+
 BASE_DIR = Path(__file__).resolve().parents[2]
 FRONTEND_DIST = BASE_DIR.parent / "frontend" / "dist"
+ENV = EnvironmentSettings()
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
+DEBUG = ENV.django_debug
+SECRET_KEY = ENV.django_secret_key.get_secret_value() if ENV.django_secret_key else ""
 if not SECRET_KEY:
     if not DEBUG:
         raise ImproperlyConfigured("Defina DJANGO_SECRET_KEY no ambiente de produção.")
     SECRET_KEY = "development-only-secret-key"
 
-POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "")
+POSTGRES_PASSWORD = (
+    ENV.postgres_password.get_secret_value() if ENV.postgres_password else ""
+)
 if not POSTGRES_PASSWORD and not DEBUG:
     raise ImproperlyConfigured("Defina POSTGRES_PASSWORD no ambiente de produção.")
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = ENV.django_allowed_hosts.split(",")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -64,11 +68,11 @@ WSGI_APPLICATION = "caderno.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("POSTGRES_DB", "caderno"),
-        "USER": os.environ.get("POSTGRES_USER", "caderno"),
+        "NAME": ENV.postgres_db,
+        "USER": ENV.postgres_user,
         "PASSWORD": POSTGRES_PASSWORD or "caderno",
-        "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
-        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        "HOST": ENV.postgres_host,
+        "PORT": ENV.postgres_port,
     }
 }
 
