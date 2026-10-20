@@ -1,0 +1,46 @@
+[project]
+name = "caderno-de-amigos-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "django>=5,<6",
+    "djangorestframework>=3.15,<4",
+    "gunicorn>=23,<24",
+    "psycopg[binary]>=3,<4",
+    "pydantic-settings>=2,<3",
+    "whitenoise>=6,<7",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs>=5,<6",
+    "mypy>=1,<2",
+    "pytest>=8,<10",
+    "pytest-django>=4,<5",
+    "ruff>=0.13,<1",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "caderno.settings"
+pythonpath = ["src"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+plugins = ["mypy_django_plugin.main"]
+mypy_path = "src"
+files = ["src"]
+disallow_untyped_defs = true
+warn_return_any = true
+no_implicit_optional = true
+
+[tool.django-stubs]
+django_settings_module = "caderno.settings"
