@@ -24,17 +24,17 @@ Constantes dão nome a valores que representam uma regra, um contrato externo ou
 Antes:
 
 ```python
-with cache_lock(lock_key, timeout=300):
-    ...
+if days_since_contact <= 7:
+    column = "Essa semana"
 ```
 
 Depois:
 
 ```python
-SYNC_CUSTOMERS_LOCK_TIMEOUT = 5 * 60
+ESSA_SEMANA_MAX_DAYS = 7
 
-with cache_lock(lock_key, timeout=SYNC_CUSTOMERS_LOCK_TIMEOUT):
-    ...
+if days_since_contact <= ESSA_SEMANA_MAX_DAYS:
+    column = "Essa semana"
 ```
 
 O nome precisa explicar a função do valor. Não crie uma constante para um literal usado uma única vez e que já seja autoexplicativo.

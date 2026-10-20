@@ -46,7 +46,7 @@ Registre sempre com `@admin.register(Model)`, junto da classe. Nada de `admin.si
 
 ## Peças compartilhadas
 
-Ficam em `src/<projeto>/admin/`. O projeto segue OOP, então são mixins, não funções soltas. O conjunto inicial que vale ter:
+Ficam em `src/caderno/admin/`. O projeto segue OOP, então são mixins, não funções soltas. O conjunto inicial que vale ter:
 
 | Peça | Para quê |
 | --- | --- |

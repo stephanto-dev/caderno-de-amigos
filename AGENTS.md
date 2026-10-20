@@ -13,7 +13,7 @@ We need to be on the same page with terminology. When communicating, use this la
 - **"Friend"** (Amigo): A person the user wants to stay in touch with. Stored in the `Friend` model (planned).
 - **"Contact"** (Contato): A log entry recording that the user spoke with a friend. Stored in the `Contact` model (planned).
 - **"Frequency"** (Frequência): The desired contact interval in days for a friend. Integer field on `Friend` (planned).
-- **"Group"** (Grupo): An optional grouping for friends (e.g., "college friends", "family"). Stored in the `Group` model (planned).
+- **"Group"** (Grupo): An optional grouping for friends (e.g., "college friends", "family"). Optional `grupo` field on `Friend` using `TextChoices` (values: `familia`, `faculdade`, `trabalho`, `vizinhanca`; blank means 'sem grupo').
 - **"Board"** (Quadro): The main dashboard showing friends grouped by contact recency: 'Falei agora', 'Faz um tempinho', 'Essa semana', 'Em dia'.
 
 Although the code is written in English, the user is Brazilian, so we use Portuguese when communicating with them.
