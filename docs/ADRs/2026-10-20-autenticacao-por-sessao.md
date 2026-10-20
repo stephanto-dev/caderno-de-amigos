@@ -2,7 +2,7 @@
 
 Responsável: Vinicius
 Data: 2026-10-20
-Status: Proposto
+Status: Aceito
 
 ## Contexto
 
@@ -16,6 +16,8 @@ A escolha clássica é entre tokens (Token Authentication do DRF) ou sessões (S
 
 Usar **SessionAuthentication** do Django REST Framework, não TokenAuthentication.
 
+O Vue faz login em `POST /api/login/` e recebe um cookie de sessão. Em cada requisição que altera dados, envia o token CSRF (do cookie `csrftoken` no header `X-CSRFToken`).
+
 ### Por que sessão em vez de token
 
 - **Same-origin**: A SPA e a API estão na mesma origem, então o cookie de sessão funciona sem configuração extra de CORS.
@@ -23,9 +25,14 @@ Usar **SessionAuthentication** do Django REST Framework, não TokenAuthenticatio
 - **CSRF built-in**: Django já protege contra CSRF com o middleware padrão. A SPA só precisa ler o cookie `csrftoken` e enviar no header `X-CSRFToken`.
 - **Simplicidade**: Um fluxo a menos para implementar e documentar.
 
+### Por que não JWT
+
+JWT com `djangorestframework-simplejwt` só se justifica para apps mobile, múltiplos domínios ou integração com outros sistemas. Better Auth é biblioteca TypeScript/Node, não serve para backend Django.
+
 ## Consequências
 
-- A SPA precisa fazer login via POST para um endpoint que cria a sessão (ex: `/api/auth/login/`).
+- A SPA precisa fazer login via `POST /api/login/` para criar a sessão.
+- Logout via `POST /api/logout/` invalida a sessão.
+- Endpoint `GET /api/me/` para verificar autenticação e obter token CSRF.
 - Toda requisição para `/api` precisa incluir o header `X-CSRFToken`.
-- Logout é POST para `/api/auth/logout/` que invalida a sessão.
 - Se no futuro precisarmos de uma API pública ou mobile, podemos adicionar TokenAuthentication em paralelo, restrita aos endpoints que precisam.
