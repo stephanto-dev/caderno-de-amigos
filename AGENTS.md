@@ -14,7 +14,11 @@ We need to be on the same page with terminology. When communicating, use this la
 - **"Contact"** (Contato): A log entry recording that the user spoke with a friend. Stored in the `Contact` model.
 - **"Contact cadence"** (Ritmo): The desired contact interval for a friend, stored as a positive quantity and a unit (day, week, month, or year) on `Friend` (`cadence_amount`, `cadence_unit`).
 - **"Group"** (Grupo): An optional way to organize friends (e.g., "college friends", "family"). Stored in the `Group` model; a `Friend` can belong to multiple groups.
-- **"Board"** (Quadro): The main dashboard showing friends grouped by contact recency: 'Just talked' (`just_talked`), 'Overdue' (`overdue`), 'This week' (`this_week`), 'On track' (`on_track`).
+- **"Board"** (Quadro): The main dashboard showing friends grouped by contact recency in 4 columns:
+  - `just_talked` ("Falei agora"): last contact was today or yesterday
+  - `overdue` ("Faz um tempinho"): past the desired cadence
+  - `this_week` ("Essa semana"): within 7 days of the cadence deadline
+  - `on_track` ("Em dia"): on track, more than 7 days remaining
 
 Although the code is written in English, the user is Brazilian, so we use Portuguese when communicating with them.
 

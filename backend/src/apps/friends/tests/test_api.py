@@ -104,7 +104,7 @@ class TestFriendsReadAPI:
         # Assert
         assert response.status_code == 404
 
-    def test_detail_retorna_ultimo_contato_ultima_nota_e_grupos_ordenados(
+    def test_detail_returns_last_contact_last_note_and_sorted_groups(
         self,
     ) -> None:
         # Arrange

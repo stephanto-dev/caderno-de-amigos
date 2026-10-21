@@ -95,10 +95,10 @@ Detalhes completos em [ADR 2026-10-20](ADRs/2026-10-20-contrato-api-mvp.md)
 
 O Quadro mostra amigos em 4 colunas baseadas no tempo desde o último contato e no ritmo desejado:
 
-1. **Just talked** (`just_talked`) — última interação foi hoje ou ontem
-2. **On track** (`on_track`) — dentro do ritmo esperado
-3. **Overdue** (`overdue`) — passou do ritmo
-4. **This week** (`this_week`) — últimos 7 dias do ritmo (janela fixa) ([ADR 2026-10-20](ADRs/2026-10-20-quadro-simplificado-janela-fixa.md))
+1. **`just_talked`** ("Falei agora") — última interação foi hoje ou ontem
+2. **`overdue`** ("Faz um tempinho") — passou do ritmo desejado
+3. **`this_week`** ("Essa semana") — dentro dos últimos 7 dias do ritmo (janela fixa) ([ADR 2026-10-20](ADRs/2026-10-20-quadro-simplificado-janela-fixa.md))
+4. **`on_track`** ("Em dia") — dentro do ritmo, com mais de 7 dias restantes
 
 A coluna é **calculada no backend** por `BoardService` ([ADR 2026-10-20](ADRs/2026-10-20-coluna-quadro-calculada.md)). O frontend apenas agrupa e renderiza.
 

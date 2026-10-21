@@ -40,9 +40,7 @@ class BoardService:
         """Return the number of days since the last contact in the active time zone."""
         return (timezone.localdate() - timezone.localdate(last_contact)).days
 
-    def calculate_column(
-        self, friend: Friend, last_contact: datetime | None
-    ) -> Column:
+    def calculate_column(self, friend: Friend, last_contact: datetime | None) -> Column:
         """Return the friend's column from the supplied last contact, without a query.
 
         Calendar dates use Django's active time zone, configured as São Paulo.
