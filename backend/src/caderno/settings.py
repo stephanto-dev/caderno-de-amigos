@@ -99,7 +99,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     # shortcut: cache is per worker; use shared cache when scaling.
-    "DEFAULT_THROTTLE_RATES": {"login": "5/min"},
+    "DEFAULT_THROTTLE_RATES": {"login": "5/min", "amigos": "60/min"},
     "EXCEPTION_HANDLER": "drf_standardized_errors.handler.exception_handler",
 }
 
