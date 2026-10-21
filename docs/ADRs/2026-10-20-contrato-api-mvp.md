@@ -29,31 +29,31 @@ Sem contrato claro, frontend e backend evoluem de forma descoordenada, gerando r
 
 - `GET /api/friends/` — lista amigos do usuário, já ordenada pelo backend (colunas overdue, this_week, on_track, just_talked; dentro da coluna por urgência)
   - Campos: `id`, `name`, `cadence_amount` (≥1), `cadence_unit`, `column`, `last_contact_at`, `last_note`, `groups`
-- `POST /api/friends/` — cria amigo, retorna `201`
+- `POST /api/friends/` — cria amigo, retorna `201` **(planejado em CRM-6)**
   - Corpo: `{"name": "...", "cadence_amount": N, "cadence_unit": "day|week|month|year", "groups": [ids]}`
   - `cadence_amount` deve ser ≥ 1
 - `GET /api/friends/{id}/` — detalhe de um amigo
-- `PATCH /api/friends/{id}/` — edita amigo
-- `DELETE /api/friends/{id}/` — remove amigo, retorna `204`
+- `PATCH /api/friends/{id}/` — edita amigo **(planejado em CRM-6)**
+- `DELETE /api/friends/{id}/` — remove amigo, retorna `204` **(planejado em CRM-6)**
 
 ### Contatos (nested routes)
 
-- `POST /api/friends/{id}/contacts/` — registra contato, retorna `201` com amigo atualizado
-  - Corpo: `{"kind": "message|call|meeting", "note": "..."}` (`note` é opcional; `date` é setado pelo servidor para now)
+- `POST /api/friends/{id}/contacts/` — registra contato, retorna `201` com amigo atualizado **(planejado em CRM-8)**
+  - Corpo: `{"kind": "message|call|meeting", "note": "..."}` (`note` é opcional; `date` é setado pelo servidor para o momento atual)
   - Resposta: amigo com `last_contact_at` e `last_note` atualizados
-- `DELETE /api/friends/{id}/contacts/{contact_id}/` — desfaz contato (qualquer contato daquele amigo), retorna `204`
+- `DELETE /api/friends/{id}/contacts/{contact_id}/` — desfaz contato (qualquer contato daquele amigo), retorna `204` **(planejado em CRM-8)**
 
 A view sempre confere que o amigo pertence ao usuário (`owner`).
 
 ### Grupos
 
-- `GET /api/groups/` — lista grupos do usuário
+- `GET /api/groups/` — lista grupos do usuário **(planejado em CRM-7)**
   - Campos: `id`, `name`, `color`, `friends_count`
-- `POST /api/groups/` — cria grupo, retorna `201`
+- `POST /api/groups/` — cria grupo, retorna `201` **(planejado em CRM-7)**
   - Corpo: `{"name": "...", "color": "family|college|work|neighborhood|neutral"}`
   - Nome duplicado (sem diferenciar maiúsculas) retorna `400` (planejado em CRM-7)
-- `PATCH /api/groups/{id}/` — edita grupo (nome e/ou cor)
-- `DELETE /api/groups/{id}/` — remove grupo (apenas desvincula amigos, nunca exclui amigos), retorna `204`
+- `PATCH /api/groups/{id}/` — edita grupo (nome e/ou cor) **(planejado em CRM-7)**
+- `DELETE /api/groups/{id}/` — remove grupo (apenas desvincula amigos, nunca exclui amigos), retorna `204` **(planejado em CRM-7)**
 
 Nome de grupo será **único por owner sem diferenciar maiúsculas** ("Família" e "família" serão o mesmo nome) — planejado em CRM-7.
 

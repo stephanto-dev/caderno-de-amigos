@@ -18,7 +18,7 @@ Guardar a coluna no banco fica obsoleto com a passagem do tempo, exigindo tarefa
 
 A coluna de cada amigo **não é guardada no banco**. Um service Django (`BoardService`) calcula a coluna na leitura e a API devolve o campo pronto (`column: "this_week"`). O Vue apenas desenha.
 
-O model `Friend` **não tem campo stored `last_contact_at`**. A data vem do `Contact` mais recente com:
+O model `Friend` **não tem campo armazenado `last_contact_at`**. A data vem do `Contact` mais recente com:
 
 ```python
 annotate(last_contact=Max("contacts__date"))

@@ -40,7 +40,7 @@ Campos principais:
 - `groups`: ManyToMany para `Group` (opcional)
 - `owner`: ForeignKey para User
 
-Sem campo `last_contact_at` — esse campo é computed (derivado via `Max("contacts__date")`) ([ADR 2026-10-20](ADRs/2026-10-20-coluna-quadro-calculada.md))
+Sem campo `last_contact_at` — esse campo é calculado (derivado via `Max("contacts__date")`) ([ADR 2026-10-20](ADRs/2026-10-20-coluna-quadro-calculada.md))
 
 ### Contact
 

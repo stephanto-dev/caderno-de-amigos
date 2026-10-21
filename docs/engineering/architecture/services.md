@@ -11,10 +11,10 @@ Um serviço representa um caso de uso de um domínio. Exemplos: decidir se um co
 - Exponha **um único método público por caso de uso autocontido**: o ponto de entrada. Quem usa o serviço chama só esse método, e todo o resto (buscar os registros, iterar, aplicar a regra, persistir) acontece dentro dele, em helpers privados. Métodos públicos separados para "listar candidatos" e "processar um candidato" acoplam a orquestração ao consumidor: cada view teria que repetir a ordem certa das chamadas.
 
 ```python
-# Ruim: o consumidor orquestra
-service = BoardService()
-for friend in service.get_friends_to_check():
-    friend.column = service.calculate_column(friend, friend.last_contact)
+# Ruim: o consumidor orquestra — cada view repete a ordem das chamadas
+for friend in friends:
+    column = calculate_column(friend)
+    friend.column = column
     friend.save()
 
 # Bom: o consumidor só delega
@@ -48,8 +48,6 @@ class BoardService:
         if days_until <= self.DAYS_THIS_WEEK:
             return Column.THIS_WEEK
         return Column.ON_TRACK
-```
-```
 
 ## Evite abstrações especulativas (YAGNI)
 

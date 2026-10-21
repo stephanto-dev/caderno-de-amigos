@@ -35,14 +35,12 @@ class TestRecordContact:
         # Act
         updated_friend = ContactsService(owner).record_contact(
             friend_id=friend.id,
-            kind="message",
+            kind=Contact.Kind.MESSAGE,
             note="",
         )
 
         # Assert
-        assert updated_friend.last_contact_at is not None
-```
-```
+        assert updated_friend.last_contact is not None
 
 ## O que testar
 
