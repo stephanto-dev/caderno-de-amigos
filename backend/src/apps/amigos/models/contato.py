@@ -44,3 +44,7 @@ class Contato(models.Model):
         constraints: ClassVar[list[models.BaseConstraint]] = []
         verbose_name = "Contato"
         verbose_name_plural = "Contatos"
+
+    def __str__(self) -> str:
+        """Return the friend, contact type, and date shown in the admin."""
+        return f"{self.amigo} · {self.get_tipo_display()} · {self.data:%d/%m/%Y}"
