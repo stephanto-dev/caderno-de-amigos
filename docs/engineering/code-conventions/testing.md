@@ -1,6 +1,6 @@
 # Testes
 
-Focamos em testes unitários da lógica de negócio principal. Não mantemos suíte automatizada que dependa de sistemas externos reais; esses testes o desenvolvedor faz manualmente. Crie só testes úteis: cada teste protege um comportamento que alguém poderia quebrar.
+Focamos em testes unitários da lógica de negócio principal. Testes de models usam o Postgres do projeto para verificar constraints, relações e migrations. Não mantemos suíte automatizada que dependa de APIs externas reais; esses testes o desenvolvedor faz manualmente. Crie só testes úteis: cada teste protege um comportamento que alguém poderia quebrar.
 
 ## Ferramentas e organização
 
