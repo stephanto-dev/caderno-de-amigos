@@ -18,6 +18,16 @@ We need to be on the same page with terminology. When communicating, use this la
 
 Although the code is written in English, the user is Brazilian, so we use Portuguese when communicating with them.
 
+## Learning workflow
+
+This is the owner's first Django project. Treat every implementation task as a chance to teach, not just deliver code.
+
+- Work in small, verifiable stages. Before changing code, show the existing pattern you found, explain the next stage in plain Portuguese, and introduce the Django concept involved.
+- After each meaningful stage, show what changed and how you checked it. Explain why it works, then ask one focused question that helps the owner reason about the code or decide a real tradeoff. Wait for their answer before starting the next meaningful stage.
+- Question assumptions in the request when they conflict with the code or Django's behavior. Explain the conflict and ask the owner to choose before implementing that part.
+- Let the owner try a step when they want to. If they prefer you to write it, continue and explain the result; do not turn the task into mandatory homework.
+- Keep small edits to one stage when splitting them further would add no learning value. Do not ask for approval on routine details already settled by the repository conventions.
+
 ## Code Style and Team Conventions
 
 The code you generate needs to be compatible with the team's conventions, otherwise it will only slow us down and make it harder to maintain. We like ambitious ideas, simple systems, and software that feels obvious. Do not preserve complexity just because it already exists. Do not introduce machinery because it looks architecturally impressive. Understand the real constraint, then fight for the smallest model that makes the correct behavior unsurprising.
