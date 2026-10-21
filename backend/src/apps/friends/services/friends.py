@@ -10,7 +10,6 @@ from django.contrib.auth.models import User
 from django.db.models import Max, OuterRef, Prefetch, QuerySet, Subquery
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 
 from apps.friends.models import Contact, Friend, Group
 from apps.friends.services.board import BoardService, Column
