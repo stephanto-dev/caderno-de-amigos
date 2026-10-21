@@ -33,7 +33,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "drf_standardized_errors",
     "apps.amigos",
+    "apps.contas",
 ]
 
 MIDDLEWARE = [
@@ -90,3 +92,15 @@ STORAGES = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    # shortcut: cache is per worker; use shared cache when scaling.
+    "DEFAULT_THROTTLE_RATES": {"login": "5/min"},
+    "EXCEPTION_HANDLER": "drf_standardized_errors.handler.exception_handler",
+}
+
+DRF_STANDARDIZED_ERRORS = {"ENABLE_IN_DEBUG_FOR_UNHANDLED_EXCEPTIONS": True}
