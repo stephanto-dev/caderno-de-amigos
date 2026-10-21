@@ -190,14 +190,14 @@ class TestFriendsReadAPI:
         # Arrange
         owner = User.objects.create_user(username="ana")
         # Created out of expected order to detect accidental sorting by ID.
-        create_friend_for_owner(owner, "Falei ontem", dias_desde_contato=1)
-        create_friend_for_owner(owner, "Em dia longe", dias_desde_contato=2)
-        create_friend_for_owner(owner, "Essa semana longe", dias_desde_contato=24)
-        create_friend_for_owner(owner, "Atraso menor", dias_desde_contato=35)
-        create_friend_for_owner(owner, "Falei hoje", dias_desde_contato=0)
-        create_friend_for_owner(owner, "Em dia perto", dias_desde_contato=20)
-        create_friend_for_owner(owner, "Essa semana perto", dias_desde_contato=28)
-        create_friend_for_owner(owner, "Atraso maior", dias_desde_contato=60)
+        create_friend_for_owner(owner, "Falei ontem", days_since_contact=1)
+        create_friend_for_owner(owner, "Em dia longe", days_since_contact=2)
+        create_friend_for_owner(owner, "Essa semana longe", days_since_contact=24)
+        create_friend_for_owner(owner, "Atraso menor", days_since_contact=35)
+        create_friend_for_owner(owner, "Falei hoje", days_since_contact=0)
+        create_friend_for_owner(owner, "Em dia perto", days_since_contact=20)
+        create_friend_for_owner(owner, "Essa semana perto", days_since_contact=28)
+        create_friend_for_owner(owner, "Atraso maior", days_since_contact=60)
         create_friend_for_owner(owner, "Nunca")
         client = APIClient()
         client.force_authenticate(owner)
@@ -222,10 +222,10 @@ class TestFriendsReadAPI:
         # Arrange
         owner = User.objects.create_user(username="ana")
         create_friend_for_owner(
-            owner, "Mais dias absolutos", ritmo_em_dias=30, dias_desde_contato=40
+            owner, "Mais dias absolutos", cadence_in_days=30, days_since_contact=40
         )
         create_friend_for_owner(
-            owner, "Mais atrasado no ritmo", ritmo_em_dias=10, dias_desde_contato=20
+            owner, "Mais atrasado no ritmo", cadence_in_days=10, days_since_contact=20
         )
         client = APIClient()
         client.force_authenticate(owner)
@@ -242,8 +242,8 @@ class TestFriendsReadAPI:
     def test_tie_na_urgencia_usa_nome_para_ordenar(self) -> None:
         # Arrange
         owner = User.objects.create_user(username="ana")
-        create_friend_for_owner(owner, "Bia", dias_desde_contato=25)
-        create_friend_for_owner(owner, "Ana", dias_desde_contato=25)
+        create_friend_for_owner(owner, "Bia", days_since_contact=25)
+        create_friend_for_owner(owner, "Ana", days_since_contact=25)
         client = APIClient()
         client.force_authenticate(owner)
 
@@ -274,7 +274,7 @@ class TestFriendsReadAPI:
         grupo = Group.objects.create(
             owner=owner, name="Group", color=Group.Color.NEUTRAL
         )
-        primeiro = create_friend_for_owner(owner, "Friend 1", dias_desde_contato=2)
+        primeiro = create_friend_for_owner(owner, "Friend 1", days_since_contact=2)
         primeiro.groups.add(grupo)
         client = APIClient()
         client.force_authenticate(owner)
@@ -286,7 +286,7 @@ class TestFriendsReadAPI:
 
         for indice in range(2, 6):
             friend = create_friend_for_owner(
-                owner, f"Friend {indice}", dias_desde_contato=indice
+                owner, f"Friend {indice}", days_since_contact=indice
             )
             friend.groups.add(grupo)
 
