@@ -48,6 +48,7 @@ class BoardService:
         if days_until <= self.DAYS_THIS_WEEK:
             return Column.THIS_WEEK
         return Column.ON_TRACK
+```
 
 ## Evite abstrações especulativas (YAGNI)
 

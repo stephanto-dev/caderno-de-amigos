@@ -41,6 +41,7 @@ class TestRecordContact:
 
         # Assert
         assert updated_friend.last_contact is not None
+```
 
 ## O que testar
 
