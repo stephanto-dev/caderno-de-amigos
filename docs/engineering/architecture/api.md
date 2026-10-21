@@ -42,12 +42,19 @@ DRF_STANDARDIZED_ERRORS = {"ENABLE_IN_DEBUG_FOR_UNHANDLED_EXCEPTIONS": True}
 class RecordContactView(CreateAPIView):
     serializer_class = RecordContactSerializer
 
-    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+    def create(self, request: Request, friend_id: int, *args: Any, **kwargs: Any) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        contact = ContactService(user=request.user).record_contact(serializer.validated_data)
-        return Response(ContactSerializer(contact).data, status=status.HTTP_201_CREATED)
+        updated_friend = ContactsService(owner=request.user).record_contact(
+            friend_id=friend_id,
+            kind=serializer.validated_data["kind"],
+            note=serializer.validated_data.get("note"),
+        )
+        return Response(
+            BoardFriendSerializer(updated_friend).data,
+            status=status.HTTP_201_CREATED,
+        )
 ```
 
 ## Serializers
@@ -59,7 +66,7 @@ class RecordContactView(CreateAPIView):
 
 ## URLs
 
-- Caminhos em kebab-case com barra no fim: `friends/record-contact/`.
+- Caminhos em kebab-case com barra no fim: `friends/<int:friend_id>/contacts/`.
 - Todo `path()` tem `name` em `snake_case`.
 - Cada app tem o seu `urls.py`, incluído no `urls.py` do projeto com um prefixo.
 

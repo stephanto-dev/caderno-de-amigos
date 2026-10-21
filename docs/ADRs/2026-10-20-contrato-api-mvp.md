@@ -22,25 +22,26 @@ Sem contrato claro, frontend e backend evoluem de forma descoordenada, gerando r
   - Corpo: `{"username": "...", "password": "..."}`
   - Resposta: `{"authenticated": true, "user": "username"}`
 - `POST /api/logout/` — invalida sessão
-- `GET /api/me/` — verifica se está logado, devolve `csrftoken`
+- `GET /api/me/` — verifica se está logado, seta o cookie `csrftoken`
   - Resposta: `{"authenticated": true|false, "user": "username"|null}`
 
 ### Amigos
 
-- `GET /api/friends/` — lista com `column` calculada, último contato, última nota, grupos em ordem alfabética
-  - Campos: `id`, `name`, `cadence_amount`, `cadence_unit`, `column`, `last_contact_at`, `last_note`, `groups`
-- `POST /api/friends/` — cria amigo
+- `GET /api/friends/` — lista amigos do usuário, já ordenada pelo backend (colunas overdue, this_week, on_track, just_talked; dentro da coluna por urgência)
+  - Campos: `id`, `name`, `cadence_amount` (≥1), `cadence_unit`, `column`, `last_contact_at`, `last_note`, `groups`
+- `POST /api/friends/` — cria amigo, retorna `201`
   - Corpo: `{"name": "...", "cadence_amount": N, "cadence_unit": "day|week|month|year", "groups": [ids]}`
+  - `cadence_amount` deve ser ≥ 1
 - `GET /api/friends/{id}/` — detalhe de um amigo
 - `PATCH /api/friends/{id}/` — edita amigo
-- `DELETE /api/friends/{id}/` — remove amigo
+- `DELETE /api/friends/{id}/` — remove amigo, retorna `204`
 
 ### Contatos (nested routes)
 
-- `POST /api/friends/{id}/contacts/` — registra contato, devolve `201` com amigo atualizado
-  - Corpo: `{"kind": "message|call|meeting", "date": "ISO 8601", "note": "..."}`
+- `POST /api/friends/{id}/contacts/` — registra contato, retorna `201` com amigo atualizado
+  - Corpo: `{"kind": "message|call|meeting", "note": "..."}` (`note` é opcional; `date` é setado pelo servidor para now)
   - Resposta: amigo com `last_contact_at` e `last_note` atualizados
-- `DELETE /api/friends/{id}/contacts/{contact_id}/` — desfaz contato recente, devolve `204`
+- `DELETE /api/friends/{id}/contacts/{contact_id}/` — desfaz contato (qualquer contato daquele amigo), retorna `204`
 
 A view sempre confere que o amigo pertence ao usuário (`owner`).
 
@@ -48,18 +49,19 @@ A view sempre confere que o amigo pertence ao usuário (`owner`).
 
 - `GET /api/groups/` — lista grupos do usuário
   - Campos: `id`, `name`, `color`, `friends_count`
-- `POST /api/groups/` — cria grupo
+- `POST /api/groups/` — cria grupo, retorna `201`
   - Corpo: `{"name": "...", "color": "family|college|work|neighborhood|neutral"}`
+  - Nome duplicado (sem diferenciar maiúsculas) retorna `400` (planejado em CRM-7)
 - `PATCH /api/groups/{id}/` — edita grupo (nome e/ou cor)
-- `DELETE /api/groups/{id}/` — remove grupo (apenas desvincula amigos, nunca exclui amigos)
+- `DELETE /api/groups/{id}/` — remove grupo (apenas desvincula amigos, nunca exclui amigos), retorna `204`
 
-Nome de grupo é **único por owner**, case-insensitively ("Família" e "família" são o mesmo nome).
+Nome de grupo será **único por owner sem diferenciar maiúsculas** ("Família" e "família" serão o mesmo nome) — planejado em CRM-7.
 
 Edição e exclusão são feitas **a partir dos chips de grupo no formulário do amigo**, sem tela dedicada.
 
 ### Quadro
 
-Sem endpoint próprio. O Vue agrupa a lista de amigos pelo campo `column` retornado em `GET /api/friends/`.
+Sem endpoint próprio. O backend já retorna amigos ordenados (primeiro por coluna: overdue, this_week, on_track, just_talked; depois por urgência dentro da coluna). O Vue apenas agrupa pelo campo `column`.
 
 Colunas possíveis: `just_talked`, `on_track`, `this_week`, `overdue`.
 

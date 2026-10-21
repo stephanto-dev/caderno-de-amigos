@@ -18,7 +18,7 @@ Separar em duas apps Django criaria importação cruzada, pois Contact depende d
 
 **Uma app Django `friends`** em `backend/src/apps/friends/` contendo:
 - `models/friend.py` e `models/contact.py` (um arquivo por model)
-- Services em `services/` (ex: `RegisterContactService`, cálculo da coluna do Quadro via `BoardService`)
+- Services em `services/` (ex: `ContactsService` planejado para `record_contact` e `undo_contact`, cálculo da coluna do Quadro via `BoardService`)
 - Views e serializers finos, delegando lógica para services
 
 Contact não existe sem Friend (`on_delete=CASCADE`). Separa-se quando as partes mudam de forma independente, não é o caso aqui.

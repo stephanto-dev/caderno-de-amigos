@@ -25,17 +25,23 @@ Focamos em testes unitários da lógica de negócio principal. Testes de models 
 ```python
 @pytest.mark.django_db
 class TestRecordContact:
-    def test_record_contact_when_friend_has_no_frequency_uses_default(
+    def test_record_contact_when_friend_has_no_prior_contact_sets_last_contact_at(
         self, create_friend: Callable[..., Friend]
     ) -> None:
         # Arrange
-        friend = create_friend(frequency=None)
+        friend = create_friend()
+        owner = friend.owner
 
         # Act
-        contact = ContactService(user=friend.user).record_contact(friend_id=friend.id)
+        updated_friend = ContactsService(owner).record_contact(
+            friend_id=friend.id,
+            kind="message",
+            note="",
+        )
 
         # Assert
-        assert contact.friend == friend
+        assert updated_friend.last_contact_at is not None
+```
 ```
 
 ## O que testar

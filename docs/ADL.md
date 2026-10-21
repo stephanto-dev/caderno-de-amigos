@@ -8,7 +8,7 @@ Uma linha por decisão, da mais antiga para a mais nova. O detalhe fica no ADR e
 - 2026-10-20: `2026-10-20-servico-unico-docker.md` — Serviço único no deploy com Dockerfile multi-stage
 - 2026-10-20: `2026-10-20-autenticacao-por-sessao.md` — Autenticação por sessão Django com CSRF
 - 2026-10-20: `2026-10-20-typescript-strict-frontend.md` — TypeScript strict no frontend Vue
-- 2026-10-20: `2026-10-20-app-unica-amigos.md` — App Django única `amigos` para Amigo e Contato
+- 2026-10-20: `2026-10-20-app-unica-amigos.md` — App Django única `friends` para Friend e Contact
 - 2026-10-20: `2026-10-20-coluna-quadro-calculada.md` — Coluna do Quadro calculada no backend, último contato derivado
 - 2026-10-20: `2026-10-20-datas-utc-timezone-sao-paulo.md` — Datas em UTC com TIME_ZONE de São Paulo
 - 2026-10-20: `2026-10-20-modelo-dados-ritmo-tipo-grupos.md` — Modelo de dados: ritmo, tipo de contato e grupos
