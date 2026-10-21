@@ -126,7 +126,7 @@ class TestFriendsReadAPI:
             owner=owner, name="Zoeira", color=Group.Color.NEUTRAL
         )
         group_a = Group.objects.create(
-            owner=owner, name="Amigos", color=Group.Color.FAMILY
+            owner=owner, name="amigos", color=Group.Color.FAMILY
         )
         friend.groups.add(group_z, group_a)
         client = APIClient()
