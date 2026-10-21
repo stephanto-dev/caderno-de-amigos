@@ -2,6 +2,22 @@
 
 Escolha nomes que expressem o domínio e o efeito da operação. O nome deve permitir que alguém entenda a intenção sem abrir a implementação.
 
+## Idioma do código
+
+**Todo o código, banco de dados e API são escritos em inglês.** Nomes de apps, models, campos, métodos, variáveis, constantes, enums, valores armazenados no banco, URLs, rotas, campos JSON da API, docstrings, comentários e nomes de testes devem estar em inglês. Apenas texto visível ao usuário final (labels de UI e mensagens de erro) permanece em português.
+
+Exemplos de código em inglês:
+- Apps: `friends`, `accounts` (não `amigos`, `contas`)
+- Models: `Friend`, `Contact`, `Group` (não `Amigo`, `Contato`, `Grupo`)
+- Campos: `name`, `cadence_amount`, `cadence_unit` (não `nome`, `ritmo_quantidade`, `ritmo_unidade`)
+- Valores de enum armazenados: `"day"`, `"week"`, `"month"` (não `"dia"`, `"semana"`, `"mes"`)
+- Campos JSON: `{"name": "Ana", "cadence_amount": 2}` (não `{"nome": "Ana", "ritmo_quantidade": 2}`)
+
+Texto que permanece em português:
+- Labels de verbose_name e help_text nos models (mostrados no admin)
+- Mensagens de erro retornadas ao usuário via API
+- Labels de choice (display): `"day", "Dia"` — o valor armazenado é inglês, o label é português
+
 ## Arquivos e módulos
 
 - Use `snake_case` em arquivos e pacotes.

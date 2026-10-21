@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from apps.friends.models import Friend, Contact, Group
+from apps.friends.models import Contact, Friend, Group
 
 
 @pytest.mark.django_db
@@ -83,7 +83,9 @@ class TestGroup:
         # Arrange
         first_owner = get_user_model().objects.create_user(username="ana")
         second_owner = get_user_model().objects.create_user(username="bia")
-        Group.objects.create(owner=first_owner, name="Família", color=Group.Color.FAMILY)
+        Group.objects.create(
+            owner=first_owner, name="Família", color=Group.Color.FAMILY
+        )
 
         # Act
         group = Group.objects.create(

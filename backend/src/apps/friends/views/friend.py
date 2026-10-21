@@ -13,9 +13,7 @@ class FriendsListView(BaseAPIView):
 
     def get(self, request: Request) -> Response:
         """Return friends in board and urgency order."""
-        friends = FriendsService(
-            self.get_queryset(), self.get_owner()
-        ).list_friends()
+        friends = FriendsService(self.get_queryset(), self.get_owner()).list_friends()
         return Response(BoardFriendSerializer(friends, many=True).data)
 
 

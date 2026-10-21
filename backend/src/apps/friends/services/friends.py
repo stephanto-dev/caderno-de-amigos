@@ -61,9 +61,7 @@ class FriendsService:
 
     def get_friend_for_owner(self, friend_id: int) -> BoardFriend:
         """Return one scoped friend or raise 404 if absent or owned by another user."""
-        friend = get_object_or_404(
-            self._get_friends_with_board_fields(), pk=friend_id
-        )
+        friend = get_object_or_404(self._get_friends_with_board_fields(), pk=friend_id)
         return self._build_board_friend(friend)
 
     def _get_friends_with_board_fields(

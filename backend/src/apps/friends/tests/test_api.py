@@ -14,7 +14,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.friends.models import Friend, Contact, Group
+from apps.friends.models import Contact, Friend, Group
 
 
 @pytest.fixture(autouse=True)
@@ -122,7 +122,9 @@ class TestFriendsReadAPI:
             date=timezone.now() - timedelta(days=2),
             note="Nota recente",
         )
-        group_z = Group.objects.create(owner=owner, name="Zoeira", color=Group.Color.NEUTRAL)
+        group_z = Group.objects.create(
+            owner=owner, name="Zoeira", color=Group.Color.NEUTRAL
+        )
         group_a = Group.objects.create(
             owner=owner, name="friends", color=Group.Color.FAMILY
         )
@@ -269,7 +271,9 @@ class TestFriendsReadAPI:
     ) -> None:
         # Arrange
         owner = User.objects.create_user(username="ana")
-        grupo = Group.objects.create(owner=owner, name="Group", color=Group.Color.NEUTRAL)
+        grupo = Group.objects.create(
+            owner=owner, name="Group", color=Group.Color.NEUTRAL
+        )
         primeiro = create_friend_for_owner(owner, "Friend 1", dias_desde_contato=2)
         primeiro.groups.add(grupo)
         client = APIClient()

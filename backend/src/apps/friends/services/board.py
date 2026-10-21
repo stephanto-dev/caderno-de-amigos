@@ -25,9 +25,7 @@ class BoardService:
     DAYS_JUST_TALKED: ClassVar[int] = 1
     DAYS_THIS_WEEK: ClassVar[int] = 7
 
-    def calculate_column(
-        self, friend: Friend, last_contact: datetime | None
-    ) -> Column:
+    def calculate_column(self, friend: Friend, last_contact: datetime | None) -> Column:
         """Return the friend's column from the supplied last contact, without a query.
 
         Calendar dates use Django's active time zone, configured as São Paulo.
