@@ -146,7 +146,7 @@ class TestFriendsReadAPI:
             "last_contact_at": timezone.localtime(recent_contact.date).isoformat(),
             "last_note": "Nota recente",
             "groups": [
-                {"id": group_a.id, "name": "Amigos", "color": "family"},
+                {"id": group_a.id, "name": "amigos", "color": "family"},
                 {"id": group_z.id, "name": "Zoeira", "color": "neutral"},
             ],
         }
