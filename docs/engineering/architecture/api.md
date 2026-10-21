@@ -66,4 +66,4 @@ class RecordContactView(CreateAPIView):
 ## Testes
 
 - Teste o endpoint pelo `APIClient` do DRF: monte o request, chame a URL pelo `reverse(name)` e verifique o status e o corpo.
-- No teste da view, o serviço é substituído por um mock. A regra é testada no teste do serviço.
+- Testes de API usam o cliente de teste com banco real, sem mock do serviço. Assim verificam juntos o contrato HTTP, o escopo dos dados e as consultas feitas pelo ORM.
