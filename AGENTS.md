@@ -10,10 +10,10 @@ Stack: Python 3.11+, Django 5, Django REST Framework, Postgres (docker compose),
 
 We need to be on the same page with terminology. When communicating, use this language:
 
-- **"Friend"** (Amigo): A person the user wants to stay in touch with. Stored in the `Friend` model (planned).
-- **"Contact"** (Contato): A log entry recording that the user spoke with a friend. Stored in the `Contact` model (planned).
-- **"Frequency"** (Frequência): The desired contact interval in days for a friend. Integer field on `Friend` (planned).
-- **"Group"** (Grupo): An optional grouping for friends (e.g., "college friends", "family"). Optional `grupo` field on `Friend` using `TextChoices` (values: `familia`, `faculdade`, `trabalho`, `vizinhanca`; blank means 'sem grupo').
+- **"Friend"** (Amigo): A person the user wants to stay in touch with. Stored in the `Amigo` model.
+- **"Contact"** (Contato): A log entry recording that the user spoke with a friend. Stored in the `Contato` model.
+- **"Contact rhythm"** (Ritmo): The desired contact interval for a friend, stored as a positive quantity and a unit (day, week, month, or year) on `Amigo`.
+- **"Group"** (Grupo): An optional way to organize friends (e.g., "college friends", "family"). Stored in the `Grupo` model; an `Amigo` can belong to multiple groups.
 - **"Board"** (Quadro): The main dashboard showing friends grouped by contact recency: 'Falei agora', 'Faz um tempinho', 'Essa semana', 'Em dia'.
 
 Although the code is written in English, the user is Brazilian, so we use Portuguese when communicating with them.
@@ -49,7 +49,7 @@ The complete style guide lives in [`docs/engineering`](docs/engineering/README.m
 
 ## Working on the codebase
 
-Postgres runs in a container via `compose.yml`. Single developer, so one shared database.
+Postgres runs in a container via `docker-compose.yml`. Single developer, so one shared database.
 
 `uv run` runs in the project's Python environment, not inside a container. Versions and checks live in `pyproject.toml` and `.github/workflows/`.
 
