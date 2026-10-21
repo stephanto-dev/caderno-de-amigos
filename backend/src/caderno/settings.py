@@ -34,8 +34,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "drf_standardized_errors",
-    "apps.amigos",
-    "apps.contas",
+    "apps.friends",
+    "apps.accounts",
 ]
 
 MIDDLEWARE = [
@@ -99,7 +99,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     # shortcut: cache is per worker; use shared cache when scaling.
-    "DEFAULT_THROTTLE_RATES": {"login": "5/min", "amigos": "60/min"},
+    "DEFAULT_THROTTLE_RATES": {"login": "5/min", "friends": "60/min"},
     "EXCEPTION_HANDLER": "drf_standardized_errors.handler.exception_handler",
 }
 
