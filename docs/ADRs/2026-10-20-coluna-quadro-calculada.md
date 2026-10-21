@@ -4,29 +4,31 @@ Responsável: Vinicius
 Data: 2026-10-20
 Status: Aceito
 
+**Atualização 2026-10-21**: Traduzido para inglês (nomes de services, campos e valores enum).
+
 ## Contexto
 
 O Quadro mostra amigos em 4 colunas conforme o tempo desde o último contato: "Falei agora", "Faz um tempinho", "Essa semana", "Em dia". Cada amigo tem um ritmo de contato desejado.
 
 ## Problema
 
-Guardar a coluna no banco fica obsoleto com a passagem do tempo, exigindo tarefa diária para atualizar. Guardar `ultimo_contato` cria duas fontes de verdade (ficaria dessincrono ao apagar um contato). Calcular no frontend duplica a regra e dificulta testes.
+Guardar a coluna no banco fica obsoleto com a passagem do tempo, exigindo tarefa diária para atualizar. Guardar `last_contact_at` cria duas fontes de verdade (ficaria dessincrono ao apagar um contato). Calcular no frontend duplica a regra e dificulta testes.
 
 ## Decisão
 
-A coluna de cada amigo **não é guardada no banco**. Um service Django (`QuadroService`) calcula a coluna na leitura e a API devolve o campo pronto (`coluna: "essa_semana"`). O Vue apenas desenha.
+A coluna de cada amigo **não é guardada no banco**. Um service Django (`BoardService`) calcula a coluna na leitura e a API devolve o campo pronto (`column: "this_week"`). O Vue apenas desenha.
 
-O model `Amigo` **não tem campo `ultimo_contato`**. A data vem do `Contato` mais recente com:
+O model `Friend` **não tem campo `last_contact_at`**. A data vem do `Contact` mais recente com:
 
 ```python
-annotate(ultimo=Max("contatos__data"))
+annotate(last_contact=Max("contacts__date"))
 ```
 
-Índice em `(amigo, data)` na tabela `Contato` garante performance.
+Índice em `(friend, date)` na tabela `Contact` garante performance.
 
 ## Consequências
 
-- Service `QuadroService` concentra a lógica das colunas
+- Service `BoardService` concentra a lógica das colunas
 - Testes cobrem todos os casos de ritmo, incluindo transição "Falei agora" → "Essa semana" para ritmos de até 9 dias
 - Query única com `annotate` e `Max` evita N+1
 - Sem jobs agendados no MVP

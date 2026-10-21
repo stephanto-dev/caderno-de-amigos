@@ -59,7 +59,7 @@ Campos principais:
 Organização opcional de amigos.
 
 Campos principais:
-- `name`: string (único por owner)
+- `name`: string (único por owner, case-insensitively)
 - `color`: TextChoices (family, college, work, neighborhood, neutral)
 - `owner`: ForeignKey para User
 
@@ -83,11 +83,13 @@ Autenticação por sessão Django com CSRF ([ADR 2026-10-20](ADRs/2026-10-20-aut
 
 ### Contacts (nested routes)
 - `POST /api/friends/{id}/contacts/` — registra contato (retorna amigo atualizado)
-- `DELETE /api/friends/{id}/contacts/{id}/` — desfaz contato
+- `DELETE /api/friends/{id}/contacts/{contact_id}/` — desfaz contato
 
 ### Groups
 - `GET /api/groups/` — lista grupos do usuário
 - `POST /api/groups/` — cria grupo
+- `PATCH /api/groups/{id}/` — edita grupo
+- `DELETE /api/groups/{id}/` — remove grupo (desvincula amigos, nunca exclui amigos)
 
 Detalhes completos em [ADR 2026-10-20](ADRs/2026-10-20-contrato-api-mvp.md)
 
@@ -157,7 +159,6 @@ MVP sem Redis, Celery, RabbitMQ ou email. Adiciona-se quando necessário, não "
 ## Fora do MVP
 
 - Email ou push de lembretes ([ADR 2026-10-16](ADRs/2026-10-16-sem-email-lembretes-mvp.md))
-- Edição e exclusão de grupos
 - Histórico completo de contatos
 - Multiusuário (campos `owner` já existem)
 - Testes E2E com navegador
