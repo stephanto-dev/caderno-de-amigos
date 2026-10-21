@@ -140,13 +140,13 @@ class TestFriendsReadAPI:
         assert response.data == {
             "id": friend.id,
             "name": "Ana",
-            "ritmo_quantidade": 30,
-            "ritmo_unidade": Friend.CadenceUnit.DAY,
-            "coluna": "on_track",
-            "last_contact": timezone.localtime(recent_contact.date).isoformat(),
+            "cadence_amount": 30,
+            "cadence_unit": Friend.CadenceUnit.DAY,
+            "column": "on_track",
+            "last_contact_at": timezone.localtime(recent_contact.date).isoformat(),
             "last_note": "Nota recente",
             "groups": [
-                {"id": group_a.id, "name": "friends", "color": Group.Color.FAMILY},
+                {"id": group_a.id, "name": "amigos", "color": Group.Color.FAMILY},
                 {"id": group_z.id, "name": "Zoeira", "color": Group.Color.NEUTRAL},
             ],
         }
@@ -163,11 +163,11 @@ class TestFriendsReadAPI:
 
         # Assert
         assert response.data[0]["id"] == friend.id
-        assert response.data[0]["coluna"] == "overdue"
-        assert response.data[0]["last_contact"] is None
+        assert response.data[0]["column"] == "overdue"
+        assert response.data[0]["last_contact_at"] is None
         assert response.data[0]["last_note"] is None
 
-    def test_grupo_de_outro_dono_nao_aparece_na_resposta(self) -> None:
+    def test_other_owner_group_not_in_response(self) -> None:
         # Arrange
         owner = User.objects.create_user(username="ana")
         other_owner = User.objects.create_user(username="bia")
@@ -239,7 +239,7 @@ class TestFriendsReadAPI:
             "Mais dias absolutos",
         ]
 
-    def test_tie_na_urgencia_usa_nome_para_ordenar(self) -> None:
+    def test_tie_in_urgency_uses_name_for_sorting(self) -> None:
         # Arrange
         owner = User.objects.create_user(username="ana")
         create_friend_for_owner(owner, "Bia", days_since_contact=25)
@@ -271,11 +271,11 @@ class TestFriendsReadAPI:
     ) -> None:
         # Arrange
         owner = User.objects.create_user(username="ana")
-        grupo = Group.objects.create(
+        group = Group.objects.create(
             owner=owner, name="Group", color=Group.Color.NEUTRAL
         )
-        primeiro = create_friend_for_owner(owner, "Friend 1", days_since_contact=2)
-        primeiro.groups.add(grupo)
+        first_friend = create_friend_for_owner(owner, "Friend 1", days_since_contact=2)
+        first_friend.groups.add(group)
         client = APIClient()
         client.force_authenticate(owner)
 
@@ -284,11 +284,11 @@ class TestFriendsReadAPI:
             response = client.get(reverse("list_friends"))
             assert response.status_code == 200
 
-        for indice in range(2, 6):
+        for index in range(2, 6):
             friend = create_friend_for_owner(
-                owner, f"Friend {indice}", days_since_contact=indice
+                owner, f"Friend {index}", days_since_contact=index
             )
-            friend.groups.add(grupo)
+            friend.groups.add(group)
 
         with django_assert_num_queries(len(queries_with_one_friend)):
             response = client.get(reverse("list_friends"))

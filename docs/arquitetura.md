@@ -29,41 +29,41 @@ Visão geral da arquitetura do sistema.
 
 ## Modelo de dados
 
-### Amigo
+### Friend
 
 Pessoa com quem o usuário quer manter contato.
 
 Campos principais:
-- `nome`: string
-- `ritmo_quantidade`: inteiro positivo
-- `ritmo_unidade`: TextChoices (dia, semana, mês, ano)
-- `grupos`: ManyToMany para `Grupo` (opcional)
+- `name`: string
+- `cadence_amount`: inteiro positivo (mínimo 1)
+- `cadence_unit`: TextChoices (day, week, month, year)
+- `groups`: ManyToMany para `Group` (opcional)
 - `owner`: ForeignKey para User
 
-Sem campo `ultimo_contato` — derivado via `Max("contatos__data")` ([ADR 2026-10-20](ADRs/2026-10-20-coluna-quadro-calculada.md))
+Sem campo `last_contact` — derivado via `Max("contacts__date")` ([ADR 2026-10-20](ADRs/2026-10-20-coluna-quadro-calculada.md))
 
-### Contato
+### Contact
 
 Registro de interação com um amigo.
 
 Campos principais:
-- `amigo`: ForeignKey com `on_delete=CASCADE`
-- `data`: DateTimeField (UTC, interpretado como São Paulo) ([ADR 2026-10-20](ADRs/2026-10-20-datas-utc-timezone-sao-paulo.md))
-- `tipo`: TextChoices (mensagem, ligacao, encontro)
-- `nota`: TextField (opcional)
+- `friend`: ForeignKey com `on_delete=CASCADE`
+- `date`: DateTimeField (UTC, interpretado como São Paulo) ([ADR 2026-10-20](ADRs/2026-10-20-datas-utc-timezone-sao-paulo.md))
+- `kind`: TextChoices (message, call, meeting)
+- `note`: TextField (opcional)
 
-Índice em `(amigo, data)` para performance.
+Índice em `(friend, date)` para performance.
 
-### Grupo
+### Group
 
 Organização opcional de amigos.
 
 Campos principais:
-- `nome`: string (único por owner)
-- `cor`: TextChoices (familia, faculdade, trabalho, vizinhanca, neutro)
+- `name`: string (único por owner)
+- `color`: TextChoices (family, college, work, neighborhood, neutral)
 - `owner`: ForeignKey para User
 
-Relacionamento N:N com `Amigo` ([ADR 2026-10-20](ADRs/2026-10-20-modelo-dados-ritmo-tipo-grupos.md))
+Relacionamento N:N com `Friend` ([ADR 2026-10-20](ADRs/2026-10-20-modelo-dados-ritmo-tipo-grupos.md))
 
 ## API REST
 
@@ -74,20 +74,20 @@ Autenticação por sessão Django com CSRF ([ADR 2026-10-20](ADRs/2026-10-20-aut
 - `POST /api/logout/` — invalida sessão
 - `GET /api/me/` — verifica autenticação, retorna csrftoken
 
-### Amigos
-- `GET /api/amigos/` — lista com `coluna` calculada, último contato, grupos
-- `POST /api/amigos/` — cria amigo
-- `GET /api/amigos/{id}/` — detalhe
-- `PATCH /api/amigos/{id}/` — edita
-- `DELETE /api/amigos/{id}/` — remove
+### Friends
+- `GET /api/friends/` — lista com `column` calculada, último contato, grupos
+- `POST /api/friends/` — cria amigo
+- `GET /api/friends/{id}/` — detalhe
+- `PATCH /api/friends/{id}/` — edita
+- `DELETE /api/friends/{id}/` — remove
 
-### Contatos (nested routes)
-- `POST /api/amigos/{id}/contatos/` — registra contato (retorna amigo atualizado)
-- `DELETE /api/amigos/{id}/contatos/{id}/` — desfaz contato
+### Contacts (nested routes)
+- `POST /api/friends/{id}/contacts/` — registra contato (retorna amigo atualizado)
+- `DELETE /api/friends/{id}/contacts/{id}/` — desfaz contato
 
-### Grupos
-- `GET /api/grupos/` — lista grupos do usuário
-- `POST /api/grupos/` — cria grupo
+### Groups
+- `GET /api/groups/` — lista grupos do usuário
+- `POST /api/groups/` — cria grupo
 
 Detalhes completos em [ADR 2026-10-20](ADRs/2026-10-20-contrato-api-mvp.md)
 
@@ -95,12 +95,12 @@ Detalhes completos em [ADR 2026-10-20](ADRs/2026-10-20-contrato-api-mvp.md)
 
 O Quadro mostra amigos em 4 colunas baseadas no tempo desde o último contato e no ritmo desejado:
 
-1. **Falei agora** — última interação foi hoje ou ontem
-2. **Em dia** — dentro do ritmo esperado
-3. **Faz um tempinho** — passou do ritmo mas ainda dentro da janela
-4. **Essa semana** — últimos 7 dias do ritmo (janela fixa) ([ADR 2026-10-20](ADRs/2026-10-20-quadro-simplificado-janela-fixa.md))
+1. **Just talked** (`just_talked`) — última interação foi hoje ou ontem
+2. **On track** (`on_track`) — dentro do ritmo esperado
+3. **Overdue** (`overdue`) — passou do ritmo
+4. **This week** (`this_week`) — últimos 7 dias do ritmo (janela fixa) ([ADR 2026-10-20](ADRs/2026-10-20-quadro-simplificado-janela-fixa.md))
 
-A coluna é **calculada no backend** por um service ([ADR 2026-10-20](ADRs/2026-10-20-coluna-quadro-calculada.md)). O frontend apenas agrupa e renderiza.
+A coluna é **calculada no backend** por `BoardService` ([ADR 2026-10-20](ADRs/2026-10-20-coluna-quadro-calculada.md)). O frontend apenas agrupa e renderiza.
 
 ## Diagrama de arquitetura
 
@@ -114,7 +114,7 @@ graph TB
         subgraph "Container Django"
             WN[WhiteNoise<br/>Arquivos estáticos]
             API[Django REST API<br/>SessionAuth + CSRF]
-            Services[Services<br/>QuadroService<br/>RegistrarContatoService]
+            Services[Services<br/>BoardService<br/>FriendsService]
         end
         DB[(PostgreSQL)]
         Backup[Backup diário<br/>Cloudflare R2]
@@ -142,8 +142,9 @@ Toda decisão passa por: **se dá para fazer com menos regra, menos estado ou me
 ### Services concentram a lógica ([docs/engineering](engineering/README.md))
 
 Views e serializers são finos. A lógica de negócio vive em services:
-- `QuadroService.calcular_coluna(amigo)` — determina a coluna no Quadro
-- `RegistrarContatoService.executar(amigo, tipo, nota)` — registra novo contato
+- `BoardService.calculate_column(friend, last_contact)` — determina a coluna no Quadro
+- `BoardService.get_cadence_in_days(friend)` — converte cadência para dias
+- `FriendsService.list_friends()` — lista amigos com dados computados do board
 
 ### TDD obrigatório ([ADR 2026-10-20](ADRs/2026-10-20-estrategia-testes-tdd.md))
 

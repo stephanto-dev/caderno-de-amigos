@@ -17,7 +17,7 @@ class TestSessionAuthentication:
 
         # Assert
         assert response.status_code == 200
-        assert response.data == {"autenticado": False, "usuario": None}
+        assert response.data == {"authenticated": False, "user": None}
         assert "csrftoken" in response.cookies
 
     def test_login_with_valid_credentials_creates_session(
@@ -31,14 +31,14 @@ class TestSessionAuthentication:
         # Act
         response = csrf_client.post(
             reverse("login_user"),
-            {"usuario": "ana", "senha": "senha-segura"},
+            {"username": "ana", "password": "senha-segura"},
             HTTP_X_CSRFTOKEN=csrf_token,
         )
         me_response = csrf_client.get(reverse("get_current_user"))
 
         # Assert
         assert response.status_code == 200
-        assert response.data == {"autenticado": True, "usuario": "ana"}
+        assert response.data == {"authenticated": True, "user": "ana"}
         assert me_response.data == response.data
 
     def test_login_with_wrong_password_returns_generic_error(
@@ -51,7 +51,7 @@ class TestSessionAuthentication:
         # Act
         response = csrf_client.post(
             reverse("login_user"),
-            {"usuario": "ana", "senha": "incorreta"},
+            {"username": "ana", "password": "incorreta"},
             HTTP_X_CSRFTOKEN=csrf_client.cookies["csrftoken"].value,
         )
 
@@ -77,7 +77,7 @@ class TestSessionAuthentication:
         # Act
         response = csrf_client.post(
             reverse("login_user"),
-            {"usuario": "desconhecido", "senha": "senha-segura"},
+            {"username": "desconhecido", "password": "senha-segura"},
             HTTP_X_CSRFTOKEN=csrf_client.cookies["csrftoken"].value,
         )
 
@@ -102,7 +102,7 @@ class TestSessionAuthentication:
 
         # Act
         response = csrf_client.post(
-            reverse("login_user"), {"usuario": "ana", "senha": "senha-segura"}
+            reverse("login_user"), {"username": "ana", "password": "senha-segura"}
         )
 
         # Assert
@@ -115,7 +115,7 @@ class TestSessionAuthentication:
         csrf_token = csrf_client.cookies["csrftoken"].value
         csrf_client.post(
             reverse("login_user"),
-            {"usuario": "ana", "senha": "senha-segura"},
+            {"username": "ana", "password": "senha-segura"},
             HTTP_X_CSRFTOKEN=csrf_token,
         )
 
@@ -128,7 +128,7 @@ class TestSessionAuthentication:
 
         # Assert
         assert response.status_code == 204
-        assert me_response.data == {"autenticado": False, "usuario": None}
+        assert me_response.data == {"authenticated": False, "user": None}
 
     def test_logout_when_anonymous_is_forbidden(self, csrf_client: APIClient) -> None:
         # Arrange
@@ -151,7 +151,7 @@ class TestSessionAuthentication:
         responses = [
             csrf_client.post(
                 reverse("login_user"),
-                {"usuario": "desconhecido", "senha": "incorreta"},
+                {"username": "desconhecido", "password": "incorreta"},
                 HTTP_X_CSRFTOKEN=csrf_token,
             )
             for _ in range(6)

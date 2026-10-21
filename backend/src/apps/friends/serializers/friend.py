@@ -22,6 +22,6 @@ class BoardFriendSerializer(serializers.Serializer):
     cadence_amount = serializers.IntegerField(source="friend.cadence_amount")
     cadence_unit = serializers.CharField(source="friend.cadence_unit")
     column = serializers.ChoiceField(choices=Column.choices)
-    last_contact = serializers.DateTimeField(allow_null=True)
+    last_contact_at = serializers.DateTimeField(allow_null=True, source="last_contact")
     last_note = serializers.CharField(allow_null=True, allow_blank=True)
     groups = FriendGroupSerializer(source="friend.groups", many=True)

@@ -10,11 +10,11 @@ Stack: Python 3.11+, Django 5, Django REST Framework, Postgres (docker compose),
 
 We need to be on the same page with terminology. When communicating, use this language:
 
-- **"Friend"** (Amigo): A person the user wants to stay in touch with. Stored in the `Amigo` model.
-- **"Contact"** (Contato): A log entry recording that the user spoke with a friend. Stored in the `Contato` model.
-- **"Contact rhythm"** (Ritmo): The desired contact interval for a friend, stored as a positive quantity and a unit (day, week, month, or year) on `Amigo`.
-- **"Group"** (Grupo): An optional way to organize friends (e.g., "college friends", "family"). Stored in the `Grupo` model; an `Amigo` can belong to multiple groups.
-- **"Board"** (Quadro): The main dashboard showing friends grouped by contact recency: 'Falei agora', 'Faz um tempinho', 'Essa semana', 'Em dia'.
+- **"Friend"** (Amigo): A person the user wants to stay in touch with. Stored in the `Friend` model.
+- **"Contact"** (Contato): A log entry recording that the user spoke with a friend. Stored in the `Contact` model.
+- **"Contact cadence"** (Ritmo): The desired contact interval for a friend, stored as a positive quantity and a unit (day, week, month, or year) on `Friend` (`cadence_amount`, `cadence_unit`).
+- **"Group"** (Grupo): An optional way to organize friends (e.g., "college friends", "family"). Stored in the `Group` model; a `Friend` can belong to multiple groups.
+- **"Board"** (Quadro): The main dashboard showing friends grouped by contact recency: 'Just talked' (`just_talked`), 'Overdue' (`overdue`), 'This week' (`this_week`), 'On track' (`on_track`).
 
 Although the code is written in English, the user is Brazilian, so we use Portuguese when communicating with them.
 

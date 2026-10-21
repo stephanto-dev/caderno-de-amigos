@@ -14,7 +14,6 @@ from django.utils import timezone
 
 from apps.friends.models import Contact, Friend, Group
 from apps.friends.services.board import BoardService, Column
-from apps.friends.services.cadence import CadenceCalculator
 
 if TYPE_CHECKING:
     from django_stubs_ext import WithAnnotations
@@ -78,6 +77,7 @@ class FriendsService:
         ).prefetch_related(
             Prefetch(
                 "groups",
+                # The model allows cross-owner links; the API must not expose them.
                 queryset=Group.objects.filter(owner=self.owner).order_by(
                     Lower("name"), "id"
                 ),
@@ -105,10 +105,8 @@ class FriendsService:
         if last_contact is None:
             return column_order, 0, 0, name
 
-        days_since_contact = (
-            timezone.localdate() - timezone.localdate(last_contact)
-        ).days
-        cadence_in_days = CadenceCalculator.get_cadence_in_days(friend)
+        days_since_contact = BoardService.get_days_since_contact(last_contact)
+        cadence_in_days = BoardService.get_cadence_in_days(friend)
         if board_friend.column == Column.OVERDUE:
             return column_order, 1, -days_since_contact / cadence_in_days, name
         if board_friend.column == Column.JUST_TALKED:

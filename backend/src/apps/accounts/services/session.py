@@ -11,9 +11,9 @@ class SessionService:
     def __init__(self, request: HttpRequest) -> None:
         self.request = request
 
-    def login_user(self, usuario: str, senha: str) -> AbstractBaseUser | None:
+    def login_user(self, username: str, password: str) -> AbstractBaseUser | None:
         """Create a session for valid credentials and return its user."""
-        user = authenticate(self.request, username=usuario, password=senha)
+        user = authenticate(self.request, username=username, password=password)
         if user is not None:
             login(self.request, user)
         return user
