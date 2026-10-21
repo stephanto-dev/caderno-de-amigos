@@ -14,7 +14,7 @@ Guardar no horário local de São Paulo é ambíguo em horário de verão. Usar 
 
 ## Decisão
 
-`Contato` usa **`DateTimeField`** (vira `timestamptz` no Postgres) com:
+`Contact` usa **`DateTimeField`** (vira `timestamptz` no Postgres) com:
 - `USE_TZ = True`
 - `TIME_ZONE = "America/Sao_Paulo"`
 

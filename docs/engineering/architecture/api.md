@@ -39,15 +39,33 @@ DRF_STANDARDIZED_ERRORS = {"ENABLE_IN_DEBUG_FOR_UNHANDLED_EXCEPTIONS": True}
 - Ids que identificam o pedido (usuário, amigo) entram no contexto do log logo no começo da view, para todo log daquele request carregá-los.
 
 ```python
-class RecordContactView(CreateAPIView):
-    serializer_class = RecordContactSerializer
+class RecordContactView(BaseAPIView):
+    """Record a new contact for a friend.
+    
+    Planned implementation for CRM-8.
+    """
 
-    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    def post(self, request: Request, friend_id: int) -> Response:
+        updated_friend = ContactsService(owner=self.get_owner()).record_contact(
+            friend_id=friend_id,
+            kind=request.data["kind"],
+            note=request.data.get("note", ""),
+        )
+        return Response(
+            BoardFriendSerializer(updated_friend).data,
+            status=status.HTTP_201_CREATED,
+        )
+```
 
-        contact = ContactService(user=request.user).record_contact(serializer.validated_data)
-        return Response(ContactSerializer(contact).data, status=status.HTTP_201_CREATED)
+**URLs (app-level):**
+
+```python
+# apps/friends/urls.py
+urlpatterns = [
+    path("", FriendsListView.as_view(), name="list_friends"),
+    path("<int:friend_id>/", FriendDetailView.as_view(), name="get_friend"),
+    path("<int:friend_id>/contacts/", RecordContactView.as_view(), name="record_contact"),
+]
 ```
 
 ## Serializers
@@ -59,7 +77,7 @@ class RecordContactView(CreateAPIView):
 
 ## URLs
 
-- Caminhos em kebab-case com barra no fim: `friends/record-contact/`.
+- Caminhos em kebab-case com barra no fim: `friends/<int:friend_id>/contacts/`.
 - Todo `path()` tem `name` em `snake_case`.
 - Cada app tem o seu `urls.py`, incluído no `urls.py` do projeto com um prefixo.
 

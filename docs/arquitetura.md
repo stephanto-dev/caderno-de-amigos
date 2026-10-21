@@ -40,7 +40,7 @@ Campos principais:
 - `groups`: ManyToMany para `Group` (opcional)
 - `owner`: ForeignKey para User
 
-Sem campo `last_contact` — derivado via `Max("contacts__date")` ([ADR 2026-10-20](ADRs/2026-10-20-coluna-quadro-calculada.md))
+Sem campo `last_contact_at` — esse campo é calculado (derivado via `Max("contacts__date")`) ([ADR 2026-10-20](ADRs/2026-10-20-coluna-quadro-calculada.md))
 
 ### Contact
 
@@ -59,7 +59,7 @@ Campos principais:
 Organização opcional de amigos.
 
 Campos principais:
-- `name`: string (único por owner)
+- `name`: string (único por owner sem diferenciar maiúsculas — planejado em CRM-7)
 - `color`: TextChoices (family, college, work, neighborhood, neutral)
 - `owner`: ForeignKey para User
 
@@ -72,10 +72,10 @@ Autenticação por sessão Django com CSRF ([ADR 2026-10-20](ADRs/2026-10-20-aut
 ### Autenticação
 - `POST /api/login/` — cria sessão
 - `POST /api/logout/` — invalida sessão
-- `GET /api/me/` — verifica autenticação, retorna csrftoken
+- `GET /api/me/` — verifica autenticação, seta o cookie csrftoken, retorna `{"authenticated": true|false, "user": "username"|null}`
 
 ### Friends
-- `GET /api/friends/` — lista com `column` calculada, último contato, grupos
+- `GET /api/friends/` — lista amigos do usuário, já ordenada pelo backend (por coluna e urgência), com `column` calculada, último contato, grupos
 - `POST /api/friends/` — cria amigo
 - `GET /api/friends/{id}/` — detalhe
 - `PATCH /api/friends/{id}/` — edita
@@ -83,11 +83,13 @@ Autenticação por sessão Django com CSRF ([ADR 2026-10-20](ADRs/2026-10-20-aut
 
 ### Contacts (nested routes)
 - `POST /api/friends/{id}/contacts/` — registra contato (retorna amigo atualizado)
-- `DELETE /api/friends/{id}/contacts/{id}/` — desfaz contato
+- `DELETE /api/friends/{id}/contacts/{contact_id}/` — desfaz contato
 
 ### Groups
-- `GET /api/groups/` — lista grupos do usuário
+- `GET /api/groups/` — lista grupos do usuário (com `friends_count`)
 - `POST /api/groups/` — cria grupo
+- `PATCH /api/groups/{id}/` — edita grupo
+- `DELETE /api/groups/{id}/` — remove grupo (desvincula amigos, nunca exclui amigos)
 
 Detalhes completos em [ADR 2026-10-20](ADRs/2026-10-20-contrato-api-mvp.md)
 
@@ -144,7 +146,8 @@ Toda decisão passa por: **se dá para fazer com menos regra, menos estado ou me
 Views e serializers são finos. A lógica de negócio vive em services:
 - `BoardService.calculate_column(friend, last_contact)` — determina a coluna no Quadro
 - `BoardService.get_cadence_in_days(friend)` — converte cadência para dias
-- `FriendsService.list_friends()` — lista amigos com dados computados do board
+- `FriendsService(friends_for_owner, owner).list_friends()` — lista amigos ordenados com dados computados do board
+- `ContactsService(owner)` — planejado: `record_contact` e `undo_contact`
 
 ### TDD obrigatório ([ADR 2026-10-20](ADRs/2026-10-20-estrategia-testes-tdd.md))
 
@@ -157,7 +160,6 @@ MVP sem Redis, Celery, RabbitMQ ou email. Adiciona-se quando necessário, não "
 ## Fora do MVP
 
 - Email ou push de lembretes ([ADR 2026-10-16](ADRs/2026-10-16-sem-email-lembretes-mvp.md))
-- Edição e exclusão de grupos
 - Histórico completo de contatos
 - Multiusuário (campos `owner` já existem)
 - Testes E2E com navegador

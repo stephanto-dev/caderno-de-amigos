@@ -4,6 +4,8 @@ Responsável: Vinicius
 Data: 2026-10-20
 Status: Aceito
 
+**Atualização 2026-10-21**: Traduzido para inglês (nomes de services).
+
 ## Contexto
 
 Precisamos definir a abordagem de testes para backend Django e frontend Vue.
@@ -21,7 +23,7 @@ Sem testes, refatoração é arriscada e bugs aparecem em produção. Testes esc
 `pytest` + `pytest-django`, com datas congeladas por `time-machine`.
 
 **Testes unitários de services:**
-- `QuadroService`: regra das colunas para cada ritmo, incluindo caso de até 9 dias
+- `BoardService`: regra das colunas para cada ritmo, incluindo caso de até 9 dias
 - Teste de fuso: contato às 23:30 BRT conta no dia local correto
 
 **Testes de API:**
