@@ -126,7 +126,7 @@ class TestFriendsReadAPI:
             owner=owner, name="Zoeira", color=Group.Color.NEUTRAL
         )
         group_a = Group.objects.create(
-            owner=owner, name="friends", color=Group.Color.FAMILY
+            owner=owner, name="Amigos", color=Group.Color.FAMILY
         )
         friend.groups.add(group_z, group_a)
         client = APIClient()
@@ -146,8 +146,8 @@ class TestFriendsReadAPI:
             "last_contact_at": timezone.localtime(recent_contact.date).isoformat(),
             "last_note": "Nota recente",
             "groups": [
-                {"id": group_a.id, "name": "amigos", "color": Group.Color.FAMILY},
-                {"id": group_z.id, "name": "Zoeira", "color": Group.Color.NEUTRAL},
+                {"id": group_a.id, "name": "Amigos", "color": "family"},
+                {"id": group_z.id, "name": "Zoeira", "color": "neutral"},
             ],
         }
 
