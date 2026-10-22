@@ -1,12 +1,13 @@
-"""Read friends with the data needed by the board."""
+"""Read and write friends with the data needed by the board."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar, TypedDict
+from typing import TYPE_CHECKING, ClassVar, NotRequired, TypedDict
 
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import Max, OuterRef, Prefetch, QuerySet, Subquery
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
@@ -25,6 +26,15 @@ class BoardComputedFields(TypedDict):
     last_note: str | None
 
 
+class FriendWriteData(TypedDict):
+    """Validated friend fields received by the write use cases."""
+
+    name: NotRequired[str]
+    cadence_amount: NotRequired[int]
+    cadence_unit: NotRequired[str]
+    groups: NotRequired[list[Group]]
+
+
 @dataclass(frozen=True)
 class BoardFriend:
     """A friend and the computed fields shown in the board API."""
@@ -36,7 +46,7 @@ class BoardFriend:
 
 
 class FriendsService:
-    """Build board data from the view's owner-scoped friend queryset."""
+    """Read and change friends through the view's owner-scoped queryset."""
 
     COLUMN_ORDER: ClassVar[dict[Column, int]] = {
         Column.OVERDUE: 0,
@@ -61,6 +71,42 @@ class FriendsService:
         """Return one scoped friend or raise 404 if absent or owned by another user."""
         friend = get_object_or_404(self._get_friends_with_board_fields(), pk=friend_id)
         return self._build_board_friend(friend)
+
+    @transaction.atomic
+    def create_friend_for_owner(self, friend_data: FriendWriteData) -> BoardFriend:
+        """Create a friend for the authenticated owner and return its board fields."""
+        friend = Friend.objects.create(
+            owner=self.owner,
+            name=friend_data["name"],
+            cadence_amount=friend_data["cadence_amount"],
+            cadence_unit=friend_data["cadence_unit"],
+        )
+        if "groups" in friend_data:
+            friend.groups.set(friend_data["groups"])
+        return self.get_friend_for_owner(friend.id)
+
+    @transaction.atomic
+    def update_friend_for_owner(
+        self, friend_id: int, friend_data: FriendWriteData
+    ) -> BoardFriend:
+        """Apply supplied fields and replace groups when a group list is supplied."""
+        friend = get_object_or_404(self.friends_for_owner, pk=friend_id)
+        updated_fields = set(friend_data) - {"groups"}
+        if updated_fields:
+            friend.name = friend_data.get("name", friend.name)
+            friend.cadence_amount = friend_data.get(
+                "cadence_amount", friend.cadence_amount
+            )
+            friend.cadence_unit = friend_data.get("cadence_unit", friend.cadence_unit)
+            friend.save(update_fields=updated_fields)
+        if "groups" in friend_data:
+            friend.groups.set(friend_data["groups"])
+        return self.get_friend_for_owner(friend.id)
+
+    def delete_friend_for_owner(self, friend_id: int) -> None:
+        """Delete one owned friend and its contacts while retaining shared groups."""
+        friend = get_object_or_404(self.friends_for_owner, pk=friend_id)
+        friend.delete()
 
     def _get_friends_with_board_fields(
         self,

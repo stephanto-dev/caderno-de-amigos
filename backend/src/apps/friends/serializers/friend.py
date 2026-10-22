@@ -1,9 +1,29 @@
-"""Read-only representation of a friend on the board."""
+"""Read and write contracts for friends on the board."""
 
+from typing import cast
+
+from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from apps.friends.models import Group
+from apps.friends.models import Friend, Group
 from apps.friends.services.board import Column
+
+
+class FriendWriteSerializer(serializers.Serializer):
+    """Validate friend fields and restrict group IDs to the authenticated owner."""
+
+    name = serializers.CharField(max_length=100)
+    cadence_amount = serializers.IntegerField(min_value=1)
+    cadence_unit = serializers.ChoiceField(choices=Friend.CadenceUnit.choices)
+
+    def get_fields(self) -> dict[str, serializers.Field]:
+        """Build fields with a group queryset scoped to the current owner."""
+        fields = super().get_fields()
+        owner = cast(User, self.context["owner"])
+        fields["groups"] = serializers.PrimaryKeyRelatedField(
+            many=True, queryset=Group.objects.filter(owner=owner), required=False
+        )
+        return fields
 
 
 class FriendGroupSerializer(serializers.ModelSerializer[Group]):
