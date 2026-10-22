@@ -1,4 +1,4 @@
-"""API contract for reading friends on the board."""
+"""API contract for reading and writing friends on the board."""
 
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager
@@ -296,3 +296,280 @@ class TestFriendsReadAPI:
         # Assert
         assert response.status_code == 200
         assert len(response.data) == 5
+
+
+@pytest.mark.django_db
+class TestFriendsWriteAPI:
+    def test_create_friend_returns_board_fields_and_owned_groups(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        group = Group.objects.create(
+            owner=owner, name="Família", color=Group.Color.FAMILY
+        )
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("list_friends"),
+            {
+                "name": "Bia",
+                "cadence_amount": 2,
+                "cadence_unit": Friend.CadenceUnit.WEEK,
+                "groups": [group.id],
+            },
+        )
+
+        # Assert
+        assert response.status_code == 201
+        friend = Friend.objects.get(pk=response.data["id"])
+        assert friend.owner == owner
+        assert response.data == {
+            "id": friend.id,
+            "name": "Bia",
+            "cadence_amount": 2,
+            "cadence_unit": Friend.CadenceUnit.WEEK,
+            "column": "overdue",
+            "last_contact_at": None,
+            "last_note": None,
+            "groups": [{"id": group.id, "name": "Família", "color": "family"}],
+        }
+
+    def test_create_friend_ignores_owner_in_body(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        other_owner = User.objects.create_user(username="bia")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("list_friends"),
+            {
+                "name": "Caio",
+                "cadence_amount": 1,
+                "cadence_unit": Friend.CadenceUnit.MONTH,
+                "owner": other_owner.id,
+            },
+        )
+
+        # Assert
+        assert response.status_code == 201
+        assert Friend.objects.get(pk=response.data["id"]).owner == owner
+
+    def test_create_friend_with_other_owner_group_returns_400(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        other_owner = User.objects.create_user(username="bia")
+        group = Group.objects.create(
+            owner=other_owner, name="Privado", color=Group.Color.NEUTRAL
+        )
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("list_friends"),
+            {
+                "name": "Caio",
+                "cadence_amount": 1,
+                "cadence_unit": Friend.CadenceUnit.MONTH,
+                "groups": [group.id],
+            },
+        )
+
+        # Assert
+        assert response.status_code == 400
+        assert not Friend.objects.filter(owner=owner).exists()
+
+    def test_create_friend_with_zero_cadence_returns_400(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("list_friends"),
+            {"name": "Caio", "cadence_amount": 0, "cadence_unit": "day"},
+        )
+
+        # Assert
+        assert response.status_code == 400
+        assert not Friend.objects.filter(owner=owner).exists()
+
+    def test_patch_friend_updates_fields_and_replaces_groups(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        old_group = Group.objects.create(
+            owner=owner, name="Antigo", color=Group.Color.NEUTRAL
+        )
+        new_group = Group.objects.create(
+            owner=owner, name="Novo", color=Group.Color.FAMILY
+        )
+        friend.groups.add(old_group)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.patch(
+            reverse("get_friend", args=[friend.id]),
+            {"name": "Ana Maria", "groups": [new_group.id]},
+        )
+
+        # Assert
+        assert response.status_code == 200
+        friend.refresh_from_db()
+        assert friend.name == "Ana Maria"
+        assert friend.cadence_amount == 30
+        assert list(friend.groups.values_list("id", flat=True)) == [new_group.id]
+        assert response.data["groups"] == [
+            {"id": new_group.id, "name": "Novo", "color": "family"}
+        ]
+
+    def test_patch_friend_without_groups_keeps_existing_groups(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        group = Group.objects.create(
+            owner=owner, name="Família", color=Group.Color.FAMILY
+        )
+        friend.groups.add(group)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.patch(
+            reverse("get_friend", args=[friend.id]), {"name": "Bia"}, format="json"
+        )
+
+        # Assert
+        assert response.status_code == 200
+        assert list(friend.groups.values_list("id", flat=True)) == [group.id]
+
+    def test_patch_friend_with_empty_groups_removes_all_groups(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        group = Group.objects.create(
+            owner=owner, name="Família", color=Group.Color.FAMILY
+        )
+        friend.groups.add(group)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.patch(
+            reverse("get_friend", args=[friend.id]), {"groups": []}, format="json"
+        )
+
+        # Assert
+        assert response.status_code == 200
+        assert not friend.groups.exists()
+        assert response.data["groups"] == []
+
+    def test_patch_other_owner_friend_returns_404_without_change(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        other_owner = User.objects.create_user(username="bia")
+        friend = create_friend_for_owner(other_owner, "Bia")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.patch(
+            reverse("get_friend", args=[friend.id]), {"name": "Alterado"}
+        )
+
+        # Assert
+        assert response.status_code == 404
+        friend.refresh_from_db()
+        assert friend.name == "Bia"
+
+    def test_patch_friend_with_other_owner_group_returns_400_without_change(
+        self,
+    ) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        other_owner = User.objects.create_user(username="bia")
+        friend = create_friend_for_owner(owner, "Ana")
+        group = Group.objects.create(
+            owner=other_owner, name="Privado", color=Group.Color.NEUTRAL
+        )
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.patch(
+            reverse("get_friend", args=[friend.id]),
+            {"name": "Alterado", "groups": [group.id]},
+        )
+
+        # Assert
+        assert response.status_code == 400
+        friend.refresh_from_db()
+        assert friend.name == "Ana"
+        assert not friend.groups.exists()
+
+    def test_delete_friend_removes_contacts_but_keeps_group(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana", days_since_contact=2)
+        group = Group.objects.create(
+            owner=owner, name="Família", color=Group.Color.FAMILY
+        )
+        friend.groups.add(group)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.delete(reverse("get_friend", args=[friend.id]))
+
+        # Assert
+        assert response.status_code == 204
+        assert not Friend.objects.filter(pk=friend.id).exists()
+        assert not Contact.objects.filter(friend_id=friend.id).exists()
+        assert Group.objects.filter(pk=group.id).exists()
+
+    def test_delete_other_owner_friend_returns_404_without_change(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        other_owner = User.objects.create_user(username="bia")
+        friend = create_friend_for_owner(other_owner, "Bia")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.delete(reverse("get_friend", args=[friend.id]))
+
+        # Assert
+        assert response.status_code == 404
+        assert Friend.objects.filter(pk=friend.id).exists()
+
+    def test_write_without_login_returns_403(self) -> None:
+        # Arrange
+        url = reverse("list_friends")
+
+        # Act
+        response = APIClient().post(
+            url, {"name": "Ana", "cadence_amount": 1, "cadence_unit": "day"}
+        )
+
+        # Assert
+        assert response.status_code == 403
+
+    def test_write_without_csrf_returns_403(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        client = APIClient(enforce_csrf_checks=True)
+        client.force_login(owner)
+
+        # Act
+        response = client.post(
+            reverse("list_friends"),
+            {"name": "Ana", "cadence_amount": 1, "cadence_unit": "day"},
+        )
+
+        # Assert
+        assert response.status_code == 403
