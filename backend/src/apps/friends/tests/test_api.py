@@ -380,6 +380,8 @@ class TestFriendsWriteAPI:
 
         # Assert
         assert response.status_code == 400
+        assert response.data["type"] == "validation_error"
+        assert any(error["attr"] == "groups" for error in response.data["errors"])
         assert not Friend.objects.filter(owner=owner).exists()
 
     def test_create_friend_with_zero_cadence_returns_400(self) -> None:
@@ -396,6 +398,10 @@ class TestFriendsWriteAPI:
 
         # Assert
         assert response.status_code == 400
+        assert response.data["type"] == "validation_error"
+        assert any(
+            error["attr"] == "cadence_amount" for error in response.data["errors"]
+        )
         assert not Friend.objects.filter(owner=owner).exists()
 
     def test_patch_friend_updates_fields_and_replaces_groups(self) -> None:
@@ -508,6 +514,8 @@ class TestFriendsWriteAPI:
 
         # Assert
         assert response.status_code == 400
+        assert response.data["type"] == "validation_error"
+        assert any(error["attr"] == "groups" for error in response.data["errors"])
         friend.refresh_from_db()
         assert friend.name == "Ana"
         assert not friend.groups.exists()
