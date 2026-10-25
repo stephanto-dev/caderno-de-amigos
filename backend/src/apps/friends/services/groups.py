@@ -1,6 +1,7 @@
 """Read and write groups belonging to the authenticated owner."""
 
 from typing import NotRequired, TypedDict
+from uuid import UUID
 
 from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
@@ -66,7 +67,7 @@ class GroupsService:
         return self._get_group_for_owner(group.pk)
 
     def update_group_for_owner(
-        self, group_id: int, group_data: GroupUpdateData
+        self, group_id: UUID, group_data: GroupUpdateData
     ) -> Group:
         """Update only supplied fields on an owned group and return its count.
 
@@ -97,11 +98,11 @@ class GroupsService:
 
         return self._get_group_for_owner(group_id)
 
-    def delete_group_for_owner(self, group_id: int) -> None:
+    def delete_group_for_owner(self, group_id: UUID) -> None:
         """Delete an owned group and its links while retaining its friends."""
         group = self._get_group_for_owner(group_id)
         group.delete()
 
-    def _get_group_for_owner(self, group_id: int) -> Group:
+    def _get_group_for_owner(self, group_id: UUID) -> Group:
         """Return an owned group with its friend count or raise 404."""
         return get_object_or_404(self.list_groups_for_owner(), pk=group_id)

@@ -1,6 +1,7 @@
 """Record and undo contacts for friends owned by the current user."""
 
 from dataclasses import dataclass
+from uuid import UUID
 
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
@@ -14,7 +15,7 @@ class RecordedContact:
     """The updated friend and the new contact ID needed to undo the action."""
 
     board_friend: BoardFriend
-    contact_id: int
+    contact_id: UUID
 
 
 class ContactsService:
@@ -23,7 +24,7 @@ class ContactsService:
     def __init__(self, owner: User) -> None:
         self.owner = owner
 
-    def record_contact(self, friend_id: int, kind: str, note: str) -> RecordedContact:
+    def record_contact(self, friend_id: UUID, kind: str, note: str) -> RecordedContact:
         """Record a contact now and return its ID with recalculated board fields."""
         friends_for_owner = Friend.objects.filter(owner=self.owner)
         friend = get_object_or_404(friends_for_owner, pk=friend_id)
@@ -35,7 +36,7 @@ class ContactsService:
             contact_id=contact.id,
         )
 
-    def undo_contact(self, friend_id: int, contact_id: int) -> None:
+    def undo_contact(self, friend_id: UUID, contact_id: UUID) -> None:
         """Delete a contact only when it belongs to a friend owned by this user."""
         friend = get_object_or_404(
             Friend.objects.filter(owner=self.owner), pk=friend_id

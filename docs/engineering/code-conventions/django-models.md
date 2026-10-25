@@ -6,7 +6,7 @@
 
 ## Ordem dos campos
 
-1. `id = models.AutoField(primary_key=True)`, sempre primeiro.
+1. `id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)`, sempre primeiro.
 2. ForeignKeys.
 3. Campos de status e de escolha.
 4. Campos de conteúdo.
@@ -33,12 +33,14 @@
 ## Exemplo
 
 ```python
+import uuid
+
 class Invoice(models.Model):
     class Status(models.TextChoices):
         OPEN = "OPEN", "Aberta"
         PAID = "PAID", "Paga"
 
-    id = models.AutoField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey(
         "customers.Customer",
         on_delete=models.CASCADE,

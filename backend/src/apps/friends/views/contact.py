@@ -1,6 +1,7 @@
 """Endpoints for recording and undoing contacts."""
 
 from typing import cast
+from uuid import UUID
 
 from rest_framework import status
 from rest_framework.request import Request
@@ -15,7 +16,7 @@ from apps.friends.views.base import BaseAPIView
 class RecordContactView(BaseAPIView):
     """Record a contact for an owned friend."""
 
-    def post(self, request: Request, friend_id: int) -> Response:
+    def post(self, request: Request, friend_id: UUID) -> Response:
         """Validate the contact and return the updated board representation."""
         serializer = ContactWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -27,7 +28,7 @@ class RecordContactView(BaseAPIView):
         return Response(
             {
                 **BoardFriendSerializer(recorded_contact.board_friend).data,
-                "contact_id": recorded_contact.contact_id,
+                "contact_id": str(recorded_contact.contact_id),
             },
             status=status.HTTP_201_CREATED,
         )
@@ -36,7 +37,7 @@ class RecordContactView(BaseAPIView):
 class UndoContactView(BaseAPIView):
     """Remove one contact from an owned friend."""
 
-    def delete(self, request: Request, friend_id: int, contact_id: int) -> Response:
+    def delete(self, request: Request, friend_id: UUID, contact_id: UUID) -> Response:
         """Delete the contact and return an empty successful response."""
         ContactsService(self.get_owner()).undo_contact(friend_id, contact_id)
         return Response(status=status.HTTP_204_NO_CONTENT)

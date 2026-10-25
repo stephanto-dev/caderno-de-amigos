@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, NotRequired, TypedDict
+from uuid import UUID
 
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -67,7 +68,7 @@ class FriendsService:
         ]
         return sorted(friends, key=self._get_sort_key_for_friend)
 
-    def get_friend_for_owner(self, friend_id: int) -> BoardFriend:
+    def get_friend_for_owner(self, friend_id: UUID) -> BoardFriend:
         """Return one scoped friend or raise 404 if absent or owned by another user."""
         friend = get_object_or_404(self._get_friends_with_board_fields(), pk=friend_id)
         return self._build_board_friend(friend)
@@ -87,7 +88,7 @@ class FriendsService:
 
     @transaction.atomic
     def update_friend_for_owner(
-        self, friend_id: int, friend_data: FriendWriteData
+        self, friend_id: UUID, friend_data: FriendWriteData
     ) -> BoardFriend:
         """Apply supplied fields and replace groups when a group list is supplied."""
         friend = get_object_or_404(self.friends_for_owner, pk=friend_id)
@@ -103,7 +104,7 @@ class FriendsService:
             friend.groups.set(friend_data["groups"])
         return self.get_friend_for_owner(friend.id)
 
-    def delete_friend_for_owner(self, friend_id: int) -> None:
+    def delete_friend_for_owner(self, friend_id: UUID) -> None:
         """Delete one owned friend and its contacts while retaining shared groups."""
         friend = get_object_or_404(self.friends_for_owner, pk=friend_id)
         friend.delete()

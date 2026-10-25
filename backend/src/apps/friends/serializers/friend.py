@@ -37,7 +37,7 @@ class FriendGroupSerializer(serializers.ModelSerializer[Group]):
 class BoardFriendSerializer(serializers.Serializer):
     """Expose a friend and the board fields computed by FriendsService."""
 
-    id = serializers.IntegerField(source="friend.id")
+    id = serializers.UUIDField(source="friend.id")
     name = serializers.CharField(source="friend.name")
     cadence_amount = serializers.IntegerField(source="friend.cadence_amount")
     cadence_unit = serializers.CharField(source="friend.cadence_unit")
