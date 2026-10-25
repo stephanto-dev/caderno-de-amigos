@@ -33,14 +33,15 @@ class TestRecordContact:
         owner = friend.owner
 
         # Act
-        updated_friend = ContactsService(owner).record_contact(
+        recorded_contact = ContactsService(owner).record_contact(
             friend_id=friend.id,
             kind=Contact.Kind.MESSAGE,
             note="",
         )
 
         # Assert
-        assert updated_friend.last_contact is not None
+        assert recorded_contact.board_friend.last_contact is not None
+        assert recorded_contact.contact_id > 0
 ```
 
 ## O que testar

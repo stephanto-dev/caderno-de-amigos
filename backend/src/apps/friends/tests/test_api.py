@@ -584,6 +584,175 @@ class TestFriendsWriteAPI:
 
 
 @pytest.mark.django_db
+class TestContactsAPI:
+    def test_record_contact_updates_board_friend(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("record_contact", args=[friend.id]),
+            {"kind": Contact.Kind.CALL, "note": "Conversa boa"},
+        )
+
+        # Assert
+        assert response.status_code == 201
+        contact = Contact.objects.get(friend=friend)
+        assert response.data["contact_id"] == contact.id
+        assert contact.date == timezone.now()
+        assert response.data["column"] == "just_talked"
+        assert (
+            response.data["last_contact_at"]
+            == timezone.localtime(contact.date).isoformat()
+        )
+        assert response.data["last_note"] == "Conversa boa"
+
+    def test_undo_contact_restores_previous_board_column(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia", days_since_contact=30)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        record_response = client.post(
+            reverse("record_contact", args=[friend.id]),
+            {"kind": Contact.Kind.CALL},
+        )
+        response = client.delete(
+            reverse(
+                "undo_contact", args=[friend.id, record_response.data["contact_id"]]
+            )
+        )
+        friend_response = client.get(reverse("get_friend", args=[friend.id]))
+
+        # Assert
+        assert record_response.status_code == 201
+        assert response.status_code == 204
+        assert not Contact.objects.filter(
+            pk=record_response.data["contact_id"]
+        ).exists()
+        assert friend_response.data["column"] == "overdue"
+
+    def test_record_contact_with_invalid_kind_returns_400(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("record_contact", args=[friend.id]), {"kind": "fax"}
+        )
+
+        # Assert
+        assert response.status_code == 400
+        assert response.data["errors"][0]["detail"] == (
+            "Tipo de contato inválido. Use message, call ou meeting."
+        )
+        assert not Contact.objects.filter(friend=friend).exists()
+
+    def test_record_contact_ignores_date_in_request(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("record_contact", args=[friend.id]),
+            {"kind": Contact.Kind.MESSAGE, "date": "2000-01-01T00:00:00Z"},
+        )
+
+        # Assert
+        assert response.status_code == 201
+        contact = Contact.objects.get(friend=friend)
+        assert contact.date == timezone.now()
+        assert contact.note == ""
+
+    def test_record_contact_for_other_owner_returns_404(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        other_owner = User.objects.create_user(username="bia")
+        friend = create_friend_for_owner(other_owner, "Bia")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("record_contact", args=[friend.id]), {"kind": Contact.Kind.CALL}
+        )
+
+        # Assert
+        assert response.status_code == 404
+        assert not Contact.objects.filter(friend=friend).exists()
+
+    def test_undo_contact_for_other_owner_returns_404(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        other_owner = User.objects.create_user(username="bia")
+        friend = create_friend_for_owner(other_owner, "Bia", days_since_contact=1)
+        contact = Contact.objects.get(friend=friend)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.delete(reverse("undo_contact", args=[friend.id, contact.id]))
+
+        # Assert
+        assert response.status_code == 404
+        assert Contact.objects.filter(pk=contact.id).exists()
+
+    def test_undo_contact_from_different_friend_returns_404(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia")
+        another_friend = create_friend_for_owner(owner, "Caio", days_since_contact=1)
+        contact = Contact.objects.get(friend=another_friend)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.delete(reverse("undo_contact", args=[friend.id, contact.id]))
+
+        # Assert
+        assert response.status_code == 404
+        assert Contact.objects.filter(pk=contact.id).exists()
+
+    def test_record_contact_without_login_returns_403(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia")
+
+        # Act
+        response = APIClient().post(
+            reverse("record_contact", args=[friend.id]), {"kind": Contact.Kind.CALL}
+        )
+
+        # Assert
+        assert response.status_code == 403
+
+    def test_undo_contact_without_login_returns_403(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia", days_since_contact=1)
+        contact = Contact.objects.get(friend=friend)
+
+        # Act
+        response = APIClient().delete(
+            reverse("undo_contact", args=[friend.id, contact.id])
+        )
+
+        # Assert
+        assert response.status_code == 403
+
+
+@pytest.mark.django_db
 class TestGroupsReadAPI:
     def test_list_returns_owned_groups_in_name_order_with_friend_counts(self) -> None:
         # Arrange

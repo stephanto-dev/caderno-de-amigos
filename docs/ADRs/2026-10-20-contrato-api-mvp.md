@@ -6,6 +6,8 @@ Status: Aceito
 
 **Atualização 2026-10-21**: Traduzido para inglês (nomes de rotas, campos e valores) e movida edição/exclusão de grupos para dentro do MVP.
 
+**Atualização 2026-10-25**: O POST de contato também retorna `contact_id` para permitir desfazer sem um endpoint de histórico.
+
 ## Contexto
 
 Definição dos endpoints da API REST do Django REST Framework que o frontend Vue consome.
@@ -38,10 +40,10 @@ Sem contrato claro, frontend e backend evoluem de forma descoordenada, gerando r
 
 ### Contatos (nested routes)
 
-- `POST /api/friends/{id}/contacts/` — registra contato, retorna `201` com amigo atualizado **(planejado em CRM-8)**
+- `POST /api/friends/{id}/contacts/` — registra contato, retorna `201` com amigo atualizado
   - Corpo: `{"kind": "message|call|meeting", "note": "..."}` (`note` é opcional; `date` é setado pelo servidor para o momento atual)
-  - Resposta: amigo com `last_contact_at` e `last_note` atualizados
-- `DELETE /api/friends/{id}/contacts/{contact_id}/` — desfaz contato (qualquer contato daquele amigo), retorna `204` **(planejado em CRM-8)**
+  - Resposta: amigo com `last_contact_at` e `last_note` atualizados, mais `contact_id` do novo contato
+- `DELETE /api/friends/{id}/contacts/{contact_id}/` — desfaz contato (qualquer contato daquele amigo), retorna `204`
 
 A view sempre confere que o amigo pertence ao usuário (`owner`).
 
