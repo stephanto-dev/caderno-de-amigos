@@ -6,7 +6,9 @@ Status: Aceito
 
 **Atualização 2026-10-21**: Traduzido para inglês (nomes de rotas, campos e valores) e movida edição/exclusão de grupos para dentro do MVP.
 
-**Atualização 2026-10-25**: O POST de contato também retorna `contact_id` para permitir desfazer sem um endpoint de histórico.
+**Atualização 2026-10-25 (CRM-8)**: O POST de contato também retorna `contact_id` para permitir desfazer sem um endpoint de histórico.
+
+**Atualização 2026-10-25 (CRM-10)**: Migrados os IDs de Friend, Group e Contact de AutoField para UUIDField. URLs e JSON usam UUIDs em formato string (ex: `/api/friends/381f7c9e-0201-4e5c-8ef8-92daa351609f/`). O `contact_id` retornado no POST também é UUID string.
 
 ## Contexto
 

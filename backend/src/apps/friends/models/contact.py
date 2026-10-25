@@ -1,5 +1,6 @@
 """Contact history for friends."""
 
+import uuid
 from typing import ClassVar
 
 from django.db import models
@@ -14,7 +15,7 @@ class Contact(models.Model):
         CALL = "call", "Ligação"
         MEETING = "meeting", "Encontro"
 
-    id = models.AutoField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     friend = models.ForeignKey(
         "friends.Friend",
         on_delete=models.CASCADE,

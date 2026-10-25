@@ -1,6 +1,7 @@
 """Read and write endpoints for friends."""
 
 from typing import cast
+from uuid import UUID
 
 from rest_framework import status
 from rest_framework.request import Request
@@ -37,14 +38,14 @@ class FriendsListView(BaseAPIView):
 class FriendDetailView(BaseAPIView):
     """Read, edit, and delete one friend belonging to the authenticated owner."""
 
-    def get(self, request: Request, friend_id: int) -> Response:
+    def get(self, request: Request, friend_id: UUID) -> Response:
         """Return board-ready details for one friend."""
         friend = FriendsService(
             self.get_queryset(), self.get_owner()
         ).get_friend_for_owner(friend_id)
         return Response(BoardFriendSerializer(friend).data)
 
-    def patch(self, request: Request, friend_id: int) -> Response:
+    def patch(self, request: Request, friend_id: UUID) -> Response:
         """Validate supplied fields and return the updated board representation."""
         serializer = FriendWriteSerializer(
             data=request.data, partial=True, context={"owner": self.get_owner()}
@@ -56,7 +57,7 @@ class FriendDetailView(BaseAPIView):
         )
         return Response(BoardFriendSerializer(friend).data)
 
-    def delete(self, request: Request, friend_id: int) -> Response:
+    def delete(self, request: Request, friend_id: UUID) -> Response:
         """Delete an owned friend and return an empty successful response."""
         FriendsService(self.get_queryset(), self.get_owner()).delete_friend_for_owner(
             friend_id

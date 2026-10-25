@@ -1,6 +1,7 @@
 """Read and write endpoints for groups."""
 
 from typing import cast
+from uuid import UUID
 
 from rest_framework import status
 from rest_framework.request import Request
@@ -32,7 +33,7 @@ class GroupsListView(BaseAPIView):
 class GroupDetailView(BaseAPIView):
     """Edit or delete one group belonging to the authenticated owner."""
 
-    def patch(self, request: Request, group_id: int) -> Response:
+    def patch(self, request: Request, group_id: UUID) -> Response:
         """Validate supplied fields and return the updated group."""
         serializer = GroupWriteSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -41,7 +42,7 @@ class GroupDetailView(BaseAPIView):
         )
         return Response(GroupReadSerializer(group).data)
 
-    def delete(self, request: Request, group_id: int) -> Response:
+    def delete(self, request: Request, group_id: UUID) -> Response:
         """Delete an owned group without deleting its friends."""
         GroupsService(self.get_owner()).delete_group_for_owner(group_id)
         return Response(status=status.HTTP_204_NO_CONTENT)

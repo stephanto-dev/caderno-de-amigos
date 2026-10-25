@@ -66,7 +66,9 @@ class TestFriendsReadAPI:
 
     def test_detail_without_login_returns_403(self) -> None:
         # Arrange
-        url = reverse("get_friend", args=[1])
+        import uuid
+
+        url = reverse("get_friend", args=[uuid.uuid4()])
 
         # Act
         response = APIClient().get(url)
@@ -88,7 +90,7 @@ class TestFriendsReadAPI:
 
         # Assert
         assert response.status_code == 200
-        assert [friend_data["id"] for friend_data in response.data] == [friend.id]
+        assert [friend_data["id"] for friend_data in response.data] == [str(friend.id)]
 
     def test_detail_for_other_owner_returns_404(self) -> None:
         # Arrange
@@ -138,7 +140,7 @@ class TestFriendsReadAPI:
         # Assert
         assert response.status_code == 200
         assert response.data == {
-            "id": friend.id,
+            "id": str(friend.id),
             "name": "Ana",
             "cadence_amount": 30,
             "cadence_unit": Friend.CadenceUnit.DAY,
@@ -146,8 +148,8 @@ class TestFriendsReadAPI:
             "last_contact_at": timezone.localtime(recent_contact.date).isoformat(),
             "last_note": "Nota recente",
             "groups": [
-                {"id": group_a.id, "name": "amigos", "color": "family"},
-                {"id": group_z.id, "name": "Zoeira", "color": "neutral"},
+                {"id": str(group_a.id), "name": "amigos", "color": "family"},
+                {"id": str(group_z.id), "name": "Zoeira", "color": "neutral"},
             ],
         }
 
@@ -162,7 +164,7 @@ class TestFriendsReadAPI:
         response = client.get(reverse("list_friends"))
 
         # Assert
-        assert response.data[0]["id"] == friend.id
+        assert response.data[0]["id"] == str(friend.id)
         assert response.data[0]["column"] == "overdue"
         assert response.data[0]["last_contact_at"] is None
         assert response.data[0]["last_note"] is None
@@ -325,14 +327,14 @@ class TestFriendsWriteAPI:
         friend = Friend.objects.get(pk=response.data["id"])
         assert friend.owner == owner
         assert response.data == {
-            "id": friend.id,
+            "id": str(friend.id),
             "name": "Bia",
             "cadence_amount": 2,
             "cadence_unit": Friend.CadenceUnit.WEEK,
             "column": "overdue",
             "last_contact_at": None,
             "last_note": None,
-            "groups": [{"id": group.id, "name": "Família", "color": "family"}],
+            "groups": [{"id": str(group.id), "name": "Família", "color": "family"}],
         }
 
     def test_create_friend_ignores_owner_in_body(self) -> None:
@@ -431,7 +433,7 @@ class TestFriendsWriteAPI:
         assert friend.cadence_amount == 30
         assert list(friend.groups.values_list("id", flat=True)) == [new_group.id]
         assert response.data["groups"] == [
-            {"id": new_group.id, "name": "Novo", "color": "family"}
+            {"id": str(new_group.id), "name": "Novo", "color": "family"}
         ]
 
     def test_patch_friend_without_groups_keeps_existing_groups(self) -> None:
@@ -601,7 +603,7 @@ class TestContactsAPI:
         # Assert
         assert response.status_code == 201
         contact = Contact.objects.get(friend=friend)
-        assert response.data["contact_id"] == contact.id
+        assert response.data["contact_id"] == str(contact.id)
         assert contact.date == timezone.now()
         assert response.data["column"] == "just_talked"
         assert (
@@ -776,9 +778,14 @@ class TestGroupsReadAPI:
         # Assert
         assert response.status_code == 200
         assert response.data == [
-            {"id": group_a.id, "name": "amigos", "color": "family", "friends_count": 0},
             {
-                "id": group_z.id,
+                "id": str(group_a.id),
+                "name": "amigos",
+                "color": "family",
+                "friends_count": 0,
+            },
+            {
+                "id": str(group_z.id),
                 "name": "Zoeira",
                 "color": "neutral",
                 "friends_count": 3,
@@ -852,7 +859,7 @@ class TestGroupsCreateAPI:
         group = Group.objects.get(pk=response.data["id"])
         assert group.owner == owner
         assert response.data == {
-            "id": group.id,
+            "id": str(group.id),
             "name": "Família",
             "color": "family",
             "friends_count": 0,
@@ -942,13 +949,13 @@ class TestGroupsUpdateAPI:
         # Assert
         assert response.status_code == 200
         assert response.data == {
-            "id": group.id,
+            "id": str(group.id),
             "name": "Futebol",
             "color": "family",
             "friends_count": 1,
         }
         assert friend_response.data["groups"] == [
-            {"id": group.id, "name": "Futebol", "color": "family"}
+            {"id": str(group.id), "name": "Futebol", "color": "family"}
         ]
 
     def test_patch_only_color_keeps_name(self) -> None:
@@ -1015,7 +1022,9 @@ class TestGroupsUpdateAPI:
 
     def test_patch_without_login_returns_403(self) -> None:
         # Arrange
-        url = reverse("group_detail", args=[1])
+        import uuid
+
+        url = reverse("group_detail", args=[uuid.uuid4()])
 
         # Act
         response = APIClient().patch(url, {"name": "Alterado"})
@@ -1066,10 +1075,215 @@ class TestGroupsDeleteAPI:
 
     def test_delete_without_login_returns_403(self) -> None:
         # Arrange
-        url = reverse("group_detail", args=[1])
+        import uuid
+
+        url = reverse("group_detail", args=[uuid.uuid4()])
 
         # Act
         response = APIClient().delete(url)
 
         # Assert
         assert response.status_code == 403
+
+
+@pytest.mark.django_db
+class TestUUIDPrimaryKeys:
+    """Validate UUID primary keys for Friend, Group, and Contact models."""
+
+    def test_create_friend_returns_uuid_id(self) -> None:
+        # Arrange
+        import uuid
+
+        owner = User.objects.create_user(username="ana")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("list_friends"),
+            {
+                "name": "Bia",
+                "cadence_amount": 2,
+                "cadence_unit": Friend.CadenceUnit.WEEK,
+            },
+        )
+
+        # Assert
+        assert response.status_code == 201
+        friend_id = response.data["id"]
+        assert isinstance(friend_id, str)
+        # Should be a valid UUID
+        uuid.UUID(friend_id)
+
+    def test_create_group_returns_uuid_id(self) -> None:
+        # Arrange
+        import uuid
+
+        owner = User.objects.create_user(username="ana")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("list_groups"),
+            {"name": "Família", "color": Group.Color.FAMILY},
+        )
+
+        # Assert
+        assert response.status_code == 201
+        group_id = response.data["id"]
+        assert isinstance(group_id, str)
+        # Should be a valid UUID
+        uuid.UUID(group_id)
+
+    def test_get_friend_by_uuid_succeeds(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.get(reverse("get_friend", args=[friend.id]))
+
+        # Assert
+        assert response.status_code == 200
+        assert str(friend.id) == response.data["id"]
+
+    def test_get_friend_by_invalid_uuid_returns_404(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act - Django URL resolver won't match invalid UUID, so we get 404 directly
+        response = client.get("/api/friends/not-a-uuid/")
+
+        # Assert
+        assert response.status_code == 404
+
+    def test_get_friend_by_unknown_uuid_returns_404(self) -> None:
+        # Arrange
+        import uuid
+
+        owner = User.objects.create_user(username="ana")
+        unknown_uuid = uuid.uuid4()
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.get(reverse("get_friend", args=[unknown_uuid]))
+
+        # Assert
+        assert response.status_code == 404
+
+    def test_patch_friend_by_uuid_succeeds(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.patch(
+            reverse("get_friend", args=[friend.id]), {"name": "Ana Maria"}
+        )
+
+        # Assert
+        assert response.status_code == 200
+        assert response.data["name"] == "Ana Maria"
+
+    def test_delete_friend_by_uuid_succeeds(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.delete(reverse("get_friend", args=[friend.id]))
+
+        # Assert
+        assert response.status_code == 204
+        assert not Friend.objects.filter(pk=friend.id).exists()
+
+    def test_create_friend_with_invalid_group_uuid_returns_400(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("list_friends"),
+            {
+                "name": "Bia",
+                "cadence_amount": 2,
+                "cadence_unit": Friend.CadenceUnit.WEEK,
+                "groups": ["not-a-uuid"],
+            },
+        )
+
+        # Assert
+        assert response.status_code == 400
+        assert response.data["type"] == "validation_error"
+        assert any(error["attr"] == "groups" for error in response.data["errors"])
+
+    def test_patch_group_by_uuid_succeeds(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        group = Group.objects.create(
+            owner=owner, name="Futebol", color=Group.Color.NEUTRAL
+        )
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.patch(
+            reverse("group_detail", args=[group.id]), {"name": "Futsal"}
+        )
+
+        # Assert
+        assert response.status_code == 200
+        assert response.data["name"] == "Futsal"
+
+    def test_delete_group_by_uuid_succeeds(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        group = Group.objects.create(
+            owner=owner, name="Família", color=Group.Color.FAMILY
+        )
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.delete(reverse("group_detail", args=[group.id]))
+
+        # Assert
+        assert response.status_code == 204
+        assert not Group.objects.filter(pk=group.id).exists()
+
+    def test_list_friends_returns_groups_with_uuid_ids(self) -> None:
+        # Arrange
+        import uuid
+
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        group = Group.objects.create(
+            owner=owner, name="Família", color=Group.Color.FAMILY
+        )
+        friend.groups.add(group)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.get(reverse("list_friends"))
+
+        # Assert
+        assert response.status_code == 200
+        friend_data = response.data[0]
+        assert len(friend_data["groups"]) == 1
+        group_id = friend_data["groups"][0]["id"]
+        assert isinstance(group_id, str)
+        # Should be a valid UUID
+        uuid.UUID(group_id)
