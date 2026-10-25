@@ -581,3 +581,326 @@ class TestFriendsWriteAPI:
 
         # Assert
         assert response.status_code == 403
+
+
+@pytest.mark.django_db
+class TestGroupsReadAPI:
+    def test_list_returns_owned_groups_in_name_order_with_friend_counts(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        other_owner = User.objects.create_user(username="bia")
+        group_z = Group.objects.create(
+            owner=owner, name="Zoeira", color=Group.Color.NEUTRAL
+        )
+        group_a = Group.objects.create(
+            owner=owner, name="amigos", color=Group.Color.FAMILY
+        )
+        Group.objects.create(owner=other_owner, name="Privado", color=Group.Color.WORK)
+        for name in ("Bia", "Caio", "Duda"):
+            create_friend_for_owner(owner, name).groups.add(group_z)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.get(reverse("list_groups"))
+
+        # Assert
+        assert response.status_code == 200
+        assert response.data == [
+            {"id": group_a.id, "name": "amigos", "color": "family", "friends_count": 0},
+            {
+                "id": group_z.id,
+                "name": "Zoeira",
+                "color": "neutral",
+                "friends_count": 3,
+            },
+        ]
+
+    def test_list_does_not_add_queries_per_group(
+        self, django_assert_num_queries: Callable[[int], AbstractContextManager[None]]
+    ) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        Group.objects.create(owner=owner, name="A", color=Group.Color.NEUTRAL)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        with CaptureQueriesContext(connection) as queries_with_one_group:
+            response = client.get(reverse("list_groups"))
+            assert response.status_code == 200
+
+        for name in ("B", "C", "D", "E"):
+            Group.objects.create(owner=owner, name=name, color=Group.Color.NEUTRAL)
+
+        with django_assert_num_queries(len(queries_with_one_group)):
+            response = client.get(reverse("list_groups"))
+
+        # Assert
+        assert response.status_code == 200
+        assert len(response.data) == 5
+
+    def test_list_without_login_returns_403(self) -> None:
+        # Arrange
+        url = reverse("list_groups")
+
+        # Act
+        response = APIClient().get(url)
+
+        # Assert
+        assert response.status_code == 403
+
+
+@pytest.mark.django_db
+class TestGroupsCreateAPI:
+    def test_create_without_login_returns_403(self) -> None:
+        # Arrange
+        url = reverse("list_groups")
+
+        # Act
+        response = APIClient().post(
+            url, {"name": "Família", "color": Group.Color.FAMILY}
+        )
+
+        # Assert
+        assert response.status_code == 403
+
+    def test_create_returns_group_and_uses_authenticated_owner(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        other_owner = User.objects.create_user(username="bia")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("list_groups"),
+            {"name": "Família", "color": Group.Color.FAMILY, "owner": other_owner.id},
+        )
+
+        # Assert
+        assert response.status_code == 201
+        group = Group.objects.get(pk=response.data["id"])
+        assert group.owner == owner
+        assert response.data == {
+            "id": group.id,
+            "name": "Família",
+            "color": "family",
+            "friends_count": 0,
+        }
+
+    def test_create_with_invalid_color_returns_400(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("list_groups"), {"name": "Família", "color": "red"}
+        )
+
+        # Assert
+        assert response.status_code == 400
+        assert any(error["attr"] == "color" for error in response.data["errors"])
+        assert not Group.objects.exists()
+
+    def test_create_with_same_name_in_different_case_returns_400(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        Group.objects.create(owner=owner, name="Família", color=Group.Color.FAMILY)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("list_groups"),
+            {"name": "família", "color": Group.Color.NEUTRAL},
+        )
+
+        # Assert
+        assert response.status_code == 400
+        assert response.data["errors"] == [
+            {
+                "code": "invalid",
+                "detail": "Você já tem um grupo com esse nome.",
+                "attr": "name",
+            }
+        ]
+        assert Group.objects.count() == 1
+
+    def test_create_accepts_name_used_by_another_owner(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        other_owner = User.objects.create_user(username="bia")
+        Group.objects.create(
+            owner=other_owner, name="Família", color=Group.Color.FAMILY
+        )
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("list_groups"),
+            {"name": "família", "color": Group.Color.NEUTRAL},
+        )
+
+        # Assert
+        assert response.status_code == 201
+        assert Group.objects.filter(owner=owner, name="família").exists()
+
+
+@pytest.mark.django_db
+class TestGroupsUpdateAPI:
+    def test_patch_updates_name_and_color_for_group_and_friend(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        group = Group.objects.create(
+            owner=owner, name="futebol", color=Group.Color.NEUTRAL
+        )
+        friend = create_friend_for_owner(owner, "Bia")
+        friend.groups.add(group)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.patch(
+            reverse("group_detail", args=[group.id]),
+            {"name": "Futebol", "color": Group.Color.FAMILY},
+        )
+        friend_response = client.get(reverse("get_friend", args=[friend.id]))
+
+        # Assert
+        assert response.status_code == 200
+        assert response.data == {
+            "id": group.id,
+            "name": "Futebol",
+            "color": "family",
+            "friends_count": 1,
+        }
+        assert friend_response.data["groups"] == [
+            {"id": group.id, "name": "Futebol", "color": "family"}
+        ]
+
+    def test_patch_only_color_keeps_name(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        group = Group.objects.create(
+            owner=owner, name="Família", color=Group.Color.FAMILY
+        )
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.patch(
+            reverse("group_detail", args=[group.id]), {"color": Group.Color.WORK}
+        )
+
+        # Assert
+        assert response.status_code == 200
+        assert response.data["name"] == "Família"
+        assert response.data["color"] == "work"
+
+    def test_patch_to_another_group_name_returns_400_without_change(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        group = Group.objects.create(
+            owner=owner, name="Trabalho", color=Group.Color.WORK
+        )
+        Group.objects.create(owner=owner, name="Família", color=Group.Color.FAMILY)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.patch(
+            reverse("group_detail", args=[group.id]), {"name": "família"}
+        )
+
+        # Assert
+        assert response.status_code == 400
+        assert response.data["errors"][0]["detail"] == (
+            "Você já tem um grupo com esse nome."
+        )
+        group.refresh_from_db()
+        assert group.name == "Trabalho"
+
+    def test_patch_other_owner_group_returns_404_without_change(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        other_owner = User.objects.create_user(username="bia")
+        group = Group.objects.create(
+            owner=other_owner, name="Privado", color=Group.Color.NEUTRAL
+        )
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.patch(
+            reverse("group_detail", args=[group.id]), {"name": "Alterado"}
+        )
+
+        # Assert
+        assert response.status_code == 404
+        group.refresh_from_db()
+        assert group.name == "Privado"
+
+    def test_patch_without_login_returns_403(self) -> None:
+        # Arrange
+        url = reverse("group_detail", args=[1])
+
+        # Act
+        response = APIClient().patch(url, {"name": "Alterado"})
+
+        # Assert
+        assert response.status_code == 403
+
+
+@pytest.mark.django_db
+class TestGroupsDeleteAPI:
+    def test_delete_removes_group_link_but_keeps_friend(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        group = Group.objects.create(
+            owner=owner, name="Família", color=Group.Color.FAMILY
+        )
+        friend = create_friend_for_owner(owner, "Bia")
+        friend.groups.add(group)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.delete(reverse("group_detail", args=[group.id]))
+        friend_response = client.get(reverse("get_friend", args=[friend.id]))
+
+        # Assert
+        assert response.status_code == 204
+        assert not Group.objects.filter(pk=group.id).exists()
+        assert Friend.objects.filter(pk=friend.id).exists()
+        assert friend_response.data["groups"] == []
+
+    def test_delete_other_owner_group_returns_404_without_change(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        other_owner = User.objects.create_user(username="bia")
+        group = Group.objects.create(
+            owner=other_owner, name="Privado", color=Group.Color.NEUTRAL
+        )
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.delete(reverse("group_detail", args=[group.id]))
+
+        # Assert
+        assert response.status_code == 404
+        assert Group.objects.filter(pk=group.id).exists()
+
+    def test_delete_without_login_returns_403(self) -> None:
+        # Arrange
+        url = reverse("group_detail", args=[1])
+
+        # Act
+        response = APIClient().delete(url)
+
+        # Assert
+        assert response.status_code == 403

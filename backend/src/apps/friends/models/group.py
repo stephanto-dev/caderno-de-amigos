@@ -4,6 +4,9 @@ from typing import ClassVar
 
 from django.conf import settings
 from django.db import models
+from django.db.models.functions import Lower
+
+GROUP_NAME_UNIQUE_CONSTRAINT = "group_name_unique_per_owner"
 
 
 class Group(models.Model):
@@ -40,7 +43,7 @@ class Group(models.Model):
         indexes: ClassVar[list[models.Index]] = []
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.UniqueConstraint(
-                fields=["owner", "name"], name="group_owner_name_unique"
+                Lower("name"), "owner", name=GROUP_NAME_UNIQUE_CONSTRAINT
             )
         ]
         verbose_name = "Grupo"
