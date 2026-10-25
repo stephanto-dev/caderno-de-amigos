@@ -40,19 +40,21 @@ DRF_STANDARDIZED_ERRORS = {"ENABLE_IN_DEBUG_FOR_UNHANDLED_EXCEPTIONS": True}
 
 ```python
 class RecordContactView(BaseAPIView):
-    """Record a new contact for a friend.
-    
-    Planned implementation for CRM-8.
-    """
+    """Record a contact for an owned friend."""
 
     def post(self, request: Request, friend_id: int) -> Response:
-        updated_friend = ContactsService(owner=self.get_owner()).record_contact(
+        serializer = ContactWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        recorded_contact = ContactsService(self.get_owner()).record_contact(
             friend_id=friend_id,
-            kind=request.data["kind"],
-            note=request.data.get("note", ""),
+            kind=cast(str, serializer.validated_data["kind"]),
+            note=cast(str, serializer.validated_data.get("note", "")),
         )
         return Response(
-            BoardFriendSerializer(updated_friend).data,
+            {
+                **BoardFriendSerializer(recorded_contact.board_friend).data,
+                "contact_id": recorded_contact.contact_id,
+            },
             status=status.HTTP_201_CREATED,
         )
 ```
@@ -65,6 +67,7 @@ urlpatterns = [
     path("", FriendsListView.as_view(), name="list_friends"),
     path("<int:friend_id>/", FriendDetailView.as_view(), name="get_friend"),
     path("<int:friend_id>/contacts/", RecordContactView.as_view(), name="record_contact"),
+    path("<int:friend_id>/contacts/<int:contact_id>/", UndoContactView.as_view(), name="undo_contact"),
 ]
 ```
 

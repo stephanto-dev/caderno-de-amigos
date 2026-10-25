@@ -82,7 +82,7 @@ Autenticação por sessão Django com CSRF ([ADR 2026-10-20](ADRs/2026-10-20-aut
 - `DELETE /api/friends/{id}/` — remove
 
 ### Contacts (nested routes)
-- `POST /api/friends/{id}/contacts/` — registra contato (retorna amigo atualizado)
+- `POST /api/friends/{id}/contacts/` — registra contato (retorna amigo atualizado e `contact_id` para desfazer)
 - `DELETE /api/friends/{id}/contacts/{contact_id}/` — desfaz contato
 
 ### Groups
@@ -147,7 +147,8 @@ Views e serializers são finos. A lógica de negócio vive em services:
 - `BoardService.calculate_column(friend, last_contact)` — determina a coluna no Quadro
 - `BoardService.get_cadence_in_days(friend)` — converte cadência para dias
 - `FriendsService(friends_for_owner, owner).list_friends()` — lista amigos ordenados com dados computados do board
-- `ContactsService(owner)` — planejado: `record_contact` e `undo_contact`
+- `ContactsService(owner).record_contact(...)` — registra o contato e retorna o amigo recalculado com o ID do novo contato
+- `ContactsService(owner).undo_contact(...)` — exclui um contato daquele amigo
 
 ### TDD obrigatório ([ADR 2026-10-20](ADRs/2026-10-20-estrategia-testes-tdd.md))
 
