@@ -1,6 +1,7 @@
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.friends.models import Contact, Friend, Group
@@ -69,6 +70,15 @@ class TestFriend:
 
 @pytest.mark.django_db
 class TestGroup:
+    def test_group_rejects_name_with_different_case_for_same_owner(self) -> None:
+        # Arrange
+        owner = get_user_model().objects.create_user(username="ana")
+        Group.objects.create(owner=owner, name="Família", color=Group.Color.FAMILY)
+
+        # Act / Assert
+        with pytest.raises(IntegrityError), transaction.atomic():
+            Group.objects.create(owner=owner, name="família", color=Group.Color.NEUTRAL)
+
     def test_group_rejects_duplicate_name_for_same_owner(self) -> None:
         # Arrange
         owner = get_user_model().objects.create_user(username="ana")
@@ -89,11 +99,11 @@ class TestGroup:
 
         # Act
         group = Group.objects.create(
-            owner=second_owner, name="Família", color=Group.Color.FAMILY
+            owner=second_owner, name="família", color=Group.Color.FAMILY
         )
 
         # Assert
-        assert Group.objects.filter(name="Família").count() == 2
+        assert Group.objects.filter(name__iexact="Família").count() == 2
         assert group.owner == second_owner
 
 
