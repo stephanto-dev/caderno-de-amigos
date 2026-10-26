@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Caderno de amigos — Auth (capa fechada)</title>
+<!-- Protótipo 3.8 Auth — capa v4 (altura FIXA em Entrar/Criar; kraft; etiqueta dentro).
+     Query: ?modo=entrar|criar  &  ?estado=normal|erro|carregando
+     Sucesso → /quadro. Só tokens CSS; sem bitmap; sem cor nova. -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config={theme:{extend:{
+ colors:{primaria:{50:'#F8ECE6',100:'#F1D6CC',DEFAULT:'#B04A32',600:'#B04A32',700:'#963D29',800:'#7C3221'},
+  neutro:{50:'#FBF6EE',100:'#F4ECDF',200:'#E8DCC8',300:'#D6C7AF',400:'#B3A38C',500:'#7A6B59',600:'#6B5E50',700:'#4F443A',800:'#3A312B',900:'#2B2420'},
+  folha:'#FBF6EE',papel:'#E8DCC8',tinta:'#2B2420',caneta:'#1F3A6B',mesa:'#7A5A3E',erro:{50:'#F6E3DF',DEFAULT:'#9B3B36'},foco:'#2F6185'},
+ fontFamily:{titulo:['Fraunces','Georgia','serif'],ui:['Inter','system-ui','sans-serif'],mao:['Caveat','cursive']}}}}
+</script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+:root{
+  --folha:#FBF6EE;--papel:#E8DCC8;--neutro-100:#F4ECDF;--neutro-200:#E8DCC8;--neutro-300:#D6C7AF;
+  --neutro-400:#B3A38C;--neutro-500:#7A6B59;--neutro-600:#6B5E50;--neutro-700:#4F443A;--tinta:#2B2420;
+  --primaria:#B04A32;--primaria-50:#F8ECE6;--primaria-100:#F1D6CC;--primaria-700:#963D29;--primaria-800:#7C3221;
+  --caneta:#1F3A6B;--mesa:#7A5A3E;--erro:#9B3B36;--foco:#2F6185;
+  --marca-texto:#F6D98A;--marca-texto-50:#FBEDC4;
+  --anel-foco:0 0 0 2px var(--folha),0 0 0 4px var(--foco);
+  --sombra-caderno:0 28px 50px rgba(0,0,0,.42),0 10px 18px rgba(0,0,0,.28);
+  --sombra-papel:2px 4px 8px rgba(43,36,32,.22);
+  --dur:120ms;--ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--tinta);background:var(--mesa)}
+.mesa{background:var(--mesa);min-height:100dvh}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+
+.cena{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px 18px;box-sizing:border-box}
+
+/* Caderno fechado: largura E altura FIXAS (iguais em Entrar e Criar, todos os estados) */
+.caderno{
+  --capa-w: min(340px, calc(100vw - 40px));
+  --capa-h: 520px; /* cabe criar + 3 erros; não muda ao trocar modo */
+  position:relative;
+  width:var(--capa-w);
+  height:var(--capa-h);
+  filter:drop-shadow(0 28px 40px rgba(0,0,0,.4));
+}
+
+/* Bloco de folhas à DIREITA — acompanha altura da capa */
+.bloco-folhas{
+  position:absolute;top:8px;bottom:8px;right:-14px;width:14px;z-index:1;
+  border-radius:0 3px 3px 0;
+  background:repeating-linear-gradient(to bottom,
+    var(--folha) 0 1px, var(--neutro-100) 1px 2px, var(--papel) 2px 3px, var(--neutro-300) 3px 4px);
+  box-shadow:2px 0 4px rgba(0,0,0,.18);
+  border:1px solid rgba(43,36,32,.22); border-left:0;
+}
+.bloco-folhas::before{
+  content:"";position:absolute;top:-3px;left:0;right:0;height:3px;
+  background:repeating-linear-gradient(to right,var(--folha) 0 2px,var(--papel) 2px 3px,var(--neutro-300) 3px 4px);
+}
+
+/* Capa kraft — cartolina caderno BR (neutro-400). NÃO é a cor da mesa. */
+.capa{
+  position:relative;z-index:2;
+  width:100%;
+  border-radius:6px 10px 10px 6px;
+  background:linear-gradient(155deg, var(--neutro-300) 0%, var(--neutro-400) 62%, var(--neutro-400) 100%);
+  border:1.5px solid rgba(43,36,32,.4);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28), inset -10px 0 18px -12px rgba(43,36,32,.2), var(--sombra-caderno);
+  /* padding generoso: etiqueta SEMPRE dentro; altura = 100% do .caderno (fixa) */
+  height:100%;
+  padding:18px 16px 18px 34px;
+  display:flex;flex-direction:column;align-items:stretch;gap:8px;
+  overflow:hidden; /* nada vaza da capa */
+}
+.capa::before{
+  content:"";position:absolute;top:0;bottom:0;left:24px;width:2px;
+  background:linear-gradient(to bottom,transparent,rgba(43,36,32,.14) 20%,rgba(43,36,32,.14) 80%,transparent);
+  pointer-events:none;
+}
+.capa::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(120% 80% at 100% 100%, rgba(43,36,32,.14), transparent 45%);
+}
+
+/* Espiral: furos + anéis */
+.espiral{
+  position:absolute;left:-6px;top:16px;bottom:16px;width:32px;z-index:4;
+  display:flex;flex-direction:column;justify-content:space-between;align-items:center;
+  pointer-events:none;
+}
+.anel{position:relative;width:30px;height:15px;flex:none}
+.anel::before{
+  content:"";position:absolute;left:15px;top:2px;width:11px;height:11px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%, #3A312B, #2B2420 70%);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.6); z-index:1;
+}
+.anel::after{
+  content:"";position:absolute;left:0;top:0;width:30px;height:15px;border-radius:50%;
+  border:3.5px solid #b0b0b0;
+  border-top-color:#e8e8e8;border-left-color:#d0d0d0;border-right-color:#8a8a8a;border-bottom-color:#6e6e6e;
+  background:transparent;
+  box-shadow:0 2px 2px rgba(0,0,0,.35); z-index:2;
+}
+
+.marca{position:relative;z-index:3;text-align:center;flex:none;padding:0 4px}
+.marca h1{
+  margin:0;font-family:Fraunces,Georgia,serif;font-weight:700;
+  font-size:clamp(1.35rem,4.8vw,1.75rem);line-height:1.15;
+  color:var(--tinta);
+  text-shadow:0 1px 0 rgba(255,255,255,.28), 0 -1px 0 rgba(43,36,32,.12);
+}
+.marca .sub{
+  margin:4px 0 0;font-family:Caveat,cursive;font-weight:500;
+  font-size:clamp(1rem,3.2vw,1.2rem);line-height:1.2;color:var(--caneta);
+}
+
+/* Etiqueta 100% dentro da capa — sem rotação (evita overflow) */
+.etiqueta{
+  position:relative;z-index:3;
+  width:100%;
+  max-width:100%;
+  margin:0;
+  background:var(--papel);
+  border:2px solid var(--tinta);
+  border-radius:10px;
+  box-shadow:var(--sombra-papel);
+  transform:none;
+  padding:12px 10px 10px;
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;flex-direction:column;
+}
+.etiqueta .fita{
+  position:absolute;top:-9px;left:50%;transform:translateX(-50%);
+  width:64px;height:16px;
+  background:linear-gradient(90deg, var(--marca-texto-50), var(--marca-texto), var(--marca-texto-50));
+  box-shadow:0 1px 2px rgba(43,36,32,.18);
+  border-left:1px dashed rgba(43,36,32,.12);border-right:1px dashed rgba(43,36,32,.12);
+  pointer-events:none;
+}
+
+.toggle-row{display:flex;gap:14px;justify-content:center;margin:0 0 6px;flex:none}
+.toggle{
+  font-family:Caveat,cursive;font-weight:700;font-size:19px;line-height:1;
+  color:var(--neutro-600);text-decoration:none;padding:2px 2px;
+  border-bottom:2px solid transparent;
+}
+.toggle[aria-current="true"]{color:var(--primaria);border-bottom-color:var(--primaria)}
+.toggle:focus-visible{outline:none;box-shadow:var(--anel-foco);border-radius:4px}
+
+.campos{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:flex-start}
+.campo-bloco{margin-bottom:4px;flex:none}
+.campo-bloco label{display:block;font:500 12px/14px Inter,sans-serif;color:var(--tinta);margin-bottom:2px}
+.campo{
+  height:36px;padding:0 10px;width:100%;
+  background:var(--folha);border:1.5px solid var(--tinta);border-radius:6px;
+  font:400 14px/18px Inter,sans-serif;color:var(--tinta);
+}
+.campo::placeholder{color:var(--neutro-500)}
+.campo:focus{outline:none;box-shadow:var(--anel-foco)}
+.campo[aria-invalid="true"]{border-color:var(--erro)}
+/* reserva 1 linha p/ erro — estado erro não muda altura da capa */
+.msg-erro{font:400 11px/14px Inter,sans-serif;color:var(--erro);margin:2px 0 0;min-height:14px}
+.msg-erro:empty,.msg-erro[data-empty="1"]{visibility:hidden}
+
+.acoes{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:auto;flex:none;padding-top:4px}
+.btn-pri{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:42px;min-width:140px;padding:0 22px;border:0;border-radius:999px;
+  background:var(--primaria);color:#fff;font:600 15px/1 Inter,sans-serif;cursor:pointer;
+}
+.btn-pri:hover:not(:disabled){background:var(--primaria-700)}
+.btn-pri:active:not(:disabled){background:var(--primaria-800)}
+.btn-pri:disabled{opacity:.55;cursor:not-allowed}
+.btn-pri:focus-visible{outline:none;box-shadow:var(--anel-foco)}
+.link-troca{font:500 13px/18px Inter,sans-serif;color:var(--neutro-700);text-decoration:underline;text-underline-offset:3px}
+.link-troca:focus-visible{outline:none;box-shadow:var(--anel-foco);border-radius:4px}
+[data-lucide]{width:16px;height:16px;stroke-width:2}
+.spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+
+@media (min-width:768px){
+  .cena{padding:48px}
+  .caderno{--capa-w:380px;--capa-h:560px}
+  .bloco-folhas{right:-16px;width:16px}
+  .capa{padding:22px 22px 22px 40px;gap:10px;border-radius:7px 12px 12px 7px}
+  .marca h1{font-size:1.9rem}
+  .marca .sub{font-size:1.25rem}
+  .etiqueta{padding:14px 12px 12px}
+  .campo{height:38px;font-size:15px}
+  .btn-pri{min-height:44px}
+}
+@media (max-width:400px){
+  .caderno{--capa-h:500px}
+  .capa{padding:14px 12px 14px 30px;gap:6px}
+  .marca h1{font-size:1.3rem}
+  .etiqueta{padding:10px 8px 8px}
+  .campo{height:34px}
+  .btn-pri{min-height:40px}
+}
+</style></head>
+<body class="mesa">
+<div class="cena">
+  <div class="caderno" aria-label="Caderno fechado sobre a mesa">
+    <div class="bloco-folhas" aria-hidden="true"></div>
+    <div class="capa" id="capa">
+      <div class="espiral" id="espiral" aria-hidden="true"></div>
+      <header class="marca">
+        <h1>Caderno de amigos</h1>
+        <p class="sub">seu ritmo com as pessoas que importam</p>
+      </header>
+      <form class="etiqueta" id="form" onsubmit="event.preventDefault()" novalidate>
+        <span class="fita" aria-hidden="true"></span>
+        <div class="toggle-row" role="tablist" aria-label="Modo da conta">
+          <a class="toggle" id="tab-entrar" role="tab" href="?modo=entrar" data-modo="entrar">Entrar</a>
+          <a class="toggle" id="tab-criar" role="tab" href="?modo=criar" data-modo="criar">Criar conta</a>
+        </div>
+        <p class="sr-only" id="form-titulo">Entrar</p>
+
+        <div class="campos">
+        <div class="campo-bloco">
+          <label for="email">E-mail</label>
+          <input class="campo" id="email" name="email" type="email" autocomplete="email" required placeholder="voce@email.com">
+          <p class="msg-erro" id="err-email" data-empty="1"></p>
+        </div>
+        <div class="campo-bloco">
+          <label for="senha">Senha</label>
+          <input class="campo" id="senha" name="senha" type="password" autocomplete="current-password" required placeholder="••••••••">
+          <p class="msg-erro" id="err-senha" data-empty="1"></p>
+        </div>
+        <div class="campo-bloco" id="bloco-repetir" hidden>
+          <label for="senha2">Repetir senha</label>
+          <input class="campo" id="senha2" name="senha2" type="password" autocomplete="new-password" placeholder="••••••••">
+          <p class="msg-erro" id="err-senha2" data-empty="1"></p>
+        </div>
+        <p class="msg-erro" id="err-form" data-empty="1" style="margin:0;text-align:center"></p>
+        </div>
+
+        <div class="acoes">
+          <button type="submit" class="btn-pri" id="btn">Entrar</button>
+          <a class="link-troca" id="link-troca" href="?modo=criar">Criar conta</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const esp=document.getElementById('espiral');
+  for(let i=0;i<18;i++){ const a=document.createElement('span'); a.className='anel'; esp.appendChild(a); }
+
+  const q=new URLSearchParams(location.search);
+  const modo=(q.get('modo')==='criar')?'criar':'entrar';
+  const estado=q.get('estado')||'normal';
+  const capa=document.getElementById('capa');
+  const blocoRep=document.getElementById('bloco-repetir');
+  const senha2=document.getElementById('senha2');
+  const email=document.getElementById('email');
+  const senha=document.getElementById('senha');
+  const btn=document.getElementById('btn');
+  const h1=document.getElementById('form-titulo');
+  const tabE=document.getElementById('tab-entrar');
+  const tabC=document.getElementById('tab-criar');
+  const link=document.getElementById('link-troca');
+  const errEmail=document.getElementById('err-email');
+  const errSenha=document.getElementById('err-senha');
+  const errSenha2=document.getElementById('err-senha2');
+  const errForm=document.getElementById('err-form');
+
+  capa.setAttribute('data-modo', modo);
+
+  function showErr(el,msg,field){
+    el.textContent=msg||'';
+    el.setAttribute('data-empty', msg?'0':'1');
+    if(field){
+      field.setAttribute('aria-invalid', msg?'true':'false');
+      if(msg) field.setAttribute('aria-describedby', el.id);
+      else field.removeAttribute('aria-describedby');
+    }
+  }
+
+  tabE.setAttribute('aria-current', modo==='entrar'?'true':'false');
+  tabC.setAttribute('aria-current', modo==='criar'?'true':'false');
+  tabE.setAttribute('aria-selected', modo==='entrar'?'true':'false');
+  tabC.setAttribute('aria-selected', modo==='criar'?'true':'false');
+  tabE.href='?modo=entrar'+(estado!=='normal'?'&estado='+estado:'');
+  tabC.href='?modo=criar'+(estado!=='normal'?'&estado='+estado:'');
+
+  if(modo==='criar'){
+    h1.textContent='Criar conta';
+    btn.textContent='Criar conta';
+    blocoRep.hidden=false; senha2.required=true; senha.autocomplete='new-password';
+    link.textContent='Já tenho conta'; link.href='?modo=entrar';
+  } else {
+    h1.textContent='Entrar';
+    btn.textContent='Entrar';
+    blocoRep.hidden=true; senha2.required=false; senha.autocomplete='current-password';
+    link.textContent='Criar conta'; link.href='?modo=criar';
+  }
+
+  if(estado==='erro' || estado==='carregando'){
+    email.value='marina@email.com';
+    senha.value=modo==='criar'?'curta':'senhaerrada1';
+    if(modo==='criar') senha2.value='outrasenha99';
+  }
+  if(estado==='erro'){
+    if(modo==='entrar'){
+      showErr(errForm,'E-mail ou senha incorretos.');
+      email.setAttribute('aria-invalid','true');
+      senha.setAttribute('aria-invalid','true');
+    } else {
+      showErr(errEmail,'Este e-mail já tem conta.',email);
+      showErr(errSenha,'A senha precisa ter pelo menos 8 caracteres.',senha);
+      showErr(errSenha2,'As senhas não são iguais.',senha2);
+    }
+  }
+  if(estado==='carregando'){
+    btn.disabled=true;
+    btn.setAttribute('aria-busy','true');
+    btn.innerHTML='<i data-lucide="loader-2" class="spin" aria-hidden="true"></i>'+(modo==='criar'?'Criando…':'Entrando…');
+  }
+  if(typeof lucide!=='undefined') lucide.createIcons();
+})();
+</script>
+</body></html>

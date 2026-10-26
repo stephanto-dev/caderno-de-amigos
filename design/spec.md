@@ -1,6 +1,6 @@
 # Spec de UI para o Tech Lead — "Caderno físico" (v2)
 
-_Substitui a spec v1 (direção A). Referências: `tokens.css`, `tailwind.config.js` (plugin com os utilitários), `prototipo/index.html` (`?tela=inicio|amigos|perfil|cadastro|registrar|vazio|atalhos|config`), `direcoes/grupos-chips.html` (`?estado=normal|editando|form-editar|confirmar-apagar|erro-nome`), prints em `prints/`._
+_Substitui a spec v1 (direção A). Referências: `tokens.css`, `tailwind.config.js` (plugin com os utilitários), `prototipo/index.html` (`?tela=inicio|amigos|perfil|cadastro|registrar|vazio|atalhos|config`), `direcoes/grupos-chips.html` (`?estado=normal|editando|form-editar|confirmar-apagar|erro-nome`), `direcoes/auth-capa.html` (`?modo=entrar|criar` & `?estado=normal|erro|carregando`), prints em `prints/` (incl. `desktop-auth-*`, `mobile-auth-*`, `auth-capa-estados.png`)._
 
 ## 0. O que mudou em relação à v1 (resumo para o Tech Lead)
 | Antes (v1) | Agora (v2) |
@@ -29,7 +29,7 @@ _Substitui a spec v1 (direção A). Referências: `tokens.css`, `tailwind.config
 - A `.pagina` não rola; quem rola é a `.folha` (`overflow-y:auto`). A pauta usa `background-attachment: local` para rolar junto com o texto, e a margem (pseudo-elemento da `.pagina`) fica parada.
 - Padding da folha: `32px 16px 64px 52px` no celular e `32px 40px 64px 80px` a partir de 1024. O topo e a base são sempre múltiplos de 32.
 - Altura: a `.cena` usa `100dvh`, e a página ocupa o restante. A altura da página não precisa ser múltipla de 32, porque a pauta é infinita.
-- Rotas: `/` · `/quadro` · `/amigos` · `/amigos/:id` · `/amigos/novo` · `/config` · `?registrar=1`. No livro aberto, `/amigos/:id` mostra a lista à esquerda e o perfil à direita; abaixo de 1280px, a mesma rota mostra só o perfil (página por cima, com "‹ Voltar").
+- Rotas: `/entrar` (capa, não autenticado; ver 3.8) · `/` · `/quadro` · `/amigos` · `/amigos/:id` · `/amigos/novo` · `/config` · `?registrar=1`. No livro aberto, `/amigos/:id` mostra a lista à esquerda e o perfil à direita; abaixo de 1280px, a mesma rota mostra só o perfil (página por cima, com "‹ Voltar").
 
 ## 2. Ritmo vertical (regra dura)
 - Um token: `--linha` (CSS) / `L = 32` (Tailwind). A pauta, os line-heights (`fontSize` com `lineHeight: 32px` em todos os tamanhos) e o spacing `l1`–`l6` derivam dele.
@@ -91,10 +91,55 @@ Estados comuns: **foco** `box-shadow: var(--anel-foco)` (2px folha + 2px `#2F618
 ### 3.7.1 Configurações (`/config`, MVP mínimo — 26/10/2026)
 Página simples na folha, sem tema nem notificações: título Fraunces "Configurações", o **e-mail da conta logada** em Inter 16 `neutro-700`, e o carimbo/botão **"Sair"** (logout; Caveat como os outros carimbos, ou botão secundário de 44px com texto "Sair" — o carimbo basta). Sem outros campos no MVP. Escopo: só identificar a conta e sair.
 
-### 3.8 Estado vazio
+### 3.8 Auth — capa (`/entrar`, decisão 26/10/2026)
+_Conta própria no MVP (produto.md, 26/10): self-signup na **capa do caderno**. UI de login/cadastro = caderno **fechado** (capa frontal), não a folha aberta das telas autenticadas. Ideia do Vinicius. Protótipo: `direcoes/auth-capa.html`. Prints: `prints/desktop-auth-entrar.png`, `prints/desktop-auth-criar.png`, `prints/mobile-auth-entrar.png`, `prints/mobile-auth-criar.png`, `prints/auth-capa-estados.png`._
+
+**Conceito capa vs folha**
+- **Não autenticado:** mesa + um **caderno fechado** (objeto físico, uma peça). Capa de cartolina na frente; **bloco de folhas** visível na borda direita (espessura); espiral metálica à esquerda passando por furos. **Sem** duas páginas abertas, **sem** dobra central, **sem** abas de divisória, **sem** pauta na capa.
+- **Autenticado:** folha aberta (`.paper-lined` + margem + abas) como no resto do app. Sucesso de Entrar ou Criar conta navega para **`/quadro`** (não para uma home genérica; sem onboarding no MVP).
+
+**Mesma tela, dois modos** (toggle por links/abas em Caveat, ou query `?modo=entrar|criar`):
+| Modo | Campos | Primário | Link de troca |
+|---|---|---|---|
+| Entrar (`modo=entrar`, padrão) | e-mail, senha | "Entrar" | "Criar conta" |
+| Criar conta (`modo=criar`) | e-mail, senha, repetir senha | "Criar conta" | "Já tenho conta" |
+
+- Conta = e-mail. **Sem** nome de pessoa, **sem** OAuth, **sem** confirmar e-mail e **sem** recuperar senha no MVP (ficam pra depois).
+- Rota: `/entrar`. Query opcional `?modo=entrar|criar` (default `entrar`). O protótipo também aceita `?estado=normal|erro|carregando` para QA (combinável com `modo`).
+
+**Visual — caderno fechado de verdade (só CSS, sem textura bitmap, sem cor nova)**
+_Feedback Vinicius 26/10: (1) 1ª versão = "cartão com espiral"; (2) cor peach/`primaria-100` feia; (3) etiqueta **não** pode ficar para fora da capa — foi erro._
+- Fundo = mesa `#7A5A3E`. A capa **não** usa a cor da mesa.
+- **Silhueta:** uma peça só, proporção de caderno universitário BR. **Altura da capa FIXA** — igual em Entrar e Criar conta e em todos os estados (`normal` / `erro` / `carregando`). Trocar de modo **não** redimensiona o caderno. O 3º campo e as mensagens de erro cabem dentro dessa altura (spacing compacto; scroll interno na etiqueta só se inevitável). Sombra forte sob o objeto.
+- **Capa = cartolina kraft** `neutro-400` (`#B3A38C`), com gradiente leve `neutro-300` → `neutro-400` (caderno escolar/universitário BR). **Não** é folha pautada; **não** é peach/`primaria-100`. Borda escura fina; vinco leve perto da espiral. (Terracota `primaria-600` foi descartada: contraste baixo com a mesa.)
+- **AA do título:** tinta `#2B2420` sobre kraft `#B3A38C` ≈ **6,2:1** (AA). Subtítulo Caveat `caneta` `#1F3A6B` sobre kraft ≈ **4,55:1** (AA).
+- **Bloco de folhas (direita):** faixa estreita oposta à espiral (`folha` / `papel` / `neutro-300`) — espessura do caderno fechado.
+- **Espiral (esquerda):** anéis metálicos que **passam por furos** na capa. CSS puro.
+- **Título na capa** (Fraunces): "Caderno de amigos". Subtítulo Caveat `caneta`: "seu ritmo com as pessoas que importam".
+- **Formulário = etiqueta `.papel` colada NA capa:** 100% **dentro** do retângulo da capa (padding interno generoso; `overflow:hidden` na capa). Sem rotação que cause overflow (rotação zerada na v3). Fita washi CSS (`.fita`, `marca-texto`) no topo, também dentro. Toggle Entrar | Criar conta (Caveat), campos Inter, botão primário pill terracota. **Nunca** a etiqueta invade a mesa nem ultrapassa a borda inferior/direita.
+- Mobile: capa quase full-width com margem na mesa. Desktop: ~380×560 (largura×altura fixas). Mobile: altura fixa ~500–520.
+- Contraste AA em todos os textos/botões (tokens já checados em `identidade.md`).
+
+**Estados**
+- **Normal:** campos vazios ou preenchíveis; primário habilitado quando o HTML `required` estiver satisfeito (validação de vazio fica no browser/`required`).
+- **Erro inline** (mensagem Inter 14 `erro` + `aria-invalid` / `aria-describedby` no campo afetado):
+  - Entrar: **"E-mail ou senha incorretos."** (credenciais inválidas — mensagem genérica, sem dizer qual campo).
+  - Criar: **"Este e-mail já tem conta."** · **"As senhas não são iguais."** · **"A senha precisa ter pelo menos 8 caracteres."** (senha curta = menos de 8).
+- **Carregando:** botão primário `disabled` + texto "Entrando…" / "Criando…", `aria-busy="true"` (spinner opcional `loader-2` 16px, largura fixa do botão).
+- **Foco:** anel AA `var(--anel-foco)` em campos e botões/links.
+
+**A11y**
+- Um `<h1>` com o título do produto (ou "Entrar" / "Criar conta" se o título da capa for decorativo — preferir um `h1` visível no form).
+- Toggle com `aria-current` no modo ativo (ou `role="tablist"` / `aria-selected` se usar abas).
+- Erros ligados por `aria-describedby`; formulário com `novalidate` só se a validação custom substituir a nativa — no MVP, `required` + type=email bastam para vazio/formato.
+- Alvos ≥ 44px no botão e nos links de troca.
+
+**Microcopy (pt-BR)** — ver também §6: Entrar · Criar conta · Já tenho conta · E-mail · Senha · Repetir senha · Entrando… · Criando… · E-mail ou senha incorretos. · Este e-mail já tem conta. · As senhas não são iguais. · A senha precisa ter pelo menos 8 caracteres. · Caderno de amigos · seu ritmo com as pessoas que importam.
+
+### 3.9 Estado vazio
 Na folha: data, título e, depois de `mt-l2`, duas `.nota` ("Seu caderno está em branco." / "Comece por alguém de quem você sente falta."), Inter "Só o nome já basta." e o carimbo "adicionar primeiro amigo". No livro aberto, a página direita mostra a `.nota` "Esta página é de cada amigo.". Não há ilustração (a página em branco já é a ilustração).
 
-### 3.9 Atalhos (modal)
+### 3.10 Atalhos (modal)
 `.papel` max-w 384, Inter, lista de pares com `kbd` (borda tinta). Abre com "?" (aba ou tecla); fecha com Esc ou clique fora.
 | Tecla | Ação |
 |---|---|
@@ -108,7 +153,7 @@ Na folha: data, título e, depois de `mt-l2`, duas `.nota` ("Seu caderno está e
 | ? | Atalhos |
 Ignorar atalhos de letra com foco em input ou textarea.
 
-### 3.10 Toast
+### 3.11 Toast
 Pill `tinta` com texto branco, 48px, `check` `#B9CDB1`, `role="status"`, 2,4s, "Desfazer" quando couber. Fica fora da folha, sobre a mesa.
 
 ## 4. Motion
@@ -130,7 +175,7 @@ Pill `tinta` com texto branco, 48px, `check` `#B9CDB1`, `role="status"`, 2,4s, "
 - Alvos: carimbo com área de toque estendida (≥ 44); abas de **44px** de altura no celular; demais ≥ 44.
 
 ## 6. Textos (pt-BR)
-bom falar · quadro · amigos · + novo · config · Configurações · Sair · Grupos · editar · pronto · + novo grupo · salvar · apagar grupo · cancelar · Você já tem um grupo com esse nome. · Apagar '{nome}'? {N} amigos saem desse grupo, mas continuam no seu caderno. · Apagar '{nome}'? Nenhum amigo está nesse grupo. · registrar · registrar contato · Falei com {nome} · Mensagem / Ligação / Encontro · Nota rápida (opcional) · Registrar · Novo amigo · Só o nome já basta. O resto pode vir depois. · Falar a cada · Mais detalhes (opcional) · Salvar amigo · Os outros estão em dia. · Seu caderno está em branco.
+bom falar · quadro · amigos · + novo · config · Configurações · Sair · Entrar · Criar conta · Já tenho conta · E-mail · Senha · Repetir senha · Entrando… · Criando… · E-mail ou senha incorretos. · Este e-mail já tem conta. · As senhas não são iguais. · A senha precisa ter pelo menos 8 caracteres. · Caderno de amigos · seu ritmo com as pessoas que importam · Grupos · editar · pronto · + novo grupo · salvar · apagar grupo · cancelar · Você já tem um grupo com esse nome. · Apagar '{nome}'? {N} amigos saem desse grupo, mas continuam no seu caderno. · Apagar '{nome}'? Nenhum amigo está nesse grupo. · registrar · registrar contato · Falei com {nome} · Mensagem / Ligação / Encontro · Nota rápida (opcional) · Registrar · Novo amigo · Só o nome já basta. O resto pode vir depois. · Falar a cada · Mais detalhes (opcional) · Salvar amigo · Os outros estão em dia. · Seu caderno está em branco.
 **Proibido:** atrasado, pendente, vencido, "há N dias sem falar".
 
 
@@ -138,7 +183,7 @@ bom falar · quadro · amigos · + novo · config · Configurações · Sair · 
 `--linha` vale `2rem` (e não 32px) e o gradiente da pauta usa a mesma variável. Os tamanhos de texto estão em rem. Assim, quando a pessoa aumenta a fonte do navegador, a pauta cresce junto e o texto continua sentado na linha. Teste da issue 10: com a fonte em 200%, nenhuma linha de texto pode cruzar a pauta.
 
 ## 7. Visão Quadro (aprovada para o MVP)
-_Status: **aprovada para o MVP** (Vinicius, 16/10/2026: "entra completo no MVP, com arrastar e grupos"); **simplificada em 20/10/2026: janela fixa de 7 dias e sem arrastar**; **grupos N:N em 20/10/2026** (um amigo pode estar em 0, 1 ou vários grupos); **editar/apagar grupos no MVP em 21/10 e 26/10/2026** (modo editar nos chips do cadastro, sem tela de gerenciar); **aba config no MVP em 26/10/2026** (e-mail + Sair). Protótipo: `direcoes/quadro.html` (`?estado=normal|vazio|coluna-vazia|carregando|erro|registrando`); chips: `direcoes/grupos-chips.html`. Prints: `prints/desktop-quadro.png`, `prints/mobile-quadro.png`, `prints/quadro-estados.png`, `prints/grupos-chips-estados.png`. Contraste: resultado na seção 7.10 (script `contraste-quadro.py`, na cópia local do projeto). A direção "Caderno físico" não muda: nenhuma cor, fonte ou utilitário novo._
+_Status: **aprovada para o MVP** (Vinicius, 16/10/2026: "entra completo no MVP, com arrastar e grupos"); **simplificada em 20/10/2026: janela fixa de 7 dias e sem arrastar**; **grupos N:N em 20/10/2026** (um amigo pode estar em 0, 1 ou vários grupos); **editar/apagar grupos no MVP em 21/10 e 26/10/2026** (modo editar nos chips do cadastro, sem tela de gerenciar); **aba config no MVP em 26/10/2026** (e-mail + Sair); **conta própria / capa auth no MVP em 26/10/2026** (`/entrar`, ver 3.8). Protótipo: `direcoes/quadro.html` (`?estado=normal|vazio|coluna-vazia|carregando|erro|registrando`); chips: `direcoes/grupos-chips.html`. Prints: `prints/desktop-quadro.png`, `prints/mobile-quadro.png`, `prints/quadro-estados.png`, `prints/grupos-chips-estados.png`. Contraste: resultado na seção 7.10 (script `contraste-quadro.py`, na cópia local do projeto). A direção "Caderno físico" não muda: nenhuma cor, fonte ou utilitário novo._
 
 ### 7.1 O que é
 Uma aba nova, **"quadro"** (`router-link` para `/quadro`, fundo `papel`, entre "bom falar" e "amigos"), que mostra **todos** os amigos como post-its em 4 colunas sobre a própria folha pautada. Sem cortiça: cortiça pediria textura ou uma cor fora da paleta, e as duas coisas são proibidas pela identidade.
@@ -188,7 +233,7 @@ Para cada amigo: `d` = dias desde o último contato (datas no fuso do usuário),
 1. **Sem arrastar e soltar, em nenhuma largura.** A única ação do quadro é o botão **"falei agora"** (44px) de cada post-it, que abre o mesmo componente "Registrar contato" (3.6), com o tipo e a nota.
    - **Por que não dá pra mover um post-it de coluna:** as colunas não são um campo salvo, são o resultado de uma conta (último contato + ritmo). Mover alguém para trás seria apagar um contato que aconteceu, e reordenar dentro da coluna não teria onde ser salvo. O único fato novo que a pessoa pode informar é "falei com ela agora", e é isso que o botão faz.
 2. **Ao tocar ou clicar no botão:** o post-it ganha contorno tracejado (`.registrando`) na coluna onde está, e o sheet 3.6 abre (painel sobre a página direita no livro aberto).
-   - Registrar → POST → toast "Contato registrado. Boa conversa!" + "Desfazer" (3.10). As colunas são recalculadas, e o post-it passa para "Falei agora".
+   - Registrar → POST → toast "Contato registrado. Boa conversa!" + "Desfazer" (3.11). As colunas são recalculadas, e o post-it passa para "Falei agora".
    - Fechar, Esc ou véu → nada muda: o post-it perde o contorno e nenhum contato é criado.
    - Erro → faixa `erro-50` no painel (3.6). O post-it continua com o contorno até a pessoa fechar ou registrar.
 3. **Teclado e leitor de tela:** o botão é um `button` comum, com `aria-label="Falei agora com {nome}"`, e funciona igual em todas as larguras. Depois de registrar, anúncio em `aria-live="polite"`: "Contato registrado." O foco volta para o post-it, agora em "Falei agora".
