@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Caderno aberto com dois traços de tinta que se encontram: duas pessoas, uma conversa -->
+  <rect width="64" height="64" rx="14" fill="#B04A32"/>
+  <path d="M14 18c6-2 12-1.5 18 2.5c6-4 12-4.5 18-2.5v28c-6-2-12-1.5-18 2.5c-6-4-12-4.5-18-2.5z" fill="#FBF6EE"/>
+  <path d="M32 20.5v28" stroke="#E8DCC8" stroke-width="2"/>
+  <circle cx="24" cy="31" r="4.5" fill="#2B2420"/>
+  <circle cx="40" cy="31" r="4.5" fill="#B04A32"/>
+</svg>
