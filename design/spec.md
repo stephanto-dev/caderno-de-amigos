@@ -117,7 +117,7 @@ _Feedback Vinicius 26/10: (1) 1ª versão = "cartão com espiral"; (2) cor peach
 - **Espiral (esquerda):** anéis metálicos que **passam por furos** na capa. CSS puro.
 - **Título na capa** (Fraunces): "Caderno de amigos". Subtítulo Caveat `caneta`: "seu ritmo com as pessoas que importam".
 - **Formulário = etiqueta `.papel` colada NA capa:** 100% **dentro** do retângulo da capa (padding interno generoso; `overflow:hidden` na capa). Sem rotação que cause overflow (rotação zerada na v3). Fita washi CSS (`.fita`, `marca-texto`) no topo, também dentro. Toggle Entrar | Criar conta (Caveat), campos Inter, botão primário pill terracota. **Nunca** a etiqueta invade a mesa nem ultrapassa a borda inferior/direita.
-- Mobile: capa quase full-width com margem na mesa. Desktop: ~380×560 (largura×altura fixas). Mobile: altura fixa ~500–520.
+- Mobile: capa quase full-width com margem na mesa, até 400px de largura e 580–620px de altura conforme a largura da tela. Desktop: 480px de largura e até 700px de altura. Em telas baixas, a altura diminui até um mínimo que comporta o formulário; continua igual entre os modos e estados. Medidas ampliadas após feedback de 26/10/2026; o protótipo e os prints acima mostram a escala anterior.
 - Contraste AA em todos os textos/botões (tokens já checados em `identidade.md`).
 
 **Estados**

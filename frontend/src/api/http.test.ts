@@ -41,12 +41,12 @@ describe('HTTP client', () => {
 
     await send_api_request('/api/login/', {
       method: 'POST',
-      body: { username: 'ana', password: 'senha' },
+      body: { email: 'ana@example.com', password: 'senha' },
     })
 
     expect(fetch).toHaveBeenCalledWith('/api/login/', {
       method: 'POST',
-      body: JSON.stringify({ username: 'ana', password: 'senha' }),
+      body: JSON.stringify({ email: 'ana@example.com', password: 'senha' }),
       credentials: 'include',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'token' },
     })

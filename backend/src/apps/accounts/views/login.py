@@ -26,11 +26,11 @@ class LoginView(APIView):
         """Authenticate a user and return the new session status."""
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        username: str = serializer.validated_data["username"]
+        email: str = serializer.validated_data["email"]
         password: str = serializer.validated_data["password"]
 
-        user = SessionService(request._request).login_user(username, password)
+        user = SessionService(request._request).login_user(email, password)
         if user is None:
-            raise ValidationError("Usuário ou senha inválidos.")
+            raise ValidationError("E-mail ou senha incorretos.")
 
         return Response(SessionStatusSerializer(user).data)

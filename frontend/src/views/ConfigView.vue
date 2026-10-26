@@ -5,7 +5,7 @@ import { auth_state, logout_user_for_browser } from '../auth'
 const router = useRouter()
 
 async function send_logout_for_browser(): Promise<void> {
-  if (await logout_user_for_browser()) await router.replace('/login')
+  if (await logout_user_for_browser()) await router.replace('/entrar')
 }
 </script>
 

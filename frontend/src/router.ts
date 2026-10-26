@@ -8,7 +8,8 @@ import LoginView from './views/LoginView.vue'
 import ConfigView from './views/ConfigView.vue'
 
 export const routes: RouteRecordRaw[] = [
-  { path: '/', name: 'board', component: BoardView },
+  { path: '/', redirect: '/quadro' },
+  { path: '/quadro', name: 'board', component: BoardView },
   { path: '/amigos', name: 'friends', component: FriendsView },
   { path: '/amigos/novo', name: 'new-friend', component: NewFriendView },
   {
@@ -16,7 +17,7 @@ export const routes: RouteRecordRaw[] = [
     name: 'friend-detail',
     components: { default: FriendsView, detail: FriendDetailView },
   },
-  { path: '/login', name: 'login', component: LoginView },
+  { path: '/entrar', name: 'login', component: LoginView },
   { path: '/config', name: 'config', component: ConfigView },
 ]
 
@@ -27,5 +28,6 @@ export function install_auth_guard_for_router(router: Router): void {
     if (to.name !== 'login' && auth_state.current_user === null) {
       return { name: 'login', query: { redirect: to.fullPath } }
     }
+    if (to.name === 'login' && auth_state.current_user !== null) return { name: 'board' }
   })
 }

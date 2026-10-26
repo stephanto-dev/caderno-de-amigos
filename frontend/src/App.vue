@@ -6,13 +6,14 @@ const route = useRoute()
 </script>
 
 <template>
-  <main class="desk scene">
+  <RouterView v-if="route.name === 'login'" />
+  <main v-else class="desk scene">
     <div class="book" :class="{ 'profile-open': route.name === 'friend-detail' }">
       <div class="spiral-top spiral-h" aria-hidden="true"></div>
 
       <section class="page page-left margin-line">
         <div class="page-content paper-lined">
-          <p v-if="auth_state.error && route.name !== 'login'" class="session-error" role="alert">{{ auth_state.error }}</p>
+          <p v-if="auth_state.error" class="session-error" role="alert">{{ auth_state.error }}</p>
           <RouterView />
         </div>
       </section>
@@ -28,9 +29,9 @@ const route = useRoute()
         </div>
       </section>
 
-      <nav v-if="route.name !== 'login'" class="tabs" aria-label="Seções">
+      <nav class="tabs" aria-label="Seções">
         <RouterLink
-          to="/"
+          to="/quadro"
           class="tab tab-board"
           :aria-current="route.name === 'board' ? 'page' : undefined"
         >Quadro</RouterLink>
