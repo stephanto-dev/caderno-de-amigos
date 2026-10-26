@@ -7,7 +7,10 @@ export default defineConfig(({ command }) => ({
   plugins: [vue(), tailwindcss()],
   server: {
     proxy: {
-      '/api': 'http://localhost:8000',
+      '/api': {
+        target: process.env.API_PROXY_TARGET ?? 'http://localhost:8000',
+        changeOrigin: false,
+      },
     },
   },
   test: {

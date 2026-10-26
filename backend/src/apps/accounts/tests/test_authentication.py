@@ -17,14 +17,16 @@ class TestSessionAuthentication:
 
         # Assert
         assert response.status_code == 200
-        assert response.data == {"authenticated": False, "user": None}
+        assert response.data == {"authenticated": False, "user": None, "email": None}
         assert "csrftoken" in response.cookies
 
     def test_login_with_valid_credentials_creates_session(
         self, csrf_client: APIClient
     ) -> None:
         # Arrange
-        get_user_model().objects.create_user(username="ana", password="senha-segura")
+        get_user_model().objects.create_user(
+            username="ana", email="ana@example.com", password="senha-segura"
+        )
         csrf_client.get(reverse("get_current_user"))
         csrf_token = csrf_client.cookies["csrftoken"].value
 
@@ -38,7 +40,11 @@ class TestSessionAuthentication:
 
         # Assert
         assert response.status_code == 200
-        assert response.data == {"authenticated": True, "user": "ana"}
+        assert response.data == {
+            "authenticated": True,
+            "user": "ana",
+            "email": "ana@example.com",
+        }
         assert me_response.data == response.data
 
     def test_login_with_wrong_password_returns_generic_error(
@@ -128,7 +134,7 @@ class TestSessionAuthentication:
 
         # Assert
         assert response.status_code == 204
-        assert me_response.data == {"authenticated": False, "user": None}
+        assert me_response.data == {"authenticated": False, "user": None, "email": None}
 
     def test_logout_when_anonymous_is_forbidden(self, csrf_client: APIClient) -> None:
         # Arrange

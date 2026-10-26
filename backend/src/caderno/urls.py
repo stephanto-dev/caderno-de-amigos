@@ -15,6 +15,7 @@ urlpatterns = [
     path("amigos", frontend_view),
     path("amigos/novo", frontend_view),
     path("amigos/<str:friend_id>", frontend_view),
+    path("config", frontend_view),
     path("login", frontend_view),
     path("", frontend_view, name="home"),
 ]

@@ -31,5 +31,20 @@ services:
       db:
         condition: service_healthy
 
+  frontend:
+    image: node:22-alpine
+    working_dir: /app/frontend
+    command: sh -c "npm ci && npm run dev"
+    environment:
+      API_PROXY_TARGET: http://web:8000
+    volumes:
+      - ./frontend:/app/frontend
+      - frontend_node_modules:/app/frontend/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - web
+
 volumes:
   postgres_data:
+  frontend_node_modules:

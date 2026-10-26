@@ -8,9 +8,12 @@ Copie `.env.example` para `.env` antes de iniciar. Esse arquivo contém apenas
 valores de desenvolvimento e não entra no Git. O backend também aceita
 `.env.local` para sobrescrever valores só na máquina local.
 
-Com Docker disponível, `docker compose up --build` sobe o PostgreSQL e o Django em
-`http://localhost:8000`. Para desenvolver a interface, rode `npm ci` e `npm run dev`
-em `frontend/`; o Vite abre em `http://localhost:5173` e repassa `/api` ao Django.
+Com Docker disponível, rode `docker compose up --build` uma vez para subir o
+PostgreSQL, o Django (`http://localhost:8000`) e o Vite (`http://localhost:5173`).
+Durante o desenvolvimento, abra o app em `http://localhost:5173`: mudanças em
+Vue e CSS aparecem ao salvar, e o Vite repassa `/api` ao Django. Mudanças em
+Python também são recarregadas pelo Django. Não é preciso reconstruir a imagem
+ao salvar código; reconstrua quando mudar dependências ou o Dockerfile.
 
 O backend usa Python 3.11+ e `uv`. Em `backend/`, rode `uv sync` para instalar as
 dependências, `uv run pytest src` para os testes e `uv run python src/manage.py check`

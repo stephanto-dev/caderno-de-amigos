@@ -7,7 +7,7 @@ class TestSpaRoutes:
     def test_frontend_urls_render_the_same_index_template(self) -> None:
         # Arrange
         index_view = resolve("/").func
-        urls = ("/amigos", "/amigos/novo", "/amigos/123", "/login")
+        urls = ("/amigos", "/amigos/novo", "/amigos/123", "/config", "/login")
 
         # Act and assert
         for url in urls:

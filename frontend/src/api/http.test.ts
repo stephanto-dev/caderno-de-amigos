@@ -23,7 +23,7 @@ describe('HTTP client', () => {
 
   it('does not send a CSRF header on reads', async () => {
     document.cookie = 'csrftoken=token'
-    const fetch = vi.fn().mockResolvedValue(Response.json({ authenticated: false, user: null }))
+    const fetch = vi.fn().mockResolvedValue(Response.json({ authenticated: false, user: null, email: null }))
     vi.stubGlobal('fetch', fetch)
 
     await send_api_request('/api/me/')
@@ -36,7 +36,7 @@ describe('HTTP client', () => {
 
   it('sends JSON credentials with CSRF on login', async () => {
     document.cookie = 'csrftoken=token'
-    const fetch = vi.fn().mockResolvedValue(Response.json({ authenticated: true, user: 'ana' }))
+    const fetch = vi.fn().mockResolvedValue(Response.json({ authenticated: true, user: 'ana', email: 'ana@example.com' }))
     vi.stubGlobal('fetch', fetch)
 
     await send_api_request('/api/login/', {

@@ -24,10 +24,10 @@ Sem contrato claro, frontend e backend evoluem de forma descoordenada, gerando r
 
 - `POST /api/login/` — cria sessão
   - Corpo: `{"username": "...", "password": "..."}`
-  - Resposta: `{"authenticated": true, "user": "username"}`
+  - Resposta: `{"authenticated": true, "user": "username", "email": "email"}`
 - `POST /api/logout/` — invalida sessão
 - `GET /api/me/` — verifica se está logado, seta o cookie `csrftoken`
-  - Resposta: `{"authenticated": true|false, "user": "username"|null}`
+  - Resposta: `{"authenticated": true|false, "user": "username"|null, "email": "email"|null}`
 
 ### Amigos
 

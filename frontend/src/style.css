@@ -88,15 +88,15 @@ body {
   position: fixed;
   z-index: 4;
   bottom: 22px;
-  left: 24px;
+  left: 12px;
   display: flex;
-  gap: 8px;
+  gap: 4px;
 }
 
 .tabs .tab {
   box-sizing: border-box;
-  height: 42px;
-  padding: 12px 14px 0;
+  height: 44px;
+  padding: 12px 8px 0;
   border-radius: 0 0 8px 8px;
   transition: filter var(--duration-fast) var(--ease-out);
 }
@@ -108,7 +108,8 @@ body {
 .tab-board { background: var(--primary-100); }
 .tab-friends { background: var(--highlight); }
 .tab-new { background: var(--tab-green); }
-.tabs .tab[aria-current="page"] { height: 46px; }
+.tab-config { background: var(--margin-rule); }
+.tabs .tab[aria-current="page"] { height: 48px; }
 
 @media (min-width: 1024px) {
   .view-title { font-size: 1.875rem; }
