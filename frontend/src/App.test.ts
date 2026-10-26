@@ -1,11 +1,19 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import App from './App.vue'
-import { routes } from './router'
+import { auth_state } from './auth'
+import { install_auth_guard_for_router, routes } from './router'
 
 describe('App navigation', () => {
+  afterEach(() => {
+    auth_state.current_user = null
+    auth_state.is_initialized = false
+    auth_state.error = null
+    vi.unstubAllGlobals()
+  })
+
   it('renders the view selected by the URL', async () => {
     const router = createRouter({ history: createMemoryHistory(), routes })
     await router.push('/')
@@ -57,5 +65,21 @@ describe('App navigation', () => {
     expect(tokens).toContain('--notebook-line:2rem')
     expect(tokens).toContain('.paper-lined')
     expect(tokens).toContain('.spiral-v')
+  })
+
+  it('lets an authenticated user log out', async () => {
+    auth_state.current_user = 'ana'
+    auth_state.is_initialized = true
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 204 })))
+    const router = createRouter({ history: createMemoryHistory(), routes })
+    install_auth_guard_for_router(router)
+    await router.push('/')
+    const wrapper = mount(App, { global: { plugins: [router] } })
+
+    await wrapper.get('button[name="logout"]').trigger('click')
+    await flushPromises()
+
+    expect(auth_state.current_user).toBeNull()
+    expect(router.currentRoute.value.path).toBe('/login')
   })
 })
