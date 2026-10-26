@@ -5,6 +5,7 @@ import FriendsView from './views/FriendsView.vue'
 import NewFriendView from './views/NewFriendView.vue'
 import FriendDetailView from './views/FriendDetailView.vue'
 import LoginView from './views/LoginView.vue'
+import ConfigView from './views/ConfigView.vue'
 
 export const routes: RouteRecordRaw[] = [
   { path: '/', name: 'board', component: BoardView },
@@ -16,6 +17,7 @@ export const routes: RouteRecordRaw[] = [
     components: { default: FriendsView, detail: FriendDetailView },
   },
   { path: '/login', name: 'login', component: LoginView },
+  { path: '/config', name: 'config', component: ConfigView },
 ]
 
 export function install_auth_guard_for_router(router: Router): void {

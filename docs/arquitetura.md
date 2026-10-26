@@ -72,7 +72,7 @@ Autenticação por sessão Django com CSRF ([ADR 2026-10-20](ADRs/2026-10-20-aut
 ### Autenticação
 - `POST /api/login/` — cria sessão
 - `POST /api/logout/` — invalida sessão
-- `GET /api/me/` — verifica autenticação, seta o cookie csrftoken, retorna `{"authenticated": true|false, "user": "username"|null}`
+- `GET /api/me/` — verifica autenticação, seta o cookie csrftoken, retorna `{"authenticated": true|false, "user": "username"|null, "email": "email"|null}`
 
 ### Friends
 - `GET /api/friends/` — lista amigos do usuário, já ordenada pelo backend (por coluna e urgência), com `column` calculada, último contato, grupos

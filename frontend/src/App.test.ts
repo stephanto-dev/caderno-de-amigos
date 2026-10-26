@@ -9,6 +9,7 @@ import { install_auth_guard_for_router, routes } from './router'
 describe('App navigation', () => {
   afterEach(() => {
     auth_state.current_user = null
+    auth_state.current_email = null
     auth_state.is_initialized = false
     auth_state.error = null
     vi.unstubAllGlobals()
@@ -52,6 +53,9 @@ describe('App navigation', () => {
     expect(wrapper.find('.page-right .paper-lined').exists()).toBe(true)
     expect(wrapper.get('nav[aria-label="Seções"]').text()).toContain('Quadro')
     expect(wrapper.get('nav[aria-label="Seções"]').text()).toContain('Amigos')
+    expect(Array.from(wrapper.findAll('nav[aria-label="Seções"] a')).map((tab) => tab.text())).toEqual([
+      'Quadro', 'Amigos', '+ novo', 'config',
+    ])
     expect(wrapper.get('a[aria-current="page"]').text()).toBe('Quadro')
 
     await wrapper.get('a[href="/amigos"]').trigger('click')
@@ -69,17 +73,51 @@ describe('App navigation', () => {
 
   it('lets an authenticated user log out', async () => {
     auth_state.current_user = 'ana'
+    auth_state.current_email = 'ana@example.com'
     auth_state.is_initialized = true
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 204 })))
     const router = createRouter({ history: createMemoryHistory(), routes })
     install_auth_guard_for_router(router)
-    await router.push('/')
+    await router.push('/config')
+    const wrapper = mount(App, { global: { plugins: [router] } })
+
+    expect(wrapper.get('h1').text()).toBe('Configurações')
+    expect(wrapper.text()).toContain('ana@example.com')
+    await wrapper.get('button[name="logout"]').trigger('click')
+    await flushPromises()
+
+    expect(auth_state.current_user).toBeNull()
+    expect(auth_state.current_email).toBeNull()
+    expect(router.currentRoute.value.path).toBe('/login')
+  })
+
+  it('omits the email row when the account has no email', async () => {
+    auth_state.current_user = 'ana'
+    auth_state.current_email = ''
+    auth_state.is_initialized = true
+    const router = createRouter({ history: createMemoryHistory(), routes })
+    await router.push('/config')
+    const wrapper = mount(App, { global: { plugins: [router] } })
+
+    expect(wrapper.get('h1').text()).toBe('Configurações')
+    expect(wrapper.text()).not.toContain('E-mail')
+  })
+
+  it('keeps the session visible when logout fails', async () => {
+    auth_state.current_user = 'ana'
+    auth_state.current_email = 'ana@example.com'
+    auth_state.is_initialized = true
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network unavailable')))
+    const router = createRouter({ history: createMemoryHistory(), routes })
+    install_auth_guard_for_router(router)
+    await router.push('/config')
     const wrapper = mount(App, { global: { plugins: [router] } })
 
     await wrapper.get('button[name="logout"]').trigger('click')
     await flushPromises()
 
-    expect(auth_state.current_user).toBeNull()
-    expect(router.currentRoute.value.path).toBe('/login')
+    expect(router.currentRoute.value.path).toBe('/config')
+    expect(wrapper.text()).toContain('ana@example.com')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Verifique sua conexão')
   })
 })

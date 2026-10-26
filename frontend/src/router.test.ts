@@ -6,24 +6,25 @@ import { install_auth_guard_for_router, routes } from './router'
 describe('authentication guard', () => {
   beforeEach(() => {
     auth_state.current_user = null
+    auth_state.current_email = null
     auth_state.is_initialized = false
     auth_state.error = null
   })
   afterEach(() => vi.unstubAllGlobals())
 
   it('sends a visitor to login and remembers the requested route', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ authenticated: false, user: null })))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ authenticated: false, user: null, email: null })))
     const router = createRouter({ history: createMemoryHistory(), routes })
     install_auth_guard_for_router(router)
 
-    await router.push('/amigos/123')
+    await router.push('/config')
 
     expect(router.currentRoute.value.path).toBe('/login')
-    expect(router.currentRoute.value.query.redirect).toBe('/amigos/123')
+    expect(router.currentRoute.value.query.redirect).toBe('/config')
   })
 
   it('allows a protected route when the session is authenticated', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ authenticated: true, user: 'ana' })))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ authenticated: true, user: 'ana', email: 'ana@example.com' })))
     const router = createRouter({ history: createMemoryHistory(), routes })
     install_auth_guard_for_router(router)
 

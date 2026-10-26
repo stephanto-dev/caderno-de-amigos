@@ -3,14 +3,25 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 describe('browser authentication', () => {
   afterEach(() => vi.unstubAllGlobals())
 
+  it('loads the email from the current session', async () => {
+    vi.resetModules()
+    const { auth_state, get_session_for_browser } = await import('./auth')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ authenticated: true, user: 'ana', email: 'ana@example.com' })))
+
+    await get_session_for_browser()
+
+    expect(auth_state.current_email).toBe('ana@example.com')
+  })
+
   it('keeps the authenticated user after login', async () => {
     vi.resetModules()
     const { auth_state, login_user_for_browser } = await import('./auth')
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ authenticated: true, user: 'ana' })))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ authenticated: true, user: 'ana', email: 'ana@example.com' })))
 
     await login_user_for_browser('ana', 'senha')
 
     expect(auth_state.current_user).toBe('ana')
+    expect(auth_state.current_email).toBe('ana@example.com')
     expect(auth_state.error).toBeNull()
   })
 
@@ -45,12 +56,13 @@ describe('browser authentication', () => {
     vi.resetModules()
     const { auth_state, login_user_for_browser, logout_user_for_browser } = await import('./auth')
     vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce(Response.json({ authenticated: true, user: 'ana' }))
+      .mockResolvedValueOnce(Response.json({ authenticated: true, user: 'ana', email: 'ana@example.com' }))
       .mockResolvedValueOnce(new Response(null, { status: 204 })))
     await login_user_for_browser('ana', 'senha')
 
     await logout_user_for_browser()
 
     expect(auth_state.current_user).toBeNull()
+    expect(auth_state.current_email).toBeNull()
   })
 })
