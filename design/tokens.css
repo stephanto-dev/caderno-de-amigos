@@ -1,0 +1,78 @@
+/* Tokens — direção "Caderno físico" (aprovada em 16/10/2026; substitui a A "Caderno")
+   Fonte única: estas variáveis + utilitários. No Vue, importe este arquivo OU use o plugin do tailwind.config.js (mesmas classes), não os dois. */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=Caveat:wght@500;700&display=swap');
+:root{
+  /* Ritmo vertical: UM token. Todo line-height e espaço vertical da página é múltiplo dele. */
+  --linha:2rem;                   /* escala com a fonte do navegador */
+  --pauta-offset:-0.3125rem;            /* sobe a pauta para o texto "sentar" na linha */
+  /* Primária (terracota) */
+  --primaria-50:#F8ECE6; --primaria-100:#F1D6CC; --primaria-600:#B04A32; --primaria-700:#963D29; --primaria-800:#7C3221;
+  --primaria:var(--primaria-600); --primaria-hover:var(--primaria-700); --primaria-pressed:var(--primaria-800);
+  /* Neutros quentes */
+  --neutro-50:#FBF6EE; --neutro-100:#F4ECDF; --neutro-200:#E8DCC8; --neutro-300:#D6C7AF; --neutro-400:#B3A38C;
+  --neutro-500:#7A6B59; --neutro-600:#6B5E50; --neutro-700:#4F443A; --neutro-800:#3A312B; --neutro-900:#2B2420;
+  --folha:var(--neutro-50); --papel:var(--neutro-200); --tinta:var(--neutro-900);
+  --texto:var(--neutro-900); --texto-2:var(--neutro-600); --texto-3:var(--neutro-500);
+  /* Caderno físico */
+  --caneta:#1F3A6B;         /* notas manuscritas (Caveat) */
+  --marca-texto:#F6D98A;    /* destaque, post-it, aba "amigos" */
+  --marca-texto-50:#FBEDC4; /* item selecionado */
+  --pauta:#C9D6E3;          /* decorativa; também aba "?" */
+  --margem:#D9837A;         /* decorativa */
+  --mesa:#7A5A3E;           /* cor sólida, sem textura */
+  --aba-verde:#B9CBB0;      /* aba "+ novo" */
+  /* Estados */
+  --sucesso:#5E7A55; --sucesso-700:#4A6343; --sucesso-50:#EAF0E5;
+  --aviso:#8A5A12; --aviso-50:#F7EBD3;
+  --erro:#9B3B36; --erro-50:#F6E3DF;
+  --foco:#2F6185;
+  /* Tipografia */
+  --fonte-titulo:'Fraunces',Georgia,serif; --fonte-ui:'Inter',system-ui,sans-serif; --fonte-mao:'Caveat',cursive;
+  /* Espaço horizontal (grid 8px). Vertical na página: sempre calc(var(--linha) * n) */
+  --esp-1:8px; --esp-2:16px; --esp-3:24px; --esp-4:32px; --esp-6:48px;
+  --raio-sm:6px; --raio-md:10px; --raio-pill:999px;
+  --sombra-pagina:0 18px 32px rgba(0,0,0,.35);
+  --sombra-papel:2px 4px 8px rgba(43,36,32,.2);
+  --anel-foco:0 0 0 2px var(--folha),0 0 0 4px var(--foco);
+  --dur-rapida:120ms; --dur-media:200ms; --dur-lenta:280ms;
+  --ease-saida:cubic-bezier(.2,.8,.2,1); --ease-entrada:cubic-bezier(.4,0,1,1);
+}
+@media (prefers-reduced-motion:reduce){:root{--dur-rapida:0ms;--dur-media:0ms;--dur-lenta:0ms}}
+
+/* ===== Utilitários do caderno (só CSS, sem imagens) ===== */
+.mesa{background:var(--mesa)}
+/* Folha pautada: linha de 1px no fim de cada --linha; acompanha a rolagem */
+.paper-lined{
+  background-color:var(--folha);
+  background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--linha) - 1px),var(--pauta) calc(var(--linha) - 1px) var(--linha));
+  background-position:0 var(--pauta-offset);
+  background-attachment:local;
+  line-height:var(--linha);
+}
+/* Margem vermelha: pseudo-elemento no contêiner que NÃO rola */
+.margin-line{position:relative;--margem-x:48px}
+.margin-line::after{content:"";position:absolute;top:0;bottom:0;left:var(--margem-x);width:2px;background:var(--margem);pointer-events:none;z-index:1}
+/* Espiral: anéis = gradiente repetido no passo da pauta */
+.spiral-v{width:28px;background:repeating-linear-gradient(to bottom,transparent 0 11px,#8a8a8a 11px 13px,#e2e2e2 13px 17px,#8a8a8a 17px 21px,transparent 21px var(--linha));filter:drop-shadow(0 2px 1px rgba(0,0,0,.35))}
+.spiral-h{height:24px;background:repeating-linear-gradient(to right,transparent 0 11px,#8a8a8a 11px 13px,#e2e2e2 13px 17px,#8a8a8a 17px 21px,transparent 21px var(--linha));filter:drop-shadow(1px 1px 1px rgba(0,0,0,.35))}
+/* Tipografia manuscrita — SÓ notas, carimbos e rótulos de aba */
+.nota{font-family:var(--fonte-mao);font-weight:500;font-size:1.375rem;line-height:var(--linha);color:var(--caneta)}
+.marca{background:linear-gradient(transparent 55%,var(--marca-texto) 55%)}
+.carimbo{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:2px solid var(--primaria);border-radius:var(--raio-sm);color:var(--primaria);font-family:var(--fonte-mao);font-weight:700;font-size:21px;line-height:1;transform:rotate(-2deg);vertical-align:middle;background:transparent;cursor:pointer;transition:background-color var(--dur-rapida),color var(--dur-rapida)}
+.carimbo:hover{background:var(--primaria-50);color:var(--primaria-700);border-color:var(--primaria-700)}
+.carimbo:active{background:var(--primaria-100);color:var(--primaria-800);transform:rotate(-2deg) scale(.97)}
+.carimbo:disabled{opacity:.45;cursor:not-allowed}
+.aba{font-family:var(--fonte-mao);font-weight:700;font-size:20px;color:var(--tinta);box-shadow:3px 2px 4px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;text-decoration:none}
+.aba[aria-current]{background:var(--primaria)!important;color:#fff}
+/* Superfícies "papel" para formulários, sheet e modais (Inter) */
+.papel{background:var(--papel);border:2px solid var(--tinta);border-radius:var(--raio-md);box-shadow:var(--sombra-papel)}
+.campo{height:48px;padding:0 16px;background:var(--folha);border:1.5px solid var(--tinta);border-radius:var(--raio-sm);font:400 16px/24px var(--fonte-ui);color:var(--tinta);width:100%}
+.campo::placeholder{color:var(--neutro-500)}
+.campo:focus{outline:none;box-shadow:var(--anel-foco)}
+.campo[aria-invalid="true"]{border-color:var(--erro)}
+/* Decorativos: canto fixo, nunca sobre texto (o contêiner reserva o espaço com .reserva-canto) */
+.postit{position:absolute;top:calc(var(--linha) + 4px);right:16px;width:96px;padding:8px;background:var(--marca-texto);font:500 18px/22px var(--fonte-mao);color:var(--tinta);transform:rotate(3deg);box-shadow:var(--sombra-papel);pointer-events:none}
+.polaroid{position:absolute;top:calc(var(--linha) + 8px);right:24px;width:96px;padding:6px 6px 22px;background:#fff;transform:rotate(4deg);box-shadow:var(--sombra-papel);pointer-events:none}
+.fita::before{content:"";position:absolute;top:-9px;left:24px;width:48px;height:16px;background:rgba(255,255,255,.7);transform:rotate(-6deg)}
+.reserva-canto{padding-right:112px}
+:focus-visible{outline:none;box-shadow:var(--anel-foco)}

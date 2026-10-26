@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Caderno de amigos — protótipo (Caderno físico)</title>
+<link rel="icon" href="icon.svg">
+<link rel="stylesheet" href="tokens.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config={theme:{extend:{
+ colors:{primaria:{50:'#F8ECE6',100:'#F1D6CC',DEFAULT:'#B04A32',600:'#B04A32',700:'#963D29',800:'#7C3221'},
+  neutro:{50:'#FBF6EE',100:'#F4ECDF',200:'#E8DCC8',300:'#D6C7AF',400:'#B3A38C',500:'#7A6B59',600:'#6B5E50',700:'#4F443A',800:'#3A312B',900:'#2B2420'},
+  folha:'#FBF6EE',papel:'#E8DCC8',tinta:'#2B2420',caneta:'#1F3A6B','marca-texto':{DEFAULT:'#F6D98A',50:'#FBEDC4'},pauta:'#C9D6E3',margem:'#D9837A',mesa:'#7A5A3E','aba-verde':'#B9CBB0',
+  sucesso:{50:'#EAF0E5',DEFAULT:'#5E7A55',700:'#4A6343'},erro:{50:'#F6E3DF',DEFAULT:'#9B3B36'},foco:'#2F6185'},
+ fontFamily:{titulo:['Fraunces','Georgia','serif'],ui:['Inter','system-ui','sans-serif'],mao:['Caveat','cursive']},
+ fontSize:{xs:['12px','32px'],sm:['14px','32px'],base:['16px','32px'],lg:['19px','32px'],xl:['22px','32px'],'2xl':['28px','32px'],'3xl':['30px','32px']},
+ spacing:{l1:'32px',l2:'64px',l3:'96px',l4:'128px'},screens:{livro:'1280px'}}}}
+</script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+ body{font-family:Inter,system-ui,sans-serif;color:#2B2420;margin:0}
+ .titulo{font-family:Fraunces,Georgia,serif}
+ [data-lucide]{width:18px;height:18px;stroke-width:1.75;display:inline-block;vertical-align:-3px}
+ .tela{display:none}.tela.ativa{display:block}
+ /* item selecionado: faixa de marca-texto alinhada à pauta (desloca o mesmo --pauta-offset) */
+ .card{position:relative;isolation:isolate}
+ .card.selecionado::before{content:"";position:absolute;left:0;right:0;top:var(--pauta-offset);bottom:calc(-1 * var(--pauta-offset));background:var(--marca-texto-50);z-index:-1;border-radius:4px}
+ .postit{z-index:2;height:64px;box-sizing:border-box}
+ @media (max-width:1023px){.reserva-canto{padding-right:96px}.postit{width:84px;right:10px;font-size:17px;line-height:20px}.polaroid{width:76px;right:12px}.polaroid .foto{height:64px!important}}
+
+ /* ---------- Layout: celular (padrão) ---------- */
+ .cena{height:100dvh;padding:28px 12px 64px;box-sizing:border-box}
+ .livro{position:relative;height:100%;max-width:640px;margin:0 auto}
+ .pagina{position:absolute;inset:0;border-radius:10px;box-shadow:var(--sombra-pagina);overflow:hidden;--margem-x:36px}
+ .folha{height:100%;overflow-y:auto;box-sizing:border-box;padding:32px 16px 64px 52px}
+ .pg-r{transform:translateX(calc(100% + 24px));transition:transform var(--dur-lenta) var(--ease-saida);z-index:5}
+ .perfil-aberto .pg-r{transform:none}
+ .espiral-topo{position:absolute;top:-12px;left:20px;right:20px;z-index:6}
+ .espiral-meio{display:none}
+ .abas{position:fixed;left:24px;bottom:22px;display:flex;gap:8px;z-index:4}
+ .abas .aba{height:42px;padding:12px 14px 0;border-radius:0 0 8px 8px;box-sizing:border-box}
+ .abas .aba[aria-current]{height:46px}
+ .abas .so-desk{display:none}
+ /* sheet */
+ .sheet{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;border-radius:16px 16px 0 0;border-bottom:0;padding:12px 24px 32px;transform:translateY(105%);transition:transform var(--dur-lenta) var(--ease-saida);z-index:20}
+ .sheet.aberto{transform:none}
+ .veu{position:fixed;inset:0;background:rgba(43,36,32,.45);z-index:15}
+
+ /* ---------- Tablet / desktop pequeno: 1 página, abas à direita ---------- */
+ @media (min-width:1024px){
+  .cena{padding:48px 64px 48px 48px}
+  .pagina{--margem-x:56px}
+  .folha{padding:32px 40px 64px 80px}
+  .abas{position:absolute;left:auto;bottom:auto;right:-42px;top:64px;flex-direction:column;z-index:1}
+  .abas .aba{width:42px;height:104px;padding:0;border-radius:0 8px 8px 0;writing-mode:vertical-rl}
+  .abas .aba[aria-current]{width:48px;height:104px}
+  .abas .so-desk{display:flex;height:56px}
+ }
+ /* ---------- Livro aberto: 2 páginas a partir de 1280px ---------- */
+ @media (min-width:1280px){
+  .cena{padding:48px 0;display:flex;justify-content:center}
+  .livro{width:1120px;max-width:none;display:flex;margin:0}
+  .pagina{position:relative;inset:auto;flex:1}
+  .pg-l{border-radius:10px 0 0 10px;box-shadow:var(--sombra-pagina),inset -18px 0 24px -14px rgba(0,0,0,.18)}
+  .pg-r{border-radius:0 10px 10px 0;transform:none;box-shadow:var(--sombra-pagina),inset 18px 0 24px -14px rgba(0,0,0,.18);z-index:auto}
+  .espiral-topo{display:none}
+  .espiral-meio{display:block;position:absolute;left:50%;top:16px;bottom:16px;transform:translateX(-50%);z-index:6}
+  .btn-voltar{display:none!important}
+  .sheet{position:absolute;left:auto;right:24px;top:24px;bottom:24px;width:calc(50% - 64px);max-width:none;margin:0;border-radius:10px;border-bottom:2px solid #2B2420;transform:translateX(24px);opacity:0;pointer-events:none;transition:transform var(--dur-lenta) var(--ease-saida),opacity var(--dur-media)}
+  .sheet.aberto{transform:none;opacity:1;pointer-events:auto}
+  .veu{position:absolute;inset:0;left:50%;border-radius:0 10px 10px 0;background:rgba(43,36,32,.25)}
+ }
+ @media (prefers-reduced-motion:reduce){.pg-r,.sheet{transition:none}}
+</style></head>
+<body class="mesa">
+<div class="cena">
+ <div class="livro" id="livro">
+  <div class="espiral-topo spiral-h" aria-hidden="true"></div>
+
+  <!-- PÁGINA ESQUERDA (listas e formulários) -->
+  <section class="pagina pg-l margin-line">
+   <div class="folha paper-lined" id="folha-l">
+
+    <!-- BOM FALAR COM -->
+    <div id="inicio" class="tela relative">
+     <header class="reserva-canto">
+      <p class="text-sm text-neutro-600">sexta, 16 de outubro</p>
+      <h1 class="titulo text-2xl lg:text-3xl font-semibold">Bom falar com</h1>
+     </header>
+     <!-- Post-it: só existe quando há aniversário na semana -->
+     <div class="postit fita" aria-hidden="true">niver da Marina: domingo</div>
+     <p class="sr-only">Aniversário: Marina, domingo, 18 de outubro.</p>
+     <ul id="lista-bom" class="mt-l1"></ul>
+     <p class="text-sm text-neutro-600">Os outros estão em dia.</p>
+    </div>
+
+    <!-- AMIGOS -->
+    <div id="amigos" class="tela">
+     <header class="flex items-baseline justify-between gap-4">
+      <h1 class="titulo text-2xl lg:text-3xl font-semibold">Amigos</h1>
+      <span class="text-sm text-neutro-600"><span id="qtd"></span> <kbd class="hidden lg:inline-block ml-1 font-ui text-xs leading-4 px-1.5 border border-neutro-300 border-b-2 rounded bg-white">/</kbd></span>
+     </header>
+     <div class="mt-l1 h-l2"><label class="sr-only" for="busca">Buscar amigos</label>
+      <div class="relative"><i data-lucide="search" class="absolute left-4 top-[15px] text-neutro-600"></i>
+      <input id="busca" class="campo !pl-11" placeholder="Buscar por nome ou interesse"></div></div>
+     <ul id="lista-amigos"></ul>
+    </div>
+
+    <!-- CADASTRO RÁPIDO -->
+    <div id="cadastro" class="tela">
+     <a href="?tela=inicio" data-ir="inicio" class="inline-flex items-center gap-1 text-sm font-medium text-neutro-700 hover:text-tinta"><i data-lucide="x"></i>Cancelar</a>
+     <h1 class="titulo text-2xl lg:text-3xl font-semibold">Novo amigo</h1>
+     <p class="text-base text-neutro-600">Só o nome já basta. O resto pode vir depois.</p>
+     <form class="papel mt-l1 px-4 pt-[14px] pb-[14px]" onsubmit="event.preventDefault();salvar()">
+      <!-- blocos de 2 linhas (64px): rótulo 32 + campo 48 cabem em 96 = 3 linhas -->
+      <div class="h-l3">
+       <label for="nome" class="block text-sm font-medium">Nome</label>
+       <input id="nome" class="campo" placeholder="Ex.: João Pedro" aria-describedby="erro-nome">
+      </div>
+      <p id="erro-nome" class="hidden text-sm text-erro -mt-2 mb-0">Escreva pelo menos um nome pra gente guardar.</p>
+      <div class="h-l3">
+       <p class="text-sm font-medium">Falar a cada</p>
+       <div class="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1" role="radiogroup" aria-label="Ritmo de contato">
+        <button type="button" role="radio" class="ritmo shrink-0 h-10 px-3 rounded-full whitespace-nowrap border-[1.5px] border-tinta bg-folha text-sm leading-none">1 sem.</button>
+        <button type="button" role="radio" class="ritmo shrink-0 h-10 px-3 rounded-full whitespace-nowrap border-[1.5px] border-tinta bg-folha text-sm leading-none">2 sem.</button>
+        <button type="button" role="radio" aria-checked="true" class="ritmo sel h-10 px-4 rounded-full whitespace-nowrap border-[1.5px] border-primaria bg-primaria-100 text-primaria-800 font-medium text-sm leading-none">1 mês</button>
+        <button type="button" role="radio" class="ritmo shrink-0 h-10 px-3 rounded-full whitespace-nowrap border-[1.5px] border-tinta bg-folha text-sm leading-none">3 meses</button>
+       </div>
+      </div>
+      <details class="group">
+       <summary class="flex items-center justify-between h-l1 cursor-pointer text-sm font-medium list-none">Mais detalhes (opcional)<i data-lucide="chevron-down" class="group-open:rotate-180 transition-transform"></i></summary>
+       <div class="h-l3"><label class="block text-sm font-medium" for="c1">Como se conheceram</label><input id="c1" class="campo" placeholder="Ex.: faculdade, trabalho"></div>
+       <div class="h-l3"><label class="block text-sm font-medium" for="c2">Aniversário</label><input id="c2" class="campo" placeholder="dd/mm"></div>
+       <div class="h-l3"><label class="block text-sm font-medium" for="c3">Interesses</label><input id="c3" class="campo" placeholder="Separe por vírgula"></div>
+      </details>
+      <button class="mt-l1 w-full h-12 rounded-full bg-primaria text-white font-semibold leading-none hover:bg-primaria-700 active:bg-primaria-800 transition-colors">Salvar amigo</button>
+     </form>
+    </div>
+
+    <!-- ESTADO VAZIO -->
+    <div id="vazio" class="tela">
+     <p class="text-sm text-neutro-600">sexta, 16 de outubro</p>
+     <h1 class="titulo text-2xl lg:text-3xl font-semibold">Bom falar com</h1>
+     <div class="mt-l2">
+      <p class="nota">Seu caderno está em branco.</p>
+      <p class="nota">Comece por alguém de quem você sente falta.</p>
+      <p class="text-base text-neutro-600">Só o nome já basta.</p>
+      <p class="mt-l1"><a href="?tela=cadastro" data-ir="cadastro" class="carimbo"><i data-lucide="user-plus" style="width:16px;height:16px"></i>adicionar primeiro amigo</a></p>
+     </div>
+    </div>
+
+   </div>
+  </section>
+
+  <div class="espiral-meio spiral-v" aria-hidden="true"></div>
+
+  <!-- PÁGINA DIREITA (perfil). Abaixo de 1280px abre por cima da esquerda -->
+  <section class="pagina pg-r margin-line" id="pg-r" aria-label="Perfil">
+   <div class="folha paper-lined">
+    <div id="perfil-vazio" class="tela">
+     <p class="nota mt-l3" id="pv-nota">Uma página nova no caderno.</p>
+     <p class="text-base text-neutro-600" id="pv-txt">Depois de salvar, o perfil aparece aqui.</p>
+    </div>
+    <div id="perfil" class="tela relative">
+     <header class="reserva-canto">
+      <a href="?tela=amigos" data-ir="voltar" class="btn-voltar inline-flex items-center gap-1 text-sm font-medium text-neutro-700 hover:text-tinta"><i data-lucide="chevron-left"></i>Voltar</a>
+      <h1 class="titulo text-2xl lg:text-3xl font-semibold lg:mt-0">João Pedro</h1>
+      <p class="text-sm text-neutro-600">da faculdade · a cada 3 semanas</p>
+      <p class="text-sm text-neutro-700"><i data-lucide="cake" class="text-primaria"></i> 12/mar · curte <span class="marca">escalada</span>, <span class="marca">café</span> e <span class="marca">Fortaleza</span></p>
+      <p><button data-sheet="João" class="carimbo"><i data-lucide="pen-line" style="width:16px;height:16px"></i>registrar contato</button><kbd class="hidden lg:inline-block ml-3 font-ui text-xs leading-4 px-1.5 border border-neutro-300 border-b-2 rounded bg-white align-middle">R</kbd></p>
+     </header>
+     <div class="polaroid fita" aria-hidden="true"><div class="foto h-[84px] bg-papel grid place-items-center titulo text-[28px] leading-none text-primaria-700">JP</div><p class="absolute inset-x-0 bottom-0 text-center font-mao text-[16px] leading-[22px]">João, 2024</p></div>
+     <h2 class="titulo text-lg font-semibold mt-l1">Histórico</h2>
+     <ol>
+      <li class="flex gap-3"><span class="shrink-0 w-[72px] text-sm font-semibold text-primaria-700"><i data-lucide="coffee"></i> 25/set</span><p class="nota">vai se mudar pra Fortaleza em nov. perguntar da visita ao apê</p></li>
+      <li class="flex gap-3"><span class="shrink-0 w-[72px] text-sm font-semibold text-primaria-700"><i data-lucide="message-circle"></i> 02/set</span><p class="nota">mandou foto da via que escalou</p></li>
+      <li class="flex gap-3"><span class="shrink-0 w-[72px] text-sm font-semibold text-primaria-700"><i data-lucide="phone"></i> 10/ago</span><p class="text-sm italic text-neutro-600">sem nota</p></li>
+     </ol>
+     <h2 class="titulo text-lg font-semibold mt-l1">Lembrar</h2>
+     <p class="nota">prefere áudio a texto. nada de ligação surpresa!</p>
+    </div>
+   </div>
+  </section>
+
+  <!-- Abas de divisória: links comuns (router-link no Vue) -->
+  <nav class="abas" aria-label="Seções">
+   <a href="?tela=inicio" data-ir="inicio" data-nav="inicio" class="aba bg-primaria-100">bom falar</a>
+   <a href="?tela=amigos" data-ir="amigos" data-nav="amigos" class="aba bg-marca-texto">amigos</a>
+   <a href="?tela=cadastro" data-ir="cadastro" data-nav="cadastro" class="aba bg-aba-verde">+ novo</a>
+   <a href="?tela=atalhos" onclick="event.preventDefault();atalhos(true)" class="aba so-desk bg-pauta" aria-label="Atalhos de teclado">?</a>
+  </nav>
+
+  <!-- Registrar contato: sheet no celular, painel sobre a página direita no livro aberto -->
+  <div id="veu" class="veu hidden" onclick="fecharSheet()"></div>
+  <div id="sheet" class="sheet papel hidden" role="dialog" aria-modal="true" aria-labelledby="sheet-t">
+   <div class="mx-auto w-10 h-1 rounded-full bg-neutro-500 livro:hidden"></div>
+   <div class="mt-3 flex items-center justify-between gap-4">
+    <h2 id="sheet-t" class="text-xl font-semibold leading-8 truncate">Falei com <span id="sheet-nome"></span></h2>
+    <button onclick="fecharSheet()" aria-label="Fechar" class="grid place-items-center w-11 h-11 -mr-2 rounded-full text-neutro-700 hover:bg-neutro-300/50"><i data-lucide="x"></i></button>
+   </div>
+   <div class="mt-4 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Tipo de contato">
+    <button role="radio" aria-checked="true" class="tipo flex flex-col items-center justify-center gap-1 h-20 rounded-md border-2 border-primaria bg-primaria-50 text-primaria-800 text-sm font-medium leading-5"><i data-lucide="message-circle"></i>Mensagem</button>
+    <button role="radio" class="tipo flex flex-col items-center justify-center gap-1 h-20 rounded-md border-[1.5px] border-tinta bg-folha text-neutro-800 text-sm font-medium leading-5"><i data-lucide="phone"></i>Ligação</button>
+    <button role="radio" class="tipo flex flex-col items-center justify-center gap-1 h-20 rounded-md border-[1.5px] border-tinta bg-folha text-neutro-800 text-sm font-medium leading-5"><i data-lucide="coffee"></i>Encontro</button>
+   </div>
+   <label for="nota-rapida" class="block mt-4 text-sm font-medium leading-6">Nota rápida <span class="font-normal text-neutro-600">(opcional)</span></label>
+   <textarea id="nota-rapida" rows="3" class="campo !h-auto py-3 mt-2 resize-none" placeholder="O que ficou da conversa? Ex.: vai mudar de emprego"></textarea>
+   <p class="hidden lg:block mt-2 text-xs leading-5 text-neutro-600">Ctrl + Enter registra · Esc fecha</p>
+   <button onclick="registrar()" class="mt-4 w-full h-12 rounded-full bg-primaria text-white font-semibold leading-none hover:bg-primaria-700 active:bg-primaria-800 transition-colors">Registrar</button>
+  </div>
+ </div>
+</div>
+
+<!-- Atalhos -->
+<div id="atalhos" class="hidden fixed inset-0 z-30 bg-tinta/45 grid place-items-center p-4" onclick="if(event.target===this)atalhos(false)">
+ <div role="dialog" aria-modal="true" aria-labelledby="at-t" class="papel w-full max-w-sm p-6">
+  <div class="flex items-center justify-between"><h2 id="at-t" class="text-xl font-semibold leading-8">Atalhos de teclado</h2><button onclick="atalhos(false)" aria-label="Fechar" class="grid place-items-center w-11 h-11 -mr-2 rounded-full hover:bg-neutro-300/50"><i data-lucide="x"></i></button></div>
+  <dl class="mt-3 text-sm leading-8">
+   <div class="flex justify-between"><dt>Novo amigo</dt><dd><kbd class="k">N</kbd></dd></div>
+   <div class="flex justify-between"><dt>Registrar contato</dt><dd><kbd class="k">R</kbd></dd></div>
+   <div class="flex justify-between"><dt>Próxima / anterior</dt><dd><kbd class="k">J</kbd> <kbd class="k">K</kbd></dd></div>
+   <div class="flex justify-between"><dt>Buscar amigo</dt><dd><kbd class="k">/</kbd></dd></div>
+   <div class="flex justify-between"><dt>Bom falar com / Amigos</dt><dd><kbd class="k">1</kbd> <kbd class="k">2</kbd></dd></div>
+   <div class="flex justify-between"><dt>Salvar formulário</dt><dd><kbd class="k">Ctrl</kbd> <kbd class="k">Enter</kbd></dd></div>
+   <div class="flex justify-between"><dt>Fechar</dt><dd><kbd class="k">Esc</kbd></dd></div>
+  </dl>
+ </div>
+</div>
+<style>.k{font:500 12px/16px Inter;padding:0 6px;border:1px solid #2B2420;border-bottom-width:2px;border-radius:5px;background:#FBF6EE}</style>
+
+<div id="toast" role="status" class="hidden fixed left-1/2 -translate-x-1/2 bottom-24 lg:bottom-8 z-40 flex items-center gap-2 bg-tinta text-white text-sm px-4 h-12 rounded-full shadow-lg"><i data-lucide="check" class="text-[#B9CDB1]"></i><span id="toast-t"></span></div>
+
+<script>
+const amigos=[
+ {n:'João Pedro',c:'João P.',tipo:'café',ic:'coffee',q:'3 semanas',nota:'vai se mudar pra <span class="marca">Fortaleza</span>',bom:1},
+ {n:'Marina Albuquerque',c:'Marina A.',tipo:'mensagem',ic:'message-circle',q:'1 mês',nota:'começou aula de cerâmica',bom:1},
+ {n:'Tio Carlos',c:'Tio Carlos',tipo:'ligação',ic:'phone',q:'2 meses',nota:'<s>operação do joelho</s> recuperado',bom:1},
+ {n:'Camila Rocha',c:'Camila R.',tipo:'encontro',ic:'coffee',q:'5 semanas',nota:'indicar a série que ela pediu',bom:1},
+ {n:'Ana Beatriz',q:'5 dias'},{n:'Bruno Lima',q:'2 semanas'},{n:'Diego Fernandes',q:'ainda sem contato'},{n:'Fernanda Costa',q:'1 semana'}];
+const $=s=>document.querySelector(s);
+$('#lista-bom').innerHTML=amigos.filter(a=>a.bom).map(a=>`
+ <li data-card="${a.n}" class="card relative -ml-2 pl-2 -mr-2 pr-2 mb-l1 rounded-sm">
+  <p class="truncate"><a href="?tela=perfil" data-ir="perfil" class="titulo text-lg font-semibold hover:text-primaria-700">${a.c}</a> <span class="text-xs text-neutro-600 whitespace-nowrap">· ${a.tipo}, ${a.q}</span></p>
+  <p class="nota">→ ${a.nota}</p>
+  <p><button data-sheet="${a.n.split(' ')[0]}" class="carimbo"><i data-lucide="pen-line" style="width:16px;height:16px"></i>registrar</button></p>
+ </li>`).join('');
+$('#qtd').textContent=amigos.length+' pessoas';
+$('#lista-amigos').innerHTML=[...amigos].sort((a,b)=>a.n.localeCompare(b.n)).map(a=>`
+ <li data-card="${a.n}" class="card -ml-2 pl-2 -mr-2 pr-2 rounded-sm"><a href="?tela=perfil" data-ir="perfil" class="flex items-center gap-2 h-l2 hover:bg-marca-texto-50/60">
+  <span class="min-w-0 flex-1"><span class="block titulo text-lg font-semibold truncate">${a.n}</span>
+  <span class="block text-sm text-neutro-600 truncate">último contato: ${a.q}</span></span><i data-lucide="chevron-right" class="text-neutro-500"></i></a></li>`).join('');
+let lista='inicio';const livro=()=>innerWidth>=1280;
+function mostrar(id,on){document.getElementById(id).classList.toggle('ativa',on)}
+function ir(t){
+ if(t==='voltar')t=lista;
+ if(t==='inicio'||t==='amigos')lista=t;
+ const L=t==='perfil'?lista:t;
+ ['inicio','amigos','cadastro','vazio'].forEach(id=>mostrar(id,id===L));
+ const perfil=t==='perfil'||(livro()&&(t==='inicio'||t==='amigos'));
+ mostrar('perfil',perfil);mostrar('perfil-vazio',!perfil);
+ $('#pv-nota').textContent=t==='vazio'?'Esta página é de cada amigo.':'Uma página nova no caderno.';$('#pv-txt').textContent=t==='vazio'?'Aqui vão o histórico e as coisas pra lembrar.':'Depois de salvar, o perfil aparece aqui.';
+ $('#livro').classList.toggle('perfil-aberto',t==='perfil');
+ document.querySelectorAll('[data-card]').forEach(c=>{const on=perfil&&c.dataset.card==='João Pedro'&&(livro()||t==='perfil');c.classList.toggle('selecionado',on);c.toggleAttribute('aria-current',on)});
+ const nav=t==='vazio'?'inicio':t==='perfil'?lista:t;
+ document.querySelectorAll('[data-nav]').forEach(b=>b.toggleAttribute('aria-current',b.dataset.nav===nav));
+}
+function abrirSheet(n){$('#sheet-nome').textContent=n;$('#veu').classList.remove('hidden');$('#sheet').classList.remove('hidden');requestAnimationFrame(()=>requestAnimationFrame(()=>$('#sheet').classList.add('aberto')));if(innerWidth>=1024)setTimeout(()=>$('#nota-rapida').focus(),300)}
+function fecharSheet(){if(!$('#sheet').classList.contains('aberto'))return;$('#sheet').classList.remove('aberto');$('#veu').classList.add('hidden');setTimeout(()=>$('#sheet').classList.add('hidden'),280)}
+function atalhos(on){$('#atalhos').classList.toggle('hidden',!on)}
+function toast(t){$('#toast-t').textContent=t;$('#toast').classList.remove('hidden');setTimeout(()=>$('#toast').classList.add('hidden'),2400)}
+function registrar(){fecharSheet();toast('Contato registrado. Boa conversa!')}
+function salvar(){const v=$('#nome').value.trim();$('#erro-nome').classList.toggle('hidden',!!v);$('#nome').setAttribute('aria-invalid',!v);if(v){ir('inicio');toast(v+' entrou no caderno.')}}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-ir],[data-sheet],.tipo,.ritmo');if(!b)return;
+ if(b.dataset.ir){e.preventDefault();ir(b.dataset.ir)}
+ if(b.dataset.sheet)abrirSheet(b.dataset.sheet);
+ if(b.classList.contains('tipo')){document.querySelectorAll('.tipo').forEach(x=>{x.removeAttribute('aria-checked');x.className=x.className.replace('border-2 border-primaria bg-primaria-50 text-primaria-800','border-[1.5px] border-tinta bg-folha text-neutro-800')});b.setAttribute('aria-checked','true');b.className=b.className.replace('border-[1.5px] border-tinta bg-folha text-neutro-800','border-2 border-primaria bg-primaria-50 text-primaria-800')}
+ if(b.classList.contains('ritmo')){document.querySelectorAll('.ritmo').forEach(x=>{x.removeAttribute('aria-checked');x.className='ritmo shrink-0 h-10 px-3 rounded-full whitespace-nowrap border-[1.5px] border-tinta bg-folha text-sm leading-none'});b.setAttribute('aria-checked','true');b.className='ritmo shrink-0 h-10 px-3 rounded-full whitespace-nowrap border-[1.5px] border-primaria bg-primaria-100 text-primaria-800 font-medium text-sm leading-none'}});
+document.addEventListener('keydown',e=>{
+ const dig=/INPUT|TEXTAREA/.test(document.activeElement.tagName);
+ if(e.key==='Escape'){fecharSheet();atalhos(false);document.activeElement.blur();return}
+ if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){if($('#sheet').classList.contains('aberto'))registrar();else if($('#cadastro').classList.contains('ativa'))salvar();return}
+ if(dig||e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key.toLowerCase();
+ if(k==='n'){e.preventDefault();ir('cadastro');setTimeout(()=>$('#nome').focus(),0)}else if(k==='r')abrirSheet('João');
+ else if(k==='/'){e.preventDefault();ir('amigos');$('#busca').focus()}else if(k==='1')ir('inicio');else if(k==='2')ir('amigos');else if(k==='?')atalhos(true)});
+const q=new URLSearchParams(location.search),t=q.get('tela')||'inicio';
+if(t==='registrar'){ir('inicio');abrirSheet('João')}else if(t==='atalhos'){ir('inicio');atalhos(true)}else ir(t);
+if(t==='cadastro'&&innerWidth>=1024)$('#nome').focus();
+lucide.createIcons();
+</script>
+</body></html>
