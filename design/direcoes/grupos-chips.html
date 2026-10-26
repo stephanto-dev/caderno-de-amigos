@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Caderno de amigos — Grupos: modo editar (chips)</title>
+<!-- Protótipo do bloco Grupos no cadastro (3.5). Decisão 21/10 e 26/10/2026: editar/apagar no MVP via modo editar.
+     Estados: ?estado=normal|editando|form-editar|confirmar-apagar|erro-nome
+     Também: ?estado=config (aba Configurações, MVP mínimo 26/10/2026)
+     Sheet: ?sheet=1 para ver o bloco no contexto do cadastro (desktop 720). -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config={theme:{extend:{
+ colors:{primaria:{50:'#F8ECE6',100:'#F1D6CC',DEFAULT:'#B04A32',600:'#B04A32',700:'#963D29',800:'#7C3221'},
+  neutro:{50:'#FBF6EE',100:'#F4ECDF',200:'#E8DCC8',300:'#D6C7AF',400:'#B3A38C',500:'#7A6B59',600:'#6B5E50',700:'#4F443A',800:'#3A312B',900:'#2B2420'},
+  folha:'#FBF6EE',papel:'#E8DCC8',tinta:'#2B2420',caneta:'#1F3A6B','marca-texto':{DEFAULT:'#F6D98A',50:'#FBEDC4'},pauta:'#C9D6E3',margem:'#D9837A',mesa:'#7A5A3E','aba-verde':'#B9CBB0',
+  sucesso:{50:'#EAF0E5',DEFAULT:'#5E7A55',700:'#4A6343'},erro:{50:'#F6E3DF',DEFAULT:'#9B3B36'},foco:'#2F6185'},
+ fontFamily:{titulo:['Fraunces','Georgia','serif'],ui:['Inter','system-ui','sans-serif'],mao:['Caveat','cursive']},
+ fontSize:{xs:['0.75rem','2rem'],sm:['0.875rem','2rem'],base:['1rem','2rem'],lg:['1.1875rem','2rem'],xl:['1.375rem','2rem'],'2xl':['1.75rem','2rem'],'3xl':['1.875rem','2rem']},
+ spacing:{l1:'2rem',l2:'4rem',l3:'6rem'},screens:{livro:'1280px'}}}}
+</script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+:root{--linha:2rem;--pauta-offset:-0.3125rem;
+ --primaria:#B04A32;--primaria-50:#F8ECE6;--primaria-100:#F1D6CC;--primaria-700:#963D29;--primaria-800:#7C3221;
+ --folha:#FBF6EE;--papel:#E8DCC8;--tinta:#2B2420;--caneta:#1F3A6B;--marca-texto:#F6D98A;--marca-texto-50:#FBEDC4;
+ --pauta:#C9D6E3;--margem:#D9837A;--mesa:#7A5A3E;--aba-verde:#B9CBB0;--foco:#2F6185;--erro:#9B3B36;--erro-50:#F6E3DF;
+ --sombra-pagina:0 18px 32px rgba(0,0,0,.35);--sombra-papel:2px 4px 8px rgba(43,36,32,.2);
+ --anel-foco:0 0 0 2px var(--folha),0 0 0 4px var(--foco);
+ --dur-rapida:120ms;--dur-media:200ms;--dur-lenta:280ms;--ease-saida:cubic-bezier(.2,.8,.2,1)}
+body{font-family:Inter,system-ui,sans-serif;color:var(--tinta);margin:0}
+.titulo{font-family:Fraunces,Georgia,serif}
+.mesa{background:var(--mesa);min-height:100dvh}
+.paper-lined{background-color:var(--folha);background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--linha) - 1px),var(--pauta) calc(var(--linha) - 1px) var(--linha));background-position:0 var(--pauta-offset);background-attachment:local;line-height:var(--linha)}
+.margin-line{position:relative;--margem-x:36px}
+.margin-line::after{content:"";position:absolute;top:0;bottom:0;left:var(--margem-x);width:2px;background:var(--margem);pointer-events:none;z-index:1}
+.spiral-h{height:24px;background:repeating-linear-gradient(to right,transparent 0 11px,#8a8a8a 11px 13px,#e2e2e2 13px 17px,#8a8a8a 17px 21px,transparent 21px var(--linha));filter:drop-shadow(1px 1px 1px rgba(0,0,0,.35))}
+.nota{font-family:Caveat,cursive;font-weight:500;font-size:1.375rem;line-height:var(--linha);color:var(--caneta)}
+.carimbo{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:2px solid var(--primaria);border-radius:6px;color:var(--primaria);font-family:Caveat,cursive;font-weight:700;font-size:21px;line-height:1;transform:rotate(-2deg);vertical-align:middle;background:transparent;cursor:pointer;text-decoration:none}
+.papel{background:var(--papel);border:2px solid var(--tinta);border-radius:10px;box-shadow:var(--sombra-papel)}
+.campo{height:48px;padding:0 16px;background:var(--folha);border:1.5px solid var(--tinta);border-radius:6px;font:400 16px/24px Inter,sans-serif;color:var(--tinta);width:100%;box-sizing:border-box}
+.campo[aria-invalid="true"]{border-color:var(--erro)}
+.campo:focus{outline:none;box-shadow:var(--anel-foco)}
+[data-lucide]{width:18px;height:18px;stroke-width:1.75;display:inline-block;vertical-align:-3px}
+.aba{font-family:Caveat,cursive;font-weight:700;font-size:20px;color:var(--tinta);box-shadow:3px 2px 4px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap}
+.aba[aria-current]{background:var(--primaria)!important;color:#fff}
+
+.cena{height:100dvh;padding:28px 12px 72px;box-sizing:border-box}
+.livro{position:relative;height:100%;max-width:640px;margin:0 auto}
+.pagina{position:absolute;inset:0;border-radius:10px;box-shadow:var(--sombra-pagina);overflow:hidden}
+.folha{height:100%;overflow-y:auto;box-sizing:border-box;padding:2rem 16px 4rem 52px}
+.espiral-topo{position:absolute;top:-12px;left:20px;right:20px;z-index:6}
+.abas{position:fixed;left:12px;bottom:20px;display:flex;gap:4px;z-index:4}
+.abas .aba{height:44px;padding:12px 8px 0;border-radius:0 0 8px 8px;box-sizing:border-box}
+.abas .aba[aria-current]{height:48px}
+.abas .so-desk{display:none}
+
+/* chips de grupo (cadastro) */
+.g-chip{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;font:500 14px/1 Inter,sans-serif;color:var(--tinta);background:var(--folha);border:1.5px solid var(--tinta);cursor:pointer;white-space:nowrap}
+.g-chip[aria-pressed="true"]{border-width:2px;background:var(--cor)}
+.g-chip .ico{width:16px;height:16px}
+.g-chip .pen{width:14px;height:14px;opacity:.85}
+.g-familia{--cor:#F1D6CC}.g-faculdade{--cor:#F6D98A}.g-trabalho{--cor:#C9D6E3}.g-vizinhanca{--cor:#B9CBB0}.g-neutro{--cor:#E8DCC8}
+.g-novo{border-style:dashed;background:transparent;color:var(--neutro-700,#6B5E50)}
+.link-editar{font:500 14px/32px Inter,sans-serif;color:#4F443A;text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0;cursor:pointer}
+.cor-opt{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 12px;border-radius:999px;border:1.5px solid var(--tinta);background:var(--folha);font:500 13px/1 Inter,sans-serif;cursor:pointer}
+.cor-opt[aria-checked="true"]{border-width:2px;border-color:var(--primaria);background:var(--primaria-100);color:var(--primaria-800)}
+.swatch{width:14px;height:14px;border-radius:999px;border:1.5px solid rgba(43,36,32,.35);flex:none}
+.btn-pri{height:44px;padding:0 20px;border-radius:999px;background:var(--primaria);color:#fff;font:600 15px/1 Inter,sans-serif;border:0;cursor:pointer}
+.btn-pri:hover{background:var(--primaria-700)}
+.btn-sec{height:44px;padding:0 16px;border-radius:999px;background:transparent;color:var(--tinta);font:500 14px/1 Inter,sans-serif;border:1.5px solid var(--tinta);cursor:pointer}
+.btn-erro{height:44px;padding:0 16px;border-radius:999px;background:var(--erro);color:#fff;font:600 14px/1 Inter,sans-serif;border:0;cursor:pointer}
+.msg-erro{font:400 14px/32px Inter,sans-serif;color:var(--erro);margin:0}
+.confirm-box{background:var(--erro-50);border:1.5px solid var(--erro);border-radius:10px;padding:12px 14px}
+
+@media (min-width:1024px){
+ .cena{padding:48px 64px 48px 48px}
+ .pagina{--margem-x:56px}
+ .folha{padding:2rem 40px 4rem 80px}
+ .abas{position:absolute;left:auto;bottom:auto;right:-42px;top:64px;flex-direction:column;gap:8px;z-index:1}
+ .abas .aba{width:42px;height:104px;padding:0;border-radius:0 8px 8px 0;writing-mode:vertical-rl}
+ .abas .aba[aria-current]{width:48px;height:104px}
+ .abas .so-desk{display:flex;height:56px}
+}
+</style></head>
+<body class="mesa">
+<div class="cena">
+ <div class="livro" id="livro">
+  <div class="espiral-topo spiral-h" aria-hidden="true"></div>
+  <section class="pagina margin-line">
+   <div class="folha paper-lined" id="folha">
+    <!-- CADASTRO + BLOCO GRUPOS -->
+    <div id="view-cadastro">
+     <a href="#" class="inline-flex items-center gap-1 text-sm font-medium text-neutro-700"><i data-lucide="x"></i>Cancelar</a>
+     <h1 class="titulo text-2xl font-semibold">Novo amigo</h1>
+     <p class="text-base text-neutro-600">Só o nome já basta. O resto pode vir depois.</p>
+     <form class="papel mt-l1 px-4 pt-[14px] pb-[14px]" onsubmit="event.preventDefault()">
+      <div class="h-l3">
+       <label class="block text-sm font-medium">Nome</label>
+       <input class="campo" value="Marina Costa" readonly>
+      </div>
+      <div class="h-l3">
+       <p class="text-sm font-medium">Falar a cada</p>
+       <div class="flex gap-2 overflow-x-auto">
+        <span class="shrink-0 h-10 px-3 rounded-full border-[1.5px] border-tinta bg-folha text-sm leading-10">1 sem.</span>
+        <span class="h-10 px-4 rounded-full border-[1.5px] border-primaria bg-primaria-100 text-primaria-800 font-medium text-sm leading-10">1 mês</span>
+        <span class="shrink-0 h-10 px-3 rounded-full border-[1.5px] border-tinta bg-folha text-sm leading-10">3 meses</span>
+       </div>
+      </div>
+      <details open class="group">
+       <summary class="flex items-center justify-between h-l1 cursor-pointer text-sm font-medium list-none">Mais detalhes (opcional)<i data-lucide="chevron-down"></i></summary>
+       <div class="h-l3"><label class="block text-sm font-medium">Como se conheceram</label><input class="campo" value="faculdade"></div>
+
+       <!-- BLOCO GRUPOS (estados) -->
+       <div id="bloco-grupos" class="pb-2">
+        <div class="flex items-baseline justify-between h-l1">
+         <p class="text-sm font-medium m-0">Grupos</p>
+         <button type="button" class="link-editar" id="btn-modo" aria-pressed="false">editar</button>
+        </div>
+        <div class="flex flex-wrap gap-2 mb-2" id="chips" role="group" aria-label="Grupos"></div>
+        <div id="painel-extra" hidden></div>
+       </div>
+      </details>
+      <button type="button" class="mt-l1 w-full h-12 rounded-full bg-primaria text-white font-semibold leading-none">Salvar amigo</button>
+     </form>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="view-config" hidden>
+     <h1 class="titulo text-2xl font-semibold">Configurações</h1>
+     <p class="text-base text-neutro-600 mt-l1">Conta</p>
+     <div class="papel mt-0 px-4 py-4">
+      <p class="text-sm font-medium m-0">E-mail</p>
+      <p class="text-base m-0" id="email-logado">vinicius@exemplo.com</p>
+      <p class="mt-l1 mb-0"><button type="button" class="carimbo" id="btn-sair"><i data-lucide="log-out" style="width:16px;height:16px"></i>Sair</button></p>
+     </div>
+     <p class="text-sm text-neutro-600 mt-l1">Sem tema nem notificações no MVP.</p>
+    </div>
+
+   </div>
+  </section>
+  <nav class="abas" aria-label="Seções" id="nav-abas">
+   <a href="#" class="aba bg-primaria-100">bom falar</a>
+   <a href="#" class="aba bg-papel">quadro</a>
+   <a href="#" class="aba bg-marca-texto">amigos</a>
+   <a href="#" class="aba bg-aba-verde" id="aba-novo" aria-current="page">+ novo</a>
+   <a href="#" class="aba" style="background:var(--margem)" id="aba-config">config</a>
+   <a href="#" class="aba so-desk bg-pauta" aria-label="Atalhos de teclado">?</a>
+  </nav>
+ </div>
+</div>
+<script>
+const ICO={familia:'house',faculdade:'graduation-cap',trabalho:'briefcase',vizinhanca:'map-pin',neutro:'circle-dashed'};
+const CORES=[{id:'familia',nome:'Família'},{id:'faculdade',nome:'Faculdade'},{id:'trabalho',nome:'Trabalho'},{id:'vizinhanca',nome:'Vizinhança'},{id:'neutro',nome:'Neutro'}];
+const GRUPOS=[
+ {id:1,nome:'Faculdade',cor:'faculdade',total_amigos:4,ligado:true},
+ {id:2,nome:'Família',cor:'familia',total_amigos:2,ligado:false},
+ {id:3,nome:'Trabalho',cor:'trabalho',total_amigos:0,ligado:false},
+ {id:4,nome:'Vizinhança',cor:'vizinhanca',total_amigos:1,ligado:true},
+];
+const q=new URLSearchParams(location.search);
+const estado=q.get('estado')||'normal';
+const editando=['editando','form-editar','confirmar-apagar','erro-nome'].includes(estado);
+const editandoGrupo=GRUPOS[0]; // Faculdade
+
+function icon(name,cls){return `<i data-lucide="${name}" class="${cls||''}"></i>`}
+
+function renderChips(){
+ const el=$('#chips');
+ el.innerHTML=GRUPOS.map(g=>{
+  const pressed=g.ligado?'true':'false';
+  const check=g.ligado&&!editando?icon('check','ico'):icon(ICO[g.cor],'ico');
+  const pen=editando?icon('pencil','pen'):'';
+  return `<button type="button" class="g-chip g-${g.cor}" aria-pressed="${pressed}" data-id="${g.id}">${check}<span>${g.nome}</span>${pen}</button>`;
+ }).join('')+`<button type="button" class="g-chip g-novo"><span>+ novo grupo</span></button>`;
+}
+
+function coresRadio(sel){
+ return `<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Cor do grupo">`+
+  CORES.map(c=>`<button type="button" role="radio" class="cor-opt" aria-checked="${c.id===sel?'true':'false'}"><span class="swatch g-${c.id}" style="background:var(--cor)"></span>${c.nome}</button>`).join('')+
+  `</div>`;
+}
+
+function renderPainel(){
+ const p=$('#painel-extra');
+ if(estado==='form-editar'||estado==='erro-nome'){
+  p.hidden=false;
+  const invalid=estado==='erro-nome';
+  p.innerHTML=`<div class="mt-2">
+   <label class="block text-sm font-medium" for="nome-g">Nome do grupo</label>
+   <input id="nome-g" class="campo" value="${invalid?'Família':editandoGrupo.nome}" aria-invalid="${invalid}" aria-describedby="erro-g">
+   ${invalid?`<p id="erro-g" class="msg-erro">Você já tem um grupo com esse nome.</p>`:`<p id="erro-g" class="sr-only"></p>`}
+   <p class="text-sm font-medium mt-2 mb-0">Cor</p>
+   ${coresRadio(editandoGrupo.cor)}
+   <div class="flex flex-wrap gap-2 mt-3">
+    <button type="button" class="btn-pri">salvar</button>
+    <button type="button" class="btn-sec" style="color:var(--erro);border-color:var(--erro)">apagar grupo</button>
+   </div>
+  </div>`;
+ }else if(estado==='confirmar-apagar'){
+  p.hidden=false;
+  const n=editandoGrupo.total_amigos;
+  const msg=n>0
+   ?`Apagar '${editandoGrupo.nome}'? ${n} amigos saem desse grupo, mas continuam no seu caderno.`
+   :`Apagar '${editandoGrupo.nome}'? Nenhum amigo está nesse grupo.`;
+  p.innerHTML=`<div class="confirm-box mt-2">
+   <p class="text-sm m-0" style="line-height:1.4">${msg}</p>
+   <div class="flex flex-wrap gap-2 mt-3">
+    <button type="button" class="btn-erro">apagar grupo</button>
+    <button type="button" class="btn-sec">cancelar</button>
+   </div>
+  </div>`;
+ }else{
+  p.hidden=true;p.innerHTML='';
+ }
+}
+
+function $(s){return document.querySelector(s)}
+
+function showConfig(){
+ $('#view-cadastro').hidden=true;
+ $('#view-config').hidden=false;
+ $('#aba-novo').removeAttribute('aria-current');
+ $('#aba-config').setAttribute('aria-current','page');
+}
+
+function showCadastro(){
+ $('#view-cadastro').hidden=false;
+ $('#view-config').hidden=true;
+ $('#aba-config').removeAttribute('aria-current');
+ $('#aba-novo').setAttribute('aria-current','page');
+ const btn=$('#btn-modo');
+ if(editando){btn.textContent='pronto';btn.setAttribute('aria-pressed','true')}
+ else{btn.textContent='editar';btn.setAttribute('aria-pressed','false')}
+ renderChips();renderPainel();
+}
+
+if(estado==='config') showConfig(); else showCadastro();
+lucide.createIcons();
+</script>
+</body></html>

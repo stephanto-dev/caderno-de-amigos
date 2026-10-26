@@ -1,6 +1,6 @@
 # Spec de UI para o Tech Lead — "Caderno físico" (v2)
 
-_Substitui a spec v1 (direção A). Referências: `tokens.css`, `tailwind.config.js` (plugin com os utilitários), `prototipo/index.html` (`?tela=inicio|amigos|perfil|cadastro|registrar|vazio|atalhos`), prints em `prints/`._
+_Substitui a spec v1 (direção A). Referências: `tokens.css`, `tailwind.config.js` (plugin com os utilitários), `prototipo/index.html` (`?tela=inicio|amigos|perfil|cadastro|registrar|vazio|atalhos|config`), `direcoes/grupos-chips.html` (`?estado=normal|editando|form-editar|confirmar-apagar|erro-nome`), prints em `prints/`._
 
 ## 0. O que mudou em relação à v1 (resumo para o Tech Lead)
 | Antes (v1) | Agora (v2) |
@@ -23,13 +23,13 @@ _Substitui a spec v1 (direção A). Referências: `tokens.css`, `tailwind.config
       <section class="pagina pg-l margin-line"><div class="folha paper-lined"> listas/forms </div></section>
       .spiral-v (meio, ≥1280)
       <section class="pagina pg-r margin-line"> perfil </section>   ← <1280: absoluto por cima, translateX
-      <nav class="abas"> router-link × 3 (+ "?" ≥1024) </nav>
+      <nav class="abas"> router-link × 5 (+ "?" ≥1024): bom falar · quadro · amigos · + novo · config </nav>
       sheet/painel de registro
 ```
 - A `.pagina` não rola; quem rola é a `.folha` (`overflow-y:auto`). A pauta usa `background-attachment: local` para rolar junto com o texto, e a margem (pseudo-elemento da `.pagina`) fica parada.
 - Padding da folha: `32px 16px 64px 52px` no celular e `32px 40px 64px 80px` a partir de 1024. O topo e a base são sempre múltiplos de 32.
 - Altura: a `.cena` usa `100dvh`, e a página ocupa o restante. A altura da página não precisa ser múltipla de 32, porque a pauta é infinita.
-- Rotas: `/` · `/amigos` · `/amigos/:id` · `/amigos/novo` · `?registrar=1`. No livro aberto, `/amigos/:id` mostra a lista à esquerda e o perfil à direita; abaixo de 1280px, a mesma rota mostra só o perfil (página por cima, com "‹ Voltar").
+- Rotas: `/` · `/quadro` · `/amigos` · `/amigos/:id` · `/amigos/novo` · `/config` · `?registrar=1`. No livro aberto, `/amigos/:id` mostra a lista à esquerda e o perfil à direita; abaixo de 1280px, a mesma rota mostra só o perfil (página por cima, com "‹ Voltar").
 
 ## 2. Ritmo vertical (regra dura)
 - Um token: `--linha` (CSS) / `L = 32` (Tailwind). A pauta, os line-heights (`fontSize` com `lineHeight: 32px` em todos os tamanhos) e o spacing `l1`–`l6` derivam dele.
@@ -69,7 +69,11 @@ Estados comuns: **foco** `box-shadow: var(--anel-foco)` (2px folha + 2px `#2F618
 - `.campo`: 48px, fundo folha, borda 1,5px tinta, placeholder `neutro-500`. Foco: anel. Erro: `aria-invalid="true"`, borda `erro` e mensagem Inter 14 `erro` ligada por `aria-describedby`. Desabilitado: .45.
 - Ritmo: radiogroup de chips (h-10, pill, borda tinta; selecionado `primaria-100` + borda primária + `primaria-800`) em linha única com **rolagem horizontal** no celular. O próximo chip aparece cortado de propósito, para indicar que dá para rolar. Padrão: 1 mês.
 - "Mais detalhes (opcional)": `details` com blocos `h-l3`.
-- **Grupos (dentro de "Mais detalhes", opcional, seleção múltipla):** rótulo "Grupos" e chips toggle (`button` com `aria-pressed`, h-10, pill), que quebram linha e mostram os grupos do usuário em ordem alfabética, mais o chip "+ novo grupo". Chip desligado: fundo folha, borda 1,5px tinta, texto `tinta` e o ícone do token de cor do grupo. Chip ligado: fundo da cor do grupo, borda 2px tinta e ícone `check` no lugar do ícone (o estado nunca depende só da cor). "+ novo grupo" abre, no mesmo bloco, um `.campo` de nome e as 5 cores em radiogroup (cada uma com nome escrito). O grupo criado ali já vem marcado para esse amigo. Não há tela de gerenciar grupos no MVP (editar e apagar ficam para depois). Nenhum grupo existente vem marcado, e o cadastro rápido continua só com o nome: quem não abre "Mais detalhes" salva o amigo sem grupo, como antes. Detalhes do model em 7.7.
+- **Grupos (dentro de "Mais detalhes", opcional, seleção múltipla):** rótulo "Grupos" e, ao lado, o link "editar" (Inter 14, `neutro-700`; em modo editar vira "pronto"). Chips toggle (`button` com `aria-pressed`, h-10, pill) quebram linha e mostram os grupos do usuário em ordem alfabética, mais o chip "+ novo grupo". Chip desligado: fundo folha, borda 1,5px tinta, texto `tinta` e o ícone do token de cor do grupo. Chip ligado: fundo da cor do grupo, borda 2px tinta e ícone `check` no lugar do ícone (o estado nunca depende só da cor). "+ novo grupo" abre, no mesmo bloco, um `.campo` de nome e as 5 cores em radiogroup (cada uma com nome escrito). O grupo criado ali já vem marcado para esse amigo. Nenhum grupo existente vem marcado no cadastro novo, e o cadastro rápido continua só com o nome: quem não abre "Mais detalhes" salva o amigo sem grupo, como antes. Detalhes do model em 7.7. Protótipo dos estados: `direcoes/grupos-chips.html`; print: `prints/grupos-chips-estados.png`.
+  - **Modo editar (MVP, decisão 21/10 e 26/10/2026):** não há tela de gerenciar grupos. Editar e apagar vivem nos chips do cadastro (e do perfil, quando o mesmo bloco de grupos existir). Ao tocar "editar": os chips ganham ícone `pencil` (16px) à direita do nome e **param de ligar/desligar** (`aria-pressed` fica só leitura visual; o toque abre o formulário). O link vira "pronto" e sai do modo editar (fecha formulário/confirmação se estiverem abertos).
+  - **Formulário de editar grupo:** toque no chip (em modo editar) abre, no mesmo bloco, o mesmo formulário do "+ novo grupo" já preenchido (nome + 5 cores radiogroup), com botões "salvar" (primário) e "apagar grupo" (texto/erro, não primário). Salvar chama `PATCH` (7.7). Nome repetido (case-insensitive, entre os grupos do mesmo `owner`, excluindo o próprio): `aria-invalid` no campo e mensagem "Você já tem um grupo com esse nome."
+  - **Apagar grupo:** "apagar grupo" troca o formulário por confirmação inline. Com `total_amigos` > 0: "Apagar '{nome}'? {N} amigos saem desse grupo, mas continuam no seu caderno." Com 0: "Apagar '{nome}'? Nenhum amigo está nesse grupo." Botões: "apagar grupo" (vermelho/`erro`, confirma) e "cancelar" (secundário; volta ao formulário ou fecha). Confirmar chama `DELETE` (7.7) → 204: só desfaz a relação N:N; **nunca apaga amigo**. Critérios de aceite: editar nome/cor atualiza todos os post-its daquele grupo; quem fica sem nenhum grupo vira post-it neutro com a etiqueta "sem grupo".
+  - **Estados do bloco (ver `prints/grupos-chips-estados.png`):** **normal** (chips toggle + "editar") · **editando** (chips com `pencil`, link "pronto") · **form editar** (form preenchido + salvar/apagar) · **confirmar apagar** (texto + apagar/cancelar) · **erro de nome** (campo inválido + mensagem).
 - Primário "Salvar amigo" (pill 48, `primaria` → hover 700 → active 800). Enter no nome salva. No desktop, N abre com foco no nome.
 
 ### 3.6 Registrar contato
@@ -80,9 +84,12 @@ Estados comuns: **foco** `box-shadow: var(--anel-foco)` (2px folha + 2px `#2F618
 - Erro: faixa `bg-erro-50` dentro do papel, "Não deu pra salvar. Sua nota continua aqui." Sucesso: o sheet fecha, toast "Contato registrado. Boa conversa!" com "Desfazer" e o item sai da lista (fade 240ms + colapso de altura **em múltiplos de 32**, ou seja, colapsa as 4 linhas).
 
 ### 3.7 Abas (`nav.abas` > `router-link.aba`)
-- Rótulos Caveat 20/700: "bom falar" (`primaria-100`), "amigos" (`marca-texto`), "+ novo" (`aba-verde`), "?" (`pauta`, só ≥1024, abre os atalhos).
-- ≥1024: verticais (`writing-mode: vertical-rl`), 42×104 ("?": 56), raio `0 8px 8px 0`, saindo 42px da borda direita a partir de top 64. Celular: horizontais, altura 42, raio `0 0 8px 8px`, fixas embaixo, à esquerda (24px).
+- Rótulos Caveat 20/700, nesta ordem: "bom falar" (`primaria-100`, `/`) · "quadro" (`papel`, `/quadro`) · "amigos" (`marca-texto`, `/amigos`) · "+ novo" (`aba-verde`, `/amigos/novo`) · **"config"** (`margem` `#D9837A`, `/config`, decisão 26/10/2026) · "?" (`pauta`, só ≥1024, abre os atalhos). "config" fica **depois de "+ novo" e antes do "?"**.
+- ≥1024: verticais (`writing-mode: vertical-rl`), 42×104 ("?": 56), raio `0 8px 8px 0`, saindo 42px da borda direita a partir de top 64. Celular: horizontais, **altura 44px** (alvo mínimo; ativa 48), raio `0 0 8px 8px`, fixas embaixo. Com 5 abas no celular ("bom falar", "quadro", "amigos", "+ novo", "config"): padding horizontal de 8px, `gap` de 4px e `left` de 12px, para caber em 390px (mesmo ajuste de densidade que o Quadro usou ao passar de 3 para 4).
 - **Ativa** (`.router-link-exact-active` / `aria-current="page"`): fundo `primaria`, texto branco, 6px mais "para fora". Hover: `filter: brightness(.97)`. Foco: anel. No perfil, a ativa é a aba da lista de origem.
+
+### 3.7.1 Configurações (`/config`, MVP mínimo — 26/10/2026)
+Página simples na folha, sem tema nem notificações: título Fraunces "Configurações", o **e-mail da conta logada** em Inter 16 `neutro-700`, e o carimbo/botão **"Sair"** (logout; Caveat como os outros carimbos, ou botão secundário de 44px com texto "Sair" — o carimbo basta). Sem outros campos no MVP. Escopo: só identificar a conta e sair.
 
 ### 3.8 Estado vazio
 Na folha: data, título e, depois de `mt-l2`, duas `.nota` ("Seu caderno está em branco." / "Comece por alguém de quem você sente falta."), Inter "Só o nome já basta." e o carimbo "adicionar primeiro amigo". No livro aberto, a página direita mostra a `.nota` "Esta página é de cada amigo.". Não há ilustração (a página em branco já é a ilustração).
@@ -95,7 +102,7 @@ Na folha: data, título e, depois de `mt-l2`, duas `.nota` ("Seu caderno está e
 | R | Registrar contato com a pessoa aberta |
 | J / K | Próxima / anterior (a documentar no MVP; ausente no protótipo) |
 | / | Buscar |
-| 1 / 2 | Bom falar com / Amigos |
+| 1 / 2 / 3 | Bom falar com / Quadro / Amigos |
 | Ctrl/⌘ + Enter | Salvar formulário ou registro |
 | Esc | Fechar |
 | ? | Atalhos |
@@ -120,10 +127,10 @@ Pill `tinta` com texto branco, 48px, `check` `#B9CDB1`, `role="status"`, 2,4s, "
 - Contraste AA em todos os pares (ver `identidade.md`; Caveat sempre ≥ 20px).
 - Decorativos (`postit`, `polaroid`, espiral, margem, pauta) com `aria-hidden` / pseudo-elementos, sem conteúdo exclusivo.
 - Abas em `<nav aria-label="Seções">` com `aria-current`. Sheet, painel e modal com `role="dialog" aria-modal`.
-- Alvos: carimbo com área de toque estendida (≥ 44); abas de 42×(texto+28) no celular; demais ≥ 44.
+- Alvos: carimbo com área de toque estendida (≥ 44); abas de **44px** de altura no celular; demais ≥ 44.
 
 ## 6. Textos (pt-BR)
-bom falar · amigos · + novo · registrar · registrar contato · Falei com {nome} · Mensagem / Ligação / Encontro · Nota rápida (opcional) · Registrar · Novo amigo · Só o nome já basta. O resto pode vir depois. · Falar a cada · Mais detalhes (opcional) · Salvar amigo · Os outros estão em dia. · Seu caderno está em branco.
+bom falar · quadro · amigos · + novo · config · Configurações · Sair · Grupos · editar · pronto · + novo grupo · salvar · apagar grupo · cancelar · Você já tem um grupo com esse nome. · Apagar '{nome}'? {N} amigos saem desse grupo, mas continuam no seu caderno. · Apagar '{nome}'? Nenhum amigo está nesse grupo. · registrar · registrar contato · Falei com {nome} · Mensagem / Ligação / Encontro · Nota rápida (opcional) · Registrar · Novo amigo · Só o nome já basta. O resto pode vir depois. · Falar a cada · Mais detalhes (opcional) · Salvar amigo · Os outros estão em dia. · Seu caderno está em branco.
 **Proibido:** atrasado, pendente, vencido, "há N dias sem falar".
 
 
@@ -131,7 +138,7 @@ bom falar · amigos · + novo · registrar · registrar contato · Falei com {no
 `--linha` vale `2rem` (e não 32px) e o gradiente da pauta usa a mesma variável. Os tamanhos de texto estão em rem. Assim, quando a pessoa aumenta a fonte do navegador, a pauta cresce junto e o texto continua sentado na linha. Teste da issue 10: com a fonte em 200%, nenhuma linha de texto pode cruzar a pauta.
 
 ## 7. Visão Quadro (aprovada para o MVP)
-_Status: **aprovada para o MVP** (Vinicius, 16/10/2026: "entra completo no MVP, com arrastar e grupos"); **simplificada em 20/10/2026: janela fixa de 7 dias e sem arrastar**; **grupos N:N em 20/10/2026** (um amigo pode estar em 0, 1 ou vários grupos). Protótipo: `direcoes/quadro.html` (`?estado=normal|vazio|coluna-vazia|carregando|erro|registrando`). Prints: `prints/desktop-quadro.png`, `prints/mobile-quadro.png`, `prints/quadro-estados.png`. Contraste: resultado na seção 7.10 (script `contraste-quadro.py`, na cópia local do projeto). A direção "Caderno físico" não muda: nenhuma cor, fonte ou utilitário novo._
+_Status: **aprovada para o MVP** (Vinicius, 16/10/2026: "entra completo no MVP, com arrastar e grupos"); **simplificada em 20/10/2026: janela fixa de 7 dias e sem arrastar**; **grupos N:N em 20/10/2026** (um amigo pode estar em 0, 1 ou vários grupos); **editar/apagar grupos no MVP em 21/10 e 26/10/2026** (modo editar nos chips do cadastro, sem tela de gerenciar); **aba config no MVP em 26/10/2026** (e-mail + Sair). Protótipo: `direcoes/quadro.html` (`?estado=normal|vazio|coluna-vazia|carregando|erro|registrando`); chips: `direcoes/grupos-chips.html`. Prints: `prints/desktop-quadro.png`, `prints/mobile-quadro.png`, `prints/quadro-estados.png`, `prints/grupos-chips-estados.png`. Contraste: resultado na seção 7.10 (script `contraste-quadro.py`, na cópia local do projeto). A direção "Caderno físico" não muda: nenhuma cor, fonte ou utilitário novo._
 
 ### 7.1 O que é
 Uma aba nova, **"quadro"** (`router-link` para `/quadro`, fundo `papel`, entre "bom falar" e "amigos"), que mostra **todos** os amigos como post-its em 4 colunas sobre a própria folha pautada. Sem cortiça: cortiça pediria textura ou uma cor fora da paleta, e as duas coisas são proibidas pela identidade.
@@ -174,7 +181,7 @@ Para cada amigo: `d` = dias desde o último contato (datas no fuso do usuário),
 - **1024–1279:** uma página, 4 colunas iguais e abas à direita.
 - **<1024 (celular): lista agrupada**, sem colunas com rolagem horizontal. Cada coluna vira uma seção vertical com post-its em grade de 2. "Faz um tempinho" e "Essa semana" vêm abertas. "Em dia" e "Falei agora" começam recolhidas, com um resumo ("Bruno Lima, Vó Teresa e mais 1 · mostrar", botão de 2 linhas = 64px, `aria-expanded`).
   - **Por quê:** (1) rolagem horizontal com encaixe esconde 3 de 4 colunas e ninguém descobre "Em dia"; (2) gesto horizontal compete com o "voltar" do sistema; (3) a folha do caderno já rola na vertical em todas as telas; (4) o que importa no celular é "com quem falar", e as duas primeiras seções respondem isso de cara.
-- Abas no celular com 4 itens ("bom falar", "quadro", "amigos", "+ novo"): padding horizontal de 11px, `gap` de 6px e `left` de 16px, para caber em 390px. **Proposta junto:** abas com 44px de altura no celular (hoje 42), para seguir a regra de alvo mínimo.
+- Abas no celular com **5 itens** ("bom falar", "quadro", "amigos", "+ novo", "config"): padding horizontal de 8px, `gap` de 4px e `left` de 12px, para caber em 390px. Altura **44px** no celular (ativa 48), para seguir a regra de alvo mínimo. Ver 3.7.
 - O post-it de aniversário decorativo (3.2) **não** aparece no quadro, para não ser confundido com um amigo. O aniversário vira o ícone `cake` no post-it da pessoa.
 
 ### 7.5 Interações
@@ -223,7 +230,12 @@ Para cada amigo: `d` = dias desde o último contato (datas no fuso do usuário),
   - O grupo continua **opcional**: `blank=True`, e um amigo pode ter 0, 1 ou vários. Não há limite de grupos; a cor é só um destes 5 tokens, e grupos podem repetir cor. `neutro` é a cor `papel`, a mesma do antigo "sem grupo".
   - `owner` segue o padrão do projeto (todo model tem `owner`, decidido em 16/10): cada usuário vê e usa só os seus grupos.
   - **Serializer de amigos:** campo `grupos` com `[{id, nome, cor}]`, **sempre em ordem alfabética pelo nome** (sem diferenciar maiúsculas; usar a collation pt-BR do banco, para "Ágata" ficar junto de "A"). Para não fazer uma consulta por amigo: `prefetch_related(Prefetch("grupos", queryset=Grupo.objects.order_by(Lower("nome"), "id")))`. O front usa `grupos[0].cor` para o post-it e não reordena. Na escrita, `grupos` aceita uma lista de ids (`PrimaryKeyRelatedField(many=True)`), validando que os grupos são do mesmo `owner`.
-  - **Endpoints de grupo:** `GET /grupos/` (legenda e chips do cadastro) e `POST /grupos/` (`{nome, cor}`, para o "+ novo grupo" do cadastro). No MVP só existem criar e listar: grupo nasce só pelo chip "+ novo grupo" do cadastro, sem tela de gerenciar grupos. Editar e apagar ficam para depois do MVP; apagar um grupo só tira a relação, nunca apaga amigos.
+  - **Endpoints de grupo (MVP completo — criar, listar, editar, apagar; decisão 21/10 e 26/10/2026):**
+    - `GET /api/grupos/` — lista os grupos do `owner` (ordem alfabética). Cada item: `{id, nome, cor, total_amigos}` (`total_amigos` = contagem da relação N:N; alimenta a confirmação de apagar em 3.5).
+    - `POST /api/grupos/` — `{nome, cor}`; cria o grupo do `owner`. Nome único por `owner`, case-insensitive (`UniqueConstraint(Lower("nome"), "owner")`). 400 se o nome já existir.
+    - `PATCH /api/grupos/{id}/` — `{nome, cor}` (parcial ok). Atualiza nome/cor; o front reflete em todos os post-its daquele grupo. Nome único case-insensitive (excluindo o próprio id). Grupo de outro usuário → **404** (não 403).
+    - `DELETE /api/grupos/{id}/` → **204**: só desfaz a relação N:N (os amigos continuam; quem ficar sem grupo vira post-it neutro). Nunca apaga `Amigo`. Grupo de outro usuário → **404**.
+    - Sem tela de gerenciar grupos: criar/editar/apagar só pelos chips do cadastro (3.5). Campo do model é **`owner`** (não `dono`).
   - **Migração:** só cria as tabelas `Grupo` e `Amigo.grupos` (tabela intermediária automática). Não há dado antigo para migrar, porque o campo `grupo` único era só uma proposta.
   - **Sem grupos cadastrados,** todos os post-its ficam `neutro` com a etiqueta "sem grupo", e a legenda mostra só "sem grupo". O quadro funciona do mesmo jeito.
 - Fuso: `d` precisa ser calculado na data local do usuário (America/Sao_Paulo); senão "hoje ou ontem" erra perto da meia-noite.
@@ -237,7 +249,9 @@ Sem biblioteca de arrastar: decisão de 20/10/2026, lógica simples. O quadro n�
 3. O botão "falei agora" de cada post-it **abre o sheet 3.6**; fechar sem registrar não muda nada e não cria contato.
 4. Grupos N:N e opcionais (7.7, decisão de 20/10/2026): nome livre e uma de 5 cores; o post-it usa a cor do primeiro grupo em ordem alfabética e mostra todos os grupos como etiquetas (até 2 linhas, depois "+N"). Sem grupo = post-it neutro com a etiqueta "sem grupo".
 5. Celular: lista agrupada, com "Em dia" e "Falei agora" recolhidas (sem arrastar, como em todas as larguras).
-6. Quarta aba "quadro" (cor `papel`) e abas com 44px no celular.
+6. Aba "quadro" (cor `papel`) e abas com 44px no celular.
+7. Editar/apagar grupos no MVP via modo editar nos chips (3.5 / 7.7; 21/10 e 26/10/2026): sem tela de gerenciar; `PATCH`/`DELETE`/`total_amigos`; apagar nunca remove amigo.
+8. Aba **"config"** (cor `margem`, `/config`) depois de "+ novo" e antes do "?" (26/10/2026): MVP = e-mail logado + Sair.
 
 ### 7.10 Contraste dos post-its (WCAG AA, calculado por script)
 Todos os pares **em uso** passam. Os que falharam foram trocados no desenho.
