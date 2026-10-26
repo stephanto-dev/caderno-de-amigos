@@ -1,0 +1,76 @@
+/* Adapted from design/tokens.css: keep the approved values, use English names in app code. */
+:root{
+  /* One vertical rhythm token keeps text aligned with the ruled paper. */
+  --notebook-line:2rem;
+  --ruling-offset:-0.3125rem;
+  /* Primary terracotta */
+  --primary-50:#F8ECE6; --primary-100:#F1D6CC; --primary-600:#B04A32; --primary-700:#963D29; --primary-800:#7C3221;
+  --primary:var(--primary-600); --primary-hover:var(--primary-700); --primary-pressed:var(--primary-800);
+  /* Warm neutrals */
+  --neutral-50:#FBF6EE; --neutral-100:#F4ECDF; --neutral-200:#E8DCC8; --neutral-300:#D6C7AF; --neutral-400:#B3A38C;
+  --neutral-500:#7A6B59; --neutral-600:#6B5E50; --neutral-700:#4F443A; --neutral-800:#3A312B; --neutral-900:#2B2420;
+  --sheet:var(--neutral-50); --paper:var(--neutral-200); --ink:var(--neutral-900);
+  --text:var(--neutral-900); --text-2:var(--neutral-600); --text-3:var(--neutral-500);
+  /* Notebook materials */
+  --pen-ink:#1F3A6B;
+  --highlight:#F6D98A;
+  --highlight-50:#FBEDC4;
+  --ruling:#C9D6E3;
+  --margin-rule:#D9837A;
+  --desk:#7A5A3E;
+  --tab-green:#B9CBB0;
+  /* States */
+  --success:#5E7A55; --success-700:#4A6343; --success-50:#EAF0E5;
+  --warning:#8A5A12; --warning-50:#F7EBD3;
+  --error:#9B3B36; --error-50:#F6E3DF;
+  --focus:#2F6185;
+  /* Typography */
+  --font-title:'Fraunces',Georgia,serif; --font-ui:'Inter',system-ui,sans-serif; --font-handwriting:'Caveat',cursive;
+  /* Horizontal spacing uses an 8px grid; vertical page spacing follows --notebook-line. */
+  --space-1:8px; --space-2:16px; --space-3:24px; --space-4:32px; --space-6:48px;
+  --radius-sm:6px; --radius-md:10px; --radius-pill:999px;
+  --shadow-page:0 18px 32px rgba(0,0,0,.35);
+  --shadow-paper:2px 4px 8px rgba(43,36,32,.2);
+  --focus-ring:0 0 0 2px var(--sheet),0 0 0 4px var(--focus);
+  --duration-fast:120ms; --duration-medium:200ms; --duration-slow:280ms;
+  --ease-out:cubic-bezier(.2,.8,.2,1); --ease-in:cubic-bezier(.4,0,1,1);
+}
+@media (prefers-reduced-motion:reduce){:root{--duration-fast:0ms;--duration-medium:0ms;--duration-slow:0ms}}
+
+/* Notebook utilities use CSS only. */
+.desk{background:var(--desk)}
+/* The ruled lines scroll with the page content. */
+.paper-lined{
+  background-color:var(--sheet);
+  background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--notebook-line) - 1px),var(--ruling) calc(var(--notebook-line) - 1px) var(--notebook-line));
+  background-position:0 var(--ruling-offset);
+  background-attachment:local;
+  line-height:var(--notebook-line);
+}
+/* The margin rule stays on the page container while its content scrolls. */
+.margin-line{position:relative;--margin-line-x:48px}
+.margin-line::after{content:"";position:absolute;top:0;bottom:0;left:var(--margin-line-x);width:2px;background:var(--margin-rule);pointer-events:none;z-index:1}
+/* Spiral rings repeat at the ruling interval. */
+.spiral-v{width:28px;background:repeating-linear-gradient(to bottom,transparent 0 11px,#8a8a8a 11px 13px,#e2e2e2 13px 17px,#8a8a8a 17px 21px,transparent 21px var(--notebook-line));filter:drop-shadow(0 2px 1px rgba(0,0,0,.35))}
+.spiral-h{height:24px;background:repeating-linear-gradient(to right,transparent 0 11px,#8a8a8a 11px 13px,#e2e2e2 13px 17px,#8a8a8a 17px 21px,transparent 21px var(--notebook-line));filter:drop-shadow(1px 1px 1px rgba(0,0,0,.35))}
+/* Handwriting is limited to notes, stamps, and tab labels. */
+.handwritten-note{font-family:var(--font-handwriting);font-weight:500;font-size:1.375rem;line-height:var(--notebook-line);color:var(--pen-ink)}
+.highlight{background:linear-gradient(transparent 55%,var(--highlight) 55%)}
+.stamp{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:2px solid var(--primary);border-radius:var(--radius-sm);color:var(--primary);font-family:var(--font-handwriting);font-weight:700;font-size:21px;line-height:1;transform:rotate(-2deg);vertical-align:middle;background:transparent;cursor:pointer;transition:background-color var(--duration-fast),color var(--duration-fast)}
+.stamp:hover{background:var(--primary-50);color:var(--primary-700);border-color:var(--primary-700)}
+.stamp:active{background:var(--primary-100);color:var(--primary-800);transform:rotate(-2deg) scale(.97)}
+.stamp:disabled{opacity:.45;cursor:not-allowed}
+.tab{font-family:var(--font-handwriting);font-weight:700;font-size:20px;color:var(--ink);box-shadow:3px 2px 4px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;text-decoration:none}
+.tab[aria-current]{background:var(--primary)!important;color:#fff}
+/* Paper surfaces for forms, sheets, and dialogs. */
+.paper-surface{background:var(--paper);border:2px solid var(--ink);border-radius:var(--radius-md);box-shadow:var(--shadow-paper)}
+.field{height:48px;padding:0 16px;background:var(--sheet);border:1.5px solid var(--ink);border-radius:var(--radius-sm);font:400 16px/24px var(--font-ui);color:var(--ink);width:100%}
+.field::placeholder{color:var(--neutral-500)}
+.field:focus{outline:none;box-shadow:var(--focus-ring)}
+.field[aria-invalid="true"]{border-color:var(--error)}
+/* Decorative corners must reserve space instead of covering text. */
+.sticky-note{position:absolute;top:calc(var(--notebook-line) + 4px);right:16px;width:96px;padding:8px;background:var(--highlight);font:500 18px/22px var(--font-handwriting);color:var(--ink);transform:rotate(3deg);box-shadow:var(--shadow-paper);pointer-events:none}
+.polaroid{position:absolute;top:calc(var(--notebook-line) + 8px);right:24px;width:96px;padding:6px 6px 22px;background:#fff;transform:rotate(4deg);box-shadow:var(--shadow-paper);pointer-events:none}
+.tape::before{content:"";position:absolute;top:-9px;left:24px;width:48px;height:16px;background:rgba(255,255,255,.7);transform:rotate(-6deg)}
+.corner-reserve{padding-right:112px}
+:focus-visible{outline:none;box-shadow:var(--focus-ring)}
