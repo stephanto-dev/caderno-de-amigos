@@ -50,7 +50,7 @@ describe('App navigation', () => {
     const wrapper = mount(App, { global: { plugins: [router] } })
 
     expect(wrapper.find('.desk .book .page-left .paper-lined').exists()).toBe(true)
-    expect(wrapper.find('.page-right .paper-lined').exists()).toBe(true)
+    expect(wrapper.find('.page-right').exists()).toBe(false)
     expect(wrapper.get('nav[aria-label="Seções"]').text()).toContain('Quadro')
     expect(wrapper.get('nav[aria-label="Seções"]').text()).toContain('Amigos')
     expect(Array.from(wrapper.findAll('nav[aria-label="Seções"] a')).map((tab) => tab.text())).toEqual([
@@ -61,6 +61,7 @@ describe('App navigation', () => {
     await wrapper.get('a[href="/amigos"]').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/amigos')
+    expect(wrapper.find('.page-right .paper-lined').exists()).toBe(true)
     expect(wrapper.get('a[aria-current="page"]').text()).toBe('Amigos')
   })
 

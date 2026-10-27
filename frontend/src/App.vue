@@ -8,7 +8,7 @@ const route = useRoute()
 <template>
   <RouterView v-if="route.name === 'login'" />
   <main v-else class="desk scene">
-    <div class="book" :class="{ 'profile-open': route.name === 'friend-detail' }">
+    <div class="book" :class="{ 'profile-open': route.name === 'friend-detail', 'board-open': route.name === 'board' }">
       <div class="spiral-top spiral-h" aria-hidden="true"></div>
 
       <section class="page page-left margin-line">
@@ -20,7 +20,7 @@ const route = useRoute()
 
       <div class="spiral-center spiral-v" aria-hidden="true"></div>
 
-      <section class="page page-right margin-line" aria-label="Perfil">
+      <section v-if="route.name !== 'board'" class="page page-right margin-line" aria-label="Perfil">
         <div class="page-content paper-lined">
           <RouterView name="detail" v-slot="{ Component }">
             <component :is="Component" v-if="Component" />

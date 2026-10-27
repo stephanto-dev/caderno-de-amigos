@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { BoardFriend } from '../api/friends'
+import GroupBadge from './GroupBadge.vue'
 
 const props = defineProps<{ friend: BoardFriend }>()
 const emit = defineEmits<{ 'open-contact-sheet': [friend: BoardFriend] }>()
@@ -11,13 +12,6 @@ const CADENCE_LABELS = {
   week: { one: 'semana', many: 'semanas' },
   month: { one: 'mês', many: 'meses' },
   year: { one: 'ano', many: 'anos' },
-} as const
-const GROUP_ICON_PATHS = {
-  family: 'm3 10 9-7 9 7v11h-6v-8H9v8H3Z',
-  college: 'm2 9 10-5 10 5-10 5Zm4 2v6q6 5 12 0v-6M22 9v8',
-  work: 'M3 7h18v14H3ZM8 7V3h8v4M3 12h18M10 12v3h4v-3',
-  neighborhood: 'M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0ZM15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
-  neutral: 'M12 3h1m5 2 1 1m2 5v2m-2 5-1 1m-5 2h-2m-5-2-1-1m-2-5v-2m2-5 1-1',
 } as const
 const MAX_GROUP_HEIGHT = 40
 const GROUP_ROW_HEIGHT = 18
@@ -42,7 +36,7 @@ function set_visible_groups_for_card(): void {
     overflow.hidden = false
     const hidden_groups = props.friend.groups.slice(visible_count)
     overflow.textContent = `+${hidden_groups.length}`
-    const description = `e mais ${hidden_groups.length} grupos: ${hidden_groups.map((group) => group.name).join(', ')}`
+    const description = `e mais ${hidden_groups.length} ${hidden_groups.length === 1 ? 'grupo' : 'grupos'}: ${hidden_groups.map((group) => group.name).join(', ')}`
     overflow.setAttribute('aria-label', description)
     overflow.title = description
   }
@@ -68,14 +62,8 @@ onBeforeUnmount(() => group_observer?.disconnect())
     </h3>
     <span class="sr-only">Grupos:</span>
     <div ref="group_box" class="friend-groups">
-      <span v-for="group in friend.groups" :key="group.id" :data-group-id="group.id" class="group-badge" :class="`group-${group.color}`" :title="group.name">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="GROUP_ICON_PATHS[group.color]" /></svg>
-        <span>{{ group.name }}</span>
-      </span>
-      <span v-if="friend.groups.length === 0" class="group-badge group-neutral">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="GROUP_ICON_PATHS.neutral" /></svg>
-        <span>sem grupo</span>
-      </span>
+      <GroupBadge v-for="group in friend.groups" :key="group.id" :data-group-id="group.id" :group="group" />
+      <GroupBadge v-if="friend.groups.length === 0" :group="{ name: 'sem grupo', color: 'neutral' }" />
       <span ref="overflow_badge" class="group-badge group-overflow" role="img" hidden></span>
     </div>
     <p class="friend-cadence">{{ friend.cadence_amount }} {{ CADENCE_LABELS[friend.cadence_unit][friend.cadence_amount === 1 ? 'one' : 'many'] }}</p>
@@ -97,18 +85,10 @@ onBeforeUnmount(() => group_observer?.disconnect())
 .friend-postit:nth-child(4n + 4) { --rotation: -1deg; }
 .friend-postit:hover, .friend-postit:focus-within { transform: rotate(0); }
 .friend-postit::before { content: ''; position: absolute; inset: 0 0 auto; height: 10px; background: rgb(43 36 32 / 5%); pointer-events: none; }
-.group-family { --group-color: var(--primary-100); }
-.group-college { --group-color: var(--highlight); }
-.group-work { --group-color: var(--ruling); }
-.group-neighborhood { --group-color: var(--tab-green); }
-.group-neutral { --group-color: var(--paper); }
 h3 { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 1.1875rem/1.75rem var(--font-title); }
 h3 a { color: inherit; text-decoration: none; }
 h3 a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .friend-groups { display: flex; flex-wrap: wrap; gap: 4px; max-height: 40px; margin: 2px 0; overflow: hidden; }
-.group-badge { display: inline-flex; align-items: center; gap: 3px; box-sizing: border-box; height: 18px; max-width: 100%; padding: 0 6px; border-radius: 4px; background: var(--group-color); box-shadow: inset 0 0 0 1px rgb(43 36 32 / 32%); color: var(--neutral-700); font: 500 .75rem/18px var(--font-ui); white-space: nowrap; }
-.group-badge[hidden] { display: none; }
-.group-badge span { overflow: hidden; text-overflow: ellipsis; }
 svg { width: 12px; height: 12px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 .group-overflow { background: var(--sheet); font-weight: 600; }
 .friend-cadence { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--neutral-700); font: 500 .75rem/1.25rem var(--font-ui); }
@@ -116,9 +96,13 @@ svg { width: 12px; height: 12px; flex: none; fill: none; stroke: currentColor; s
 .two-group-rows .friend-note { -webkit-line-clamp: 1; }
 .friend-no-note { margin: 4px 0 0; color: var(--neutral-700); font: italic .75rem/1.5rem var(--font-ui); }
 .contact-button { display: flex; align-items: center; align-self: flex-start; min-height: 44px; margin-top: auto; padding: 0 2px; border: 0; border-radius: var(--radius-sm); background: transparent; cursor: pointer; }
-.contact-button .stamp { padding: 0 8px; border-color: var(--primary-800); color: var(--primary-800); }
-.contact-button:hover .stamp { background: var(--sheet); }
+.contact-button .stamp { position: relative; isolation: isolate; padding: 0 8px; border-color: var(--primary-800); color: var(--primary-800); white-space: nowrap; }
+/* Requested addition to CRM-13: a hand-colored fill replaces the flat hover background. */
+.contact-button .stamp::before { content: ''; position: absolute; z-index: -1; inset: 1px; background: color-mix(in srgb, var(--primary) 38%, transparent); mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 28'%3E%3Cpath d='M1 23 7 4 9 25 15 2 17 24 23 3 25 26 31 2 33 25 39 4 41 24 47 2 49 26 55 3 57 24 63 2 65 25 71 4 73 26 79 2 81 24 87 3 89 26 95 2 97 25 103 4 105 24 111 2 113 25 119 4' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat; clip-path: inset(0 100% 0 0); transition: clip-path var(--duration-medium) var(--ease-out); }
+.contact-button:hover .stamp, .contact-button:focus-visible .stamp { background: transparent; }
+.contact-button:hover .stamp::before, .contact-button:focus-visible .stamp::before { clip-path: inset(0); }
 .contact-button svg { display: none; width: 16px; height: 16px; }
 @media (min-width: 1024px) { .contact-button svg { display: inline-block; } }
-@media (prefers-reduced-motion: reduce) { .friend-postit { transition: none; } }
+@media (max-width: 359px) { .contact-button .stamp { padding: 0 4px; font-size: 1.125rem; } }
+@media (prefers-reduced-motion: reduce) { .friend-postit, .contact-button .stamp::before { transition: none; } }
 </style>

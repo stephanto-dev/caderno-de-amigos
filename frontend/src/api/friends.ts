@@ -50,3 +50,12 @@ export async function get_friends_for_board(): Promise<BoardFriend[]> {
   }
   return body
 }
+
+/** Fetch all owned groups, including unused groups, in the order supplied by Django. */
+export async function get_groups_for_board(): Promise<FriendGroup[]> {
+  const body = await send_api_request('/api/groups/')
+  if (!Array.isArray(body) || !body.every(is_friend_group)) {
+    throw new Error('Invalid board groups response')
+  }
+  return body
+}

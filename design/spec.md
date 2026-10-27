@@ -212,6 +212,7 @@ Para cada amigo: `d` = dias desde o último contato (datas no fuso do usuário),
 - Altura de **6 linhas (192px)** em todas as larguras (antes eram 5 a partir de 1024px; a linha a mais é para as etiquetas de grupo), com `row-gap` de 1 linha.
 - Conteúdo: nome em Fraunces 19/600 com truncamento (link para `/amigos/:id`; com `cake` se o aniversário for nos próximos 7 dias, mais `sr-only`) · **etiquetas de grupo** (ver abaixo) · tempo em Inter 12/500 `neutro-700`, numa linha própria · nota em Caveat 21/24 `caneta`, até 2 linhas (`line-clamp`); quando as etiquetas ocupam 2 linhas, a nota cai para 1 linha, para o post-it manter a altura fixa. Sem nota: Inter 12 itálico, "sem nota ainda" · botão **"falei agora"**.
 - Botão: `button` de **44px** de altura com o `.carimbo` de 28px dentro, em **`primaria-800`** (texto e borda), porque a `primaria` base não passa AA sobre as cores de post-it. Ícone `pen-line` só a partir de 1024px. O botão aparece em **todos** os post-its e em todas as larguras, inclusive em "Falei agora", onde serve para registrar mais um contato no mesmo dia.
+- **Hover e foco do botão (pedido adicional de 27/10/2026):** preenchimento em traços irregulares, como canetinha, usando a terracota `primaria` com 38% de opacidade atrás do texto; durante hover e foco, o texto mantém a cor original `primaria-800`, conforme escolha do responsável. O preenchimento aparece da esquerda para a direita; com movimento reduzido, aparece sem animação. Substitui o fundo liso do hover do protótipo.
 - Giro só em CSS: `--r` alternando −1,5° / 1° / 2° / −1° por `nth-child(4n+…)`. Hover e foco: 0°. Com `prefers-reduced-motion`, sem transição.
 
 **Cor = primeiro grupo, mas nunca sozinha.** Um amigo pode estar em 0, 1 ou vários grupos (7.7), e a API devolve os grupos de cada amigo em ordem alfabética pelo nome.
@@ -243,10 +244,10 @@ Para cada amigo: `d` = dias desde o último contato (datas no fuso do usuário),
 ### 7.6 Estados (ver `prints/quadro-estados.png`)
 | Estado | O que aparece |
 |---|---|
-| **Quadro vazio** (nenhum amigo) | `.nota` "Seu quadro está em branco." / "Cada amigo vira um post-it aqui." + carimbo "adicionar primeiro amigo". A partir de 1024px, as 4 colunas aparecem com um contorno tracejado de post-it (`neutro-400`) para explicar o formato. No celular, só o convite |
+| **Quadro vazio** (nenhum amigo) | `.nota` "Seu quadro está em branco." + carimbo "adicionar primeiro amigo". Texto reduzido a pedido do responsável em 27/10/2026. A partir de 1024px, as 4 colunas aparecem com um contorno tracejado de post-it (`neutro-400`) para explicar o formato. No celular, só o convite |
 | **Coluna vazia** | `.nota` por coluna: "ninguém por aqui. aproveite o dia." (Faz um tempinho) · "nada chegando nos próximos dias." (Essa semana) · "ainda ninguém. um contato já muda isso." (Em dia) · "ninguém hoje ainda." (Falei agora). As notas valem para todas as larguras |
 | **Carregando** | Descrição da coluna como barra skeleton + 2 post-its skeleton (`neutro-100`, 6 linhas) por coluna, com pulso de 1,2s |
-| **Erro ao carregar** | Papel `erro-50` com borda `erro` ocupando a largura do quadro: "Não conseguimos abrir seu caderno agora." / "Seus amigos e notas estão salvos. Pode ser a conexão." + botão secundário "Tentar de novo" (44px) |
+| **Erro ao carregar** | Papel `erro-50` com borda `erro` ocupando a largura do quadro: "Não conseguimos abrir seu caderno agora." / "Verifique sua conexão e tente de novo." + botão secundário "Tentar de novo" (44px). Uma leitura com falha não confirma que os dados estão salvos |
 | **Registrando / salvando / erro ao salvar** | Disparado pelo botão "falei agora" (ver 7.5.2): post-it com contorno tracejado e sheet 3.6 aberto. Durante o POST, o botão "Registrar" mostra spinner e `aria-busy` (3) |
 
 ### 7.7 Impacto na API (Django)
