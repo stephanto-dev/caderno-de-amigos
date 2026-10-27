@@ -105,6 +105,16 @@ O Quadro mostra amigos em 4 colunas baseadas no tempo desde o último contato e 
 
 A coluna é **calculada no backend** por `BoardService` ([ADR 2026-10-20](ADRs/2026-10-20-coluna-quadro-calculada.md)). O frontend apenas agrupa e renderiza.
 
+O botão "falei agora" abre o `ContactSheet`. O POST envia tipo e nota com CSRF;
+a resposta atualiza o amigo no estado do Quadro, sem recalcular a regra no Vue.
+Erros preservam o rascunho e o painel aberto. Durante o envio, novos envios ficam bloqueados.
+
+O aviso de sucesso oferece "Desfazer" por 2,4 segundos, com pausa ao receber foco
+ou passar o mouse. A ação exclui o contato pelo `contact_id` e busca o amigo
+novamente, pois o DELETE retorna 204 sem corpo. Se só essa busca falhar, a nova
+tentativa repete apenas o GET. Erros ao desfazer permanecem visíveis para permitir
+uma nova tentativa; amigos que já não existem são retirados do Quadro.
+
 ## Diagrama de arquitetura
 
 ```mermaid

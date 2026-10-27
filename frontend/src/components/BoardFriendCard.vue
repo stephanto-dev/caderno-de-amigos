@@ -4,7 +4,7 @@ import { RouterLink } from 'vue-router'
 import type { BoardFriend } from '../api/friends'
 import GroupBadge from './GroupBadge.vue'
 
-const props = defineProps<{ friend: BoardFriend }>()
+const props = defineProps<{ friend: BoardFriend; is_contact_disabled?: boolean }>()
 const emit = defineEmits<{ 'open-contact-sheet': [friend: BoardFriend] }>()
 
 const CADENCE_LABELS = {
@@ -69,7 +69,7 @@ onBeforeUnmount(() => group_observer?.disconnect())
     <p class="friend-cadence">{{ friend.cadence_amount }} {{ CADENCE_LABELS[friend.cadence_unit][friend.cadence_amount === 1 ? 'one' : 'many'] }}</p>
     <p v-if="friend.last_note" class="friend-note" :title="friend.last_note">{{ friend.last_note }}</p>
     <p v-else class="friend-no-note">sem nota ainda</p>
-    <button type="button" class="contact-button" :aria-label="`Falei agora com ${friend.name}`" @click="emit('open-contact-sheet', friend)">
+    <button type="button" class="contact-button" :disabled="is_contact_disabled" :aria-label="`Falei agora com ${friend.name}`" @click="emit('open-contact-sheet', friend)">
       <span class="stamp">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 3 5 5-12 12H4v-5ZM14 5l5 5" /></svg>
         falei agora
@@ -96,6 +96,7 @@ svg { width: 12px; height: 12px; flex: none; fill: none; stroke: currentColor; s
 .two-group-rows .friend-note { -webkit-line-clamp: 1; }
 .friend-no-note { margin: 4px 0 0; color: var(--neutral-700); font: italic .75rem/1.5rem var(--font-ui); }
 .contact-button { display: flex; align-items: center; align-self: flex-start; min-height: 44px; margin-top: auto; padding: 0 2px; border: 0; border-radius: var(--radius-sm); background: transparent; cursor: pointer; }
+.contact-button:disabled { opacity: .55; cursor: wait; }
 .contact-button .stamp { position: relative; isolation: isolate; padding: 0 8px; border-color: var(--primary-800); color: var(--primary-800); white-space: nowrap; }
 /* Requested addition to CRM-13: a hand-colored fill replaces the flat hover background. */
 .contact-button .stamp::before { content: ''; position: absolute; z-index: -1; inset: 1px; background: color-mix(in srgb, var(--primary) 38%, transparent); mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 28'%3E%3Cpath d='M1 23 7 4 9 25 15 2 17 24 23 3 25 26 31 2 33 25 39 4 41 24 47 2 49 26 55 3 57 24 63 2 65 25 71 4 73 26 79 2 81 24 87 3 89 26 95 2 97 25 103 4 105 24 111 2 113 25 119 4' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat; clip-path: inset(0 100% 0 0); transition: clip-path var(--duration-medium) var(--ease-out); }
