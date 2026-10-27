@@ -22,6 +22,17 @@ export interface BoardFriend {
   groups: FriendGroup[]
 }
 
+/** Input accepted by Django's ContactWriteSerializer; the server sets the date. */
+export interface ContactWriteData {
+  kind: 'message' | 'call' | 'meeting'
+  note: string
+}
+
+/** Updated board friend plus the ID required by the contact deletion endpoint. */
+export interface RecordedContact extends BoardFriend {
+  contact_id: string
+}
+
 function is_friend_group(body: unknown): body is FriendGroup {
   return typeof body === 'object' && body !== null
     && 'id' in body && typeof body.id === 'string'
@@ -49,6 +60,29 @@ export async function get_friends_for_board(): Promise<BoardFriend[]> {
     throw new Error('Invalid board friends response')
   }
   return body
+}
+
+/** Fetch one owned friend with its latest board fields calculated by Django. */
+export async function get_friend_for_board(friend_id: string): Promise<BoardFriend> {
+  const body = await send_api_request(`/api/friends/${friend_id}/`)
+  if (!is_board_friend(body)) throw new Error('Invalid board friend response')
+  return body
+}
+
+/** Record a contact and validate the updated friend and ID used by the undo action. */
+export async function send_contact_for_friend(friend_id: string, contact: ContactWriteData): Promise<RecordedContact> {
+  const body = await send_api_request(`/api/friends/${friend_id}/contacts/`, {
+    method: 'POST', body: contact,
+  })
+  if (!is_board_friend(body) || !('contact_id' in body) || typeof body.contact_id !== 'string') {
+    throw new Error('Invalid recorded contact response')
+  }
+  return { ...body, contact_id: body.contact_id }
+}
+
+/** Delete one owned contact. Django returns 204; refresh the friend separately. */
+export async function send_contact_deletion_for_friend(friend_id: string, contact_id: string): Promise<void> {
+  await send_api_request(`/api/friends/${friend_id}/contacts/${contact_id}/`, { method: 'DELETE' })
 }
 
 /** Fetch all owned groups, including unused groups, in the order supplied by Django. */
