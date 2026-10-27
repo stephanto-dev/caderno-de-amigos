@@ -1,6 +1,6 @@
 # Spec de UI para o Tech Lead — "Caderno físico" (v2)
 
-_Substitui a spec v1 (direção A). Referências: `tokens.css`, `tailwind.config.js` (plugin com os utilitários), `prototipo/index.html` (`?tela=inicio|amigos|perfil|cadastro|registrar|vazio|atalhos|config`), `direcoes/grupos-chips.html` (`?estado=normal|editando|form-editar|confirmar-apagar|erro-nome`), `direcoes/auth-capa.html` (`?modo=entrar|criar` & `?estado=normal|erro|carregando`), prints em `prints/` (incl. `desktop-auth-*`, `mobile-auth-*`, `auth-capa-estados.png`)._
+_Substitui a spec v1 (direção A). Referências: `tokens.css`, `tailwind.config.js` (plugin com os utilitários), `prototipo/index.html` (`?tela=inicio|amigos|perfil|cadastro|registrar|vazio|atalhos|config`), `direcoes/grupos-chips.html` (`?estado=normal|editando|form-editar|confirmar-apagar|erro-nome`), `direcoes/auth-capa.html` (`?modo=entrar|criar` & `?estado=normal|erro|carregando`), `direcoes/quadro.html`, `direcoes/cabecalho-folha.html` (3.12), prints em `prints/` (incl. `desktop-auth-*`, `mobile-auth-*`, `auth-capa-estados.png`, `desktop-quadro.png`, `mobile-quadro.png`, `cabecalho-folha.png`). Ref visual do carimbo escolar: `ref-folha-data.png`._
 
 ## 0. O que mudou em relação à v1 (resumo para o Tech Lead)
 | Antes (v1) | Agora (v2) |
@@ -69,9 +69,20 @@ Estados comuns: **foco** `box-shadow: var(--anel-foco)` (2px folha + 2px `#2F618
 - `.campo`: 48px, fundo folha, borda 1,5px tinta, placeholder `neutro-500`. Foco: anel. Erro: `aria-invalid="true"`, borda `erro` e mensagem Inter 14 `erro` ligada por `aria-describedby`. Desabilitado: .45.
 - Ritmo: radiogroup de chips (h-10, pill, borda tinta; selecionado `primaria-100` + borda primária + `primaria-800`) em linha única com **rolagem horizontal** no celular. O próximo chip aparece cortado de propósito, para indicar que dá para rolar. Padrão: 1 mês.
 - "Mais detalhes (opcional)": `details` com blocos `h-l3`.
-- **Grupos (dentro de "Mais detalhes", opcional, seleção múltipla):** rótulo "Grupos" e, ao lado, o link "editar" (Inter 14, `neutro-700`; em modo editar vira "pronto"). Chips toggle (`button` com `aria-pressed`, h-10, pill) quebram linha e mostram os grupos do usuário em ordem alfabética, mais o chip "+ novo grupo". Chip desligado: fundo folha, borda 1,5px tinta, texto `tinta` e o ícone do token de cor do grupo. Chip ligado: fundo da cor do grupo, borda 2px tinta e ícone `check` no lugar do ícone (o estado nunca depende só da cor). "+ novo grupo" abre, no mesmo bloco, um `.campo` de nome e as 5 cores em radiogroup (cada uma com nome escrito). O grupo criado ali já vem marcado para esse amigo. Nenhum grupo existente vem marcado no cadastro novo, e o cadastro rápido continua só com o nome: quem não abre "Mais detalhes" salva o amigo sem grupo, como antes. Detalhes do model em 7.7. Protótipo dos estados: `direcoes/grupos-chips.html`; print: `prints/grupos-chips-estados.png`.
+- **Grupos (dentro de "Mais detalhes", opcional, seleção múltipla):** rótulo "Grupos" e, ao lado, o link "editar" (Inter 14, `neutro-700`; em modo editar vira "pronto"). Chips toggle (`button` com `aria-pressed`, h-10, pill) quebram linha e mostram os grupos do usuário em ordem alfabética, mais o chip "+ novo grupo". Chip desligado: fundo folha, borda 1,5px tinta, texto `tinta` e o ícone do token de cor do grupo. Chip ligado: fundo da cor do grupo, borda 2px tinta e ícone `check` no lugar do ícone (o estado nunca depende só da cor). "+ novo grupo" abre, no mesmo bloco, um `.campo` de nome e as 5 cores em radiogroup (**swatch + label de cor escrito** — ver tabela abaixo; token interno ≠ label). O grupo criado ali já vem marcado para esse amigo. Nenhum grupo existente vem marcado no cadastro novo, e o cadastro rápido continua só com o nome: quem não abre "Mais detalhes" salva o amigo sem grupo, como antes. Detalhes do model em 7.7. Protótipo dos estados: `direcoes/grupos-chips.html`; print: `prints/grupos-chips-estados.png`.
+
+  **Labels de cor na UI (27/10/2026):** o token interno (API/banco) **não** é o texto exibido. SPA e admin mostram **nome de cor + swatch** (sempre os dois; nunca só a cor). Ícones por token (§7.3) permanecem.
+
+  | token PT (spec / API) | enum EN | label UI | fundo (token já existente) |
+  |---|---|---|---|
+  | `familia` | `family` | **Pêssego** | `primaria-100` `#F1D6CC` |
+  | `faculdade` | `college` | **Amarelo** | `marca-texto` `#F6D98A` |
+  | `trabalho` | `work` | **Azul** | `pauta` `#C9D6E3` |
+  | `vizinhanca` | `neighborhood` | **Verde** | `aba-verde` `#B9CBB0` |
+  | `neutro` | `neutral` | **Creme** | `papel` `#E8DCC8` |
+
   - **Modo editar (MVP, decisão 21/10 e 26/10/2026):** não há tela de gerenciar grupos. Editar e apagar vivem nos chips do cadastro (e do perfil, quando o mesmo bloco de grupos existir). Ao tocar "editar": os chips ganham ícone `pencil` (16px) à direita do nome e **param de ligar/desligar** (`aria-pressed` fica só leitura visual; o toque abre o formulário). O link vira "pronto" e sai do modo editar (fecha formulário/confirmação se estiverem abertos).
-  - **Formulário de editar grupo:** toque no chip (em modo editar) abre, no mesmo bloco, o mesmo formulário do "+ novo grupo" já preenchido (nome + 5 cores radiogroup), com botões "salvar" (primário) e "apagar grupo" (texto/erro, não primário). Salvar chama `PATCH` (7.7). Nome repetido (case-insensitive, entre os grupos do mesmo `owner`, excluindo o próprio): `aria-invalid` no campo e mensagem "Você já tem um grupo com esse nome."
+  - **Formulário de editar grupo:** toque no chip (em modo editar) abre, no mesmo bloco, o mesmo formulário do "+ novo grupo" já preenchido (nome + 5 cores radiogroup com labels Pêssego/Amarelo/Azul/Verde/Creme), com botões "salvar" (primário) e "apagar grupo" (texto/erro, não primário). Salvar chama `PATCH` (7.7). Nome repetido (case-insensitive, entre os grupos do mesmo `owner`, excluindo o próprio): `aria-invalid` no campo e mensagem "Você já tem um grupo com esse nome."
   - **Apagar grupo:** "apagar grupo" troca o formulário por confirmação inline. Com `total_amigos` > 0: "Apagar '{nome}'? {N} amigos saem desse grupo, mas continuam no seu caderno." Com 0: "Apagar '{nome}'? Nenhum amigo está nesse grupo." Botões: "apagar grupo" (vermelho/`erro`, confirma) e "cancelar" (secundário; volta ao formulário ou fecha). Confirmar chama `DELETE` (7.7) → 204: só desfaz a relação N:N; **nunca apaga amigo**. Critérios de aceite: editar nome/cor atualiza todos os post-its daquele grupo; quem fica sem nenhum grupo vira post-it neutro com a etiqueta "sem grupo".
   - **Estados do bloco (ver `prints/grupos-chips-estados.png`):** **normal** (chips toggle + "editar") · **editando** (chips com `pencil`, link "pronto") · **form editar** (form preenchido + salvar/apagar) · **confirmar apagar** (texto + apagar/cancelar) · **erro de nome** (campo inválido + mensagem).
 - Primário "Salvar amigo" (pill 48, `primaria` → hover 700 → active 800). Enter no nome salva. No desktop, N abre com foco no nome.
@@ -117,7 +128,7 @@ _Feedback Vinicius 26/10: (1) 1ª versão = "cartão com espiral"; (2) cor peach
 - **Espiral (esquerda):** anéis metálicos que **passam por furos** na capa. CSS puro.
 - **Título na capa** (Fraunces): "Caderno de amigos". Subtítulo Caveat `caneta`: "seu ritmo com as pessoas que importam".
 - **Formulário = etiqueta `.papel` colada NA capa:** 100% **dentro** do retângulo da capa (padding interno generoso; `overflow:hidden` na capa). Sem rotação que cause overflow (rotação zerada na v3). Fita washi CSS (`.fita`, `marca-texto`) no topo, também dentro. Toggle Entrar | Criar conta (Caveat), campos Inter, botão primário pill terracota. **Nunca** a etiqueta invade a mesa nem ultrapassa a borda inferior/direita.
-- Mobile: capa quase full-width com margem na mesa, até 400px de largura e 580–620px de altura conforme a largura da tela. Desktop: 480px de largura e até 700px de altura. Em telas baixas, a altura diminui até um mínimo que comporta o formulário; continua igual entre os modos e estados. Medidas ampliadas após feedback de 26/10/2026 no protótipo e nos prints.
+- Mobile: capa quase full-width com margem na mesa. Desktop: ~380×560 (largura×altura fixas). Mobile: altura fixa ~500–520.
 - Contraste AA em todos os textos/botões (tokens já checados em `identidade.md`).
 
 **Estados**
@@ -137,7 +148,7 @@ _Feedback Vinicius 26/10: (1) 1ª versão = "cartão com espiral"; (2) cor peach
 **Microcopy (pt-BR)** — ver também §6: Entrar · Criar conta · Já tenho conta · E-mail · Senha · Repetir senha · Entrando… · Criando… · E-mail ou senha incorretos. · Este e-mail já tem conta. · As senhas não são iguais. · A senha precisa ter pelo menos 8 caracteres. · Caderno de amigos · seu ritmo com as pessoas que importam.
 
 ### 3.9 Estado vazio
-Na folha: data, título e, depois de `mt-l2`, duas `.nota` ("Seu caderno está em branco." / "Comece por alguém de quem você sente falta."), Inter "Só o nome já basta." e o carimbo "adicionar primeiro amigo". No livro aberto, a página direita mostra a `.nota` "Esta página é de cada amigo.". Não há ilustração (a página em branco já é a ilustração).
+Na folha: `.cabecalho-folha` (3.12), título e, depois de `mt-l2`, duas `.nota` ("Seu caderno está em branco." / "Comece por alguém de quem você sente falta."), Inter "Só o nome já basta." e o carimbo "adicionar primeiro amigo". No livro aberto, a página direita mostra a `.nota` "Esta página é de cada amigo.". Não há ilustração (a página em branco já é a ilustração).
 
 ### 3.10 Atalhos (modal)
 `.papel` max-w 384, Inter, lista de pares com `kbd` (borda tinta). Abre com "?" (aba ou tecla); fecha com Esc ou clique fora.
@@ -155,6 +166,55 @@ Ignorar atalhos de letra com foco em input ou textarea.
 
 ### 3.11 Toast
 Pill `tinta` com texto branco, 48px, `check` `#B9CDB1`, `role="status"`, 2,4s, "Desfazer" quando couber. Fica fora da folha, sobre a mesa.
+
+### 3.12 Cabeçalho de folha (`.cabecalho-folha`)
+_Decisão de grupo (MVP, 27/10/2026): carimbo escolar de dia + data em **todas** as folhas autenticadas. Não reabrir. Protótipo: `direcoes/quadro.html`, `direcoes/grupos-chips.html`, `direcoes/cabecalho-folha.html`. Prints: `prints/desktop-quadro.png`, `prints/mobile-quadro.png`, `prints/cabecalho-folha.png`. Ref: `ref-folha-data.png`._
+
+**Onde entra**
+- Em **todas** as folhas autenticadas: `/` (bom falar), `/quadro`, `/amigos`, `/amigos/:id`, `/amigos/novo`, `/config` (e qualquer outra folha aberta autenticada).
+- **Fora:** `/entrar` (capa fechada — não autenticado). O protótipo `direcoes/auth-capa.html` **não** recebe este bloco.
+
+**O que é**
+Um carimbo de caderno escolar BR no topo da `.folha`, **acima** do conteúdo (título, lista, form). **Não** substitui a pauta (`.paper-lined` continua no corpo).
+
+| Lado | Conteúdo |
+|---|---|
+| Esquerda | 7 caixas com letras **D S T Q Q S S** (Domingo → Sábado) |
+| Direita | Data **só leitura** `DD/MM/AAAA` = hoje em `America/Sao_Paulo` (cliente, 100% front; `Intl` / `Date` no fuso SP). Visual de carimbo / `__/__/__` preenchido — **nunca** `<input>` |
+
+**Comportamento (fechado)**
+- Sem editar a data. Sem filtrar por data. Sem navegar ao clicar (o bloco é informativo; `pointer-events: none` ou sem handlers).
+- Dia da semana **em destaque** = hoje (caixa preenchida).
+- Atualiza só porque o calendário do cliente mudou (meia-noite SP); sem backend.
+
+**Destaque do dia atual**
+- Uma das 7 caixas marcada: fundo `tinta` `#2B2420` + letra branca + borda 2px `tinta` (peso reforçado). Contraste AA (~15:1). **Não depender só de cor:** o preenchimento + peso da borda + `font-weight: 700` bastam sem cor (formas distintas da caixa vazia).
+- As demais: fundo transparente, borda 1,5px `tinta`, letra `tinta`, Inter 600.
+- Ordem fixa: Domingo→Sábado = **D S T Q Q S S** (índice 0 = domingo; terça = 2 → `T`).
+- A11y: `aria-current="date"` na caixa de hoje; o grupo tem `aria-label` (ex. "Data de hoje"); `<time datetime="YYYY-MM-DD">` na data.
+
+**Layout e ritmo**
+- Altura: **1 linha de pauta** (`--linha` / 32px). No máximo 2 linhas se precisar de respiro (evitar). Padding horizontal alinhado ao da `.folha` existente (não inventar margem nova).
+- Flex `space-between`; caixas ~22×22 dentro da linha; `gap` 4px entre caixas.
+- A data fica alinhada à direita, sentada na mesma linha.
+
+**Tipografia (motivada)**
+- **Caixas D…S: Inter 600/700 ~11–12px.** Igual à ref impressa de caderno escolar BR (letras tipográficas limpas nas caixinhas), não manuscritas.
+- **Data: Caveat 700 ~21px** (mesmo papel tipográfico dos `.carimbo` do app). É um carimbo preenchido, não um campo. Cor `tinta`. Sublinhado tracejado leve (`neutro-400`) sob a data lembra o `__/__/__` da ref.
+
+**Implementação (front)**
+```js
+// fuso America/Sao_Paulo, só cliente
+const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year:'numeric', month:'2-digit', day:'2-digit' });
+const weekday = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', weekday: 'short' }).format(new Date());
+// map Sun→0 … Sat→6 → letras [D,S,T,Q,Q,S,S]
+```
+No protótipo HTML a terça (`T`) e `27/10/2026` podem estar hardcoded; o comentário no HTML documenta que em produção vêm de `Intl`/`Date` em SP.
+
+**Não fazer**
+- Input, datepicker, filtro, deep-link por data, backend de “hoje”.
+- Aparecer na capa `/entrar`.
+- Tokens, fontes ou cores novas.
 
 ## 4. Motion
 | Elemento | Duração | Curva |
@@ -183,7 +243,7 @@ bom falar · quadro · amigos · + novo · config · Configurações · Sair · 
 `--linha` vale `2rem` (e não 32px) e o gradiente da pauta usa a mesma variável. Os tamanhos de texto estão em rem. Assim, quando a pessoa aumenta a fonte do navegador, a pauta cresce junto e o texto continua sentado na linha. Teste da issue 10: com a fonte em 200%, nenhuma linha de texto pode cruzar a pauta.
 
 ## 7. Visão Quadro (aprovada para o MVP)
-_Status: **aprovada para o MVP** (Vinicius, 16/10/2026: "entra completo no MVP, com arrastar e grupos"); **simplificada em 20/10/2026: janela fixa de 7 dias e sem arrastar**; **grupos N:N em 20/10/2026** (um amigo pode estar em 0, 1 ou vários grupos); **editar/apagar grupos no MVP em 21/10 e 26/10/2026** (modo editar nos chips do cadastro, sem tela de gerenciar); **aba config no MVP em 26/10/2026** (e-mail + Sair); **conta própria / capa auth no MVP em 26/10/2026** (`/entrar`, ver 3.8). Protótipo: `direcoes/quadro.html` (`?estado=normal|vazio|coluna-vazia|carregando|erro|registrando`); chips: `direcoes/grupos-chips.html`. Prints: `prints/desktop-quadro.png`, `prints/mobile-quadro.png`, `prints/quadro-estados.png`, `prints/grupos-chips-estados.png`. Contraste: resultado na seção 7.10 (script `contraste-quadro.py`, na cópia local do projeto). A direção "Caderno físico" não muda: nenhuma cor, fonte ou utilitário novo._
+_Status: **aprovada para o MVP** (Vinicius, 16/10/2026: "entra completo no MVP, com arrastar e grupos"); **simplificada em 20/10/2026: janela fixa de 7 dias e sem arrastar**; **grupos N:N em 20/10/2026** (um amigo pode estar em 0, 1 ou vários grupos); **editar/apagar grupos no MVP em 21/10 e 26/10/2026** (modo editar nos chips do cadastro, sem tela de gerenciar); **aba config no MVP em 26/10/2026** (e-mail + Sair); **conta própria / capa auth no MVP em 26/10/2026** (`/entrar`, ver 3.8); **cabeçalho de folha (dia + data carimbo) no MVP em 27/10/2026** (3.12; em todas as folhas autenticadas, não na capa). Protótipo: `direcoes/quadro.html` (`?estado=normal|vazio|coluna-vazia|carregando|erro|registrando`); chips: `direcoes/grupos-chips.html`; cabeçalho: `direcoes/cabecalho-folha.html`. Prints: `prints/desktop-quadro.png`, `prints/mobile-quadro.png`, `prints/quadro-estados.png`, `prints/grupos-chips-estados.png`, `prints/cabecalho-folha.png`. Contraste: resultado na seção 7.10 (script `contraste-quadro.py`, na cópia local do projeto). A direção "Caderno físico" não muda: nenhuma cor, fonte ou utilitário novo — o cabeçalho só reusa Inter, Caveat e `tinta`._
 
 ### 7.1 O que é
 Uma aba nova, **"quadro"** (`router-link` para `/quadro`, fundo `papel`, entre "bom falar" e "amigos"), que mostra **todos** os amigos como post-its em 4 colunas sobre a própria folha pautada. Sem cortiça: cortiça pediria textura ou uma cor fora da paleta, e as duas coisas são proibidas pela identidade.
@@ -204,7 +264,7 @@ Para cada amigo: `d` = dias desde o último contato (datas no fuso do usuário),
 - Nada de contagem de dias. O post-it mostra só "3 semanas", como a lista atual.
 
 ### 7.3 Componentes
-**`QuadroView`** (`/quadro`): cabeçalho (data, título "Quadro" e uma explicação de 2–3 linhas) + legenda de grupos + 4 `QuadroColuna`. A **legenda lista os grupos do usuário** (`GET /grupos/`), em ordem alfabética, cada um como etiqueta com nome, ícone e cor; "sem grupo" entra no fim se algum amigo não tiver grupo. Na legenda, a etiqueta tem 24px de altura e ocupa uma linha da pauta (margem de 4px acima e abaixo). Abaixo de 1024px, a legenda vem sem a frase de introdução.
+**`QuadroView`** (`/quadro`): `.cabecalho-folha` (3.12) no topo da `.folha` + título "Quadro" e uma explicação de 2–3 linhas + legenda de grupos + 4 `QuadroColuna`. A data longa em Inter ("sábado, 17 de outubro") **sai**; o carimbo D…S + `DD/MM/AAAA` a substitui. A **legenda lista os grupos do usuário** (`GET /grupos/`), em ordem alfabética, cada um como etiqueta com nome, ícone e cor; "sem grupo" entra no fim se algum amigo não tiver grupo. Na legenda, a etiqueta tem 24px de altura e ocupa uma linha da pauta (margem de 4px acima e abaixo). Abaixo de 1024px, a legenda vem sem a frase de introdução.
 
 **`QuadroColuna`**: `section` com `aria-labelledby`, título Fraunces 19/600 (1 linha) + descrição Inter 12 `neutro-600` (1 linha) + `ul` de post-its. O cabeçalho ocupa 2 linhas.
 
@@ -218,8 +278,8 @@ Para cada amigo: `d` = dias desde o último contato (datas no fuso do usuário),
 - **Cor do post-it:** a cor do **primeiro** grupo da lista (ordem alfabética). Sem grupo: post-it `neutro` (`papel`) com a etiqueta "sem grupo".
 - **Etiquetas:** o post-it mostra **todos** os grupos como etiquetas pequenas: ícone + nome, 18px de altura, Inter 12/500 `neutro-700`, raio 4, padding 0 6px, fundo da cor do grupo e contorno interno de 1px `tinta` a 32% (para a etiqueta continuar visível quando tem a mesma cor do post-it). O nome está sempre escrito, então a cor nunca informa nada sozinha. Um nome longo trunca dentro da etiqueta, com reticências.
 - **Quebra e "+N":** as etiquetas quebram linha (`flex-wrap`, `gap` de 4px) e ocupam no máximo 2 linhas (40px). Se não couberem, mostram as que cabem e, no fim, uma etiqueta "+N" (fundo folha, Inter 12/600) com `role="img"`, `aria-label="e mais N grupos: {nomes}"` e `title` com os mesmos nomes. Antes das etiquetas, um `sr-only` "Grupos:". A conta é feita no front, medindo a altura da caixa (no Vue, com `ResizeObserver`), porque depende da largura da coluna e da fonte.
-- **Ícone por token de cor** (e não mais por grupo fixo): `familia` → `house`, `faculdade` → `graduation-cap`, `trabalho` → `briefcase`, `vizinhanca` → `map-pin`, `neutro` → `circle-dashed`. Escolhi o ícone por token, e não um `tag` genérico, porque ele repete a informação da cor numa forma que não depende de enxergar cor, e os ícones já existiam no desenho. Como os grupos têm nome livre, o ícone fala da cor, não do nome: um grupo "Escalada" com cor `vizinhanca` aparece com `map-pin`.
-- **Cores (todas já existem nos tokens, nenhuma nova):** `familia` `primaria-100` · `faculdade` `marca-texto` · `trabalho` `pauta` · `vizinhanca` `aba-verde` · `neutro` `papel`. Os grupos são ilimitados, mas há só 5 cores, e vários grupos podem usar a mesma cor. A regra antiga ("máximo de 5 grupos; acima disso, o resto vai para 'sem grupo'") saiu.
+- **Ícone por token de cor** (e não mais por grupo fixo): `familia` → `house`, `faculdade` → `graduation-cap`, `trabalho` → `briefcase`, `vizinhanca` → `map-pin`, `neutro` → `circle-dashed`. Escolhi o ícone por token, e não um `tag` genérico, porque ele repete a informação da cor numa forma que não depende de enxergar cor, e os ícones já existiam no desenho. Como os grupos têm nome livre, o ícone fala do **token** de cor, não do nome do grupo nem do label UI: um grupo "Escalada" com cor `vizinhanca` (label **Verde**) aparece com `map-pin`. No radiogroup/admin o texto é Pêssego/Amarelo/Azul/Verde/Creme (3.5), não Família/Faculdade/…
+- **Cores (todas já existem nos tokens, nenhuma nova):** `familia` → label UI **Pêssego** (`primaria-100`) · `faculdade` → **Amarelo** (`marca-texto`) · `trabalho` → **Azul** (`pauta`) · `vizinhanca` → **Verde** (`aba-verde`) · `neutro` → **Creme** (`papel`). Token interno ≠ label (tabela em 3.5). Os grupos são ilimitados, mas há só 5 cores, e vários grupos podem usar a mesma cor. A regra antiga ("máximo de 5 grupos; acima disso, o resto vai para 'sem grupo'") saiu.
 
 ### 7.4 Layout por largura
 - **≥1280 (livro aberto):** um único scroller ocupa as duas páginas. Grid `1fr 1fr 112px 1fr 1fr` (a coluna de 112px é a espiral e a margem da página direita): "Faz um tempinho" e "Essa semana" ficam à esquerda; "Em dia" e "Falei agora", à direita. A dobra central (`inset` / gradiente) e as duas margens são decorativas e não rolam.
@@ -256,11 +316,12 @@ Para cada amigo: `d` = dias desde o último contato (datas no fuso do usuário),
   ```python
   class Grupo(models.Model):
       class Cor(models.TextChoices):
-          FAMILIA = "familia", "Família"
-          FACULDADE = "faculdade", "Faculdade"
-          TRABALHO = "trabalho", "Trabalho"
-          VIZINHANCA = "vizinhanca", "Vizinhança"
-          NEUTRO = "neutro", "Neutro"
+          # value = token PT; label = nome de cor na UI (admin/SPA). Ver tabela 3.5.
+          FAMILIA = "familia", "Pêssego"       # EN: family
+          FACULDADE = "faculdade", "Amarelo"   # EN: college
+          TRABALHO = "trabalho", "Azul"        # EN: work
+          VIZINHANCA = "vizinhanca", "Verde"   # EN: neighborhood
+          NEUTRO = "neutro", "Creme"           # EN: neutral
       owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="grupos")
       nome = models.CharField(max_length=40)
       cor = models.CharField(max_length=12, choices=Cor.choices, default=Cor.NEUTRO)
@@ -297,6 +358,7 @@ Sem biblioteca de arrastar: decisão de 20/10/2026, lógica simples. O quadro n�
 6. Aba "quadro" (cor `papel`) e abas com 44px no celular.
 7. Editar/apagar grupos no MVP via modo editar nos chips (3.5 / 7.7; 21/10 e 26/10/2026): sem tela de gerenciar; `PATCH`/`DELETE`/`total_amigos`; apagar nunca remove amigo.
 8. Aba **"config"** (cor `margem`, `/config`) depois de "+ novo" e antes do "?" (26/10/2026): MVP = e-mail logado + Sair.
+9. **Cabeçalho de folha** (3.12, 27/10/2026): D S T Q Q S S + data carimbo de hoje (SP) em todas as folhas autenticadas; não na capa `/entrar`; sem editar/filtrar.
 
 ### 7.10 Contraste dos post-its (WCAG AA, calculado por script)
 Todos os pares **em uso** passam. Os que falharam foram trocados no desenho.
