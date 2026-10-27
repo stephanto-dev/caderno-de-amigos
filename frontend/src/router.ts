@@ -17,6 +17,7 @@ export const routes: RouteRecordRaw[] = [
     name: 'friend-detail',
     components: { default: FriendsView, detail: FriendDetailView },
   },
+  { path: '/login', redirect: '/entrar' },
   { path: '/entrar', name: 'login', component: LoginView },
   { path: '/config', name: 'config', component: ConfigView },
 ]
@@ -26,7 +27,7 @@ export function install_auth_guard_for_router(router: Router): void {
     if (!auth_state.is_initialized) await get_session_for_browser()
     // /api/me/ returns 200 with authenticated:false so a visitor also receives the CSRF cookie.
     if (to.name !== 'login' && auth_state.current_user === null) {
-      return { name: 'login', query: { redirect: to.fullPath } }
+      return { name: 'login' }
     }
     if (to.name === 'login' && auth_state.current_user !== null) return { name: 'board' }
   })

@@ -12,7 +12,7 @@ describe('authentication guard', () => {
   })
   afterEach(() => vi.unstubAllGlobals())
 
-  it('sends a visitor to login and remembers the requested route', async () => {
+  it('sends a visitor to login without an unused redirect query', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ authenticated: false, user: null, email: null })))
     const router = createRouter({ history: createMemoryHistory(), routes })
     install_auth_guard_for_router(router)
@@ -20,7 +20,17 @@ describe('authentication guard', () => {
     await router.push('/config')
 
     expect(router.currentRoute.value.path).toBe('/entrar')
-    expect(router.currentRoute.value.query.redirect).toBe('/config')
+    expect(router.currentRoute.value.query).toEqual({})
+  })
+
+  it('redirects the old login route to enter', async () => {
+    auth_state.current_user = 'ana@example.com'
+    auth_state.is_initialized = true
+    const router = createRouter({ history: createMemoryHistory(), routes })
+
+    await router.push('/login')
+
+    expect(router.currentRoute.value.path).toBe('/entrar')
   })
 
   it('allows a protected route when the session is authenticated', async () => {
