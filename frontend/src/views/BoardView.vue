@@ -15,9 +15,6 @@ const BOARD_COLUMNS = [
   { value: 'on_track', label: 'Em dia', description: 'conversa recente, tudo certo', empty: 'ainda ninguém. um contato já muda isso.', collapsible: true },
   { value: 'just_talked', label: 'Falei agora', description: 'falou hoje ou ontem', empty: 'ninguém hoje ainda.', collapsible: true },
 ] as const
-const board_date = new Intl.DateTimeFormat('pt-BR', {
-  weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Sao_Paulo',
-}).format(new Date())
 
 const friends = ref<BoardFriend[]>([])
 const groups = ref<FriendGroup[]>([])
@@ -62,7 +59,6 @@ onMounted(get_friends_for_view)
 <template>
   <div class="board-view">
     <header class="board-header">
-      <p class="board-date">{{ board_date }}</p>
       <h1 class="view-title">Quadro</h1>
       <p class="board-introduction">As colunas se arrumam sozinhas, pelo último contato e pelo ritmo de cada amigo.</p>
     </header>
@@ -122,8 +118,7 @@ onMounted(get_friends_for_view)
 
 <style scoped>
 .board-header p, .board-legend p, .column-description { margin: 0; }
-.board-date, .board-introduction, .board-legend > p { font-size: .875rem; line-height: var(--notebook-line); }
-.board-date { color: var(--neutral-600); }
+.board-introduction, .board-legend > p { font-size: .875rem; line-height: var(--notebook-line); }
 .board-introduction { color: var(--neutral-700); }
 .board-legend { margin-top: var(--notebook-line); min-width: 0; }
 .board-legend > p { display: none; color: var(--neutral-600); }
