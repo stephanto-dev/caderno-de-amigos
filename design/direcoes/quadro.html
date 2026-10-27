@@ -5,7 +5,8 @@
 <!-- Protótipo da "Visão Quadro". Direção "Caderno físico" (aprovada 16/10/2026), sem alterações.
      Simplificada em 20/10/2026: janela fixa de 7 dias em "Essa semana" e sem arrastar (a única ação é o botão "falei agora").
      Grupos N:N em 20/10/2026: cor do post-it = cor do primeiro grupo em ordem alfabética; todos os grupos como etiquetas.
-     Estados: ?estado=normal|vazio|coluna-vazia|carregando|erro|registrando -->
+     Estados: ?estado=normal|vazio|coluna-vazia|carregando|erro|registrando
+     Cabeçalho de folha (3.12, 27/10/2026): D S T Q Q S S + data carimbo; demo = terça T + 27/10/2026. -->
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -153,6 +154,15 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--tinta);margin:0}
  .sheet{right:24px;top:24px;bottom:24px;width:calc(50% - 64px)}
  .veu{left:50%;border-radius:0 10px 10px 0}
 }
+
+/* ===== 3.12 Cabeçalho de folha (carimbo escolar D…S + data) =====
+   Demo: terça (T) destacada + 27/10/2026. Em produção: Intl/Date em America/Sao_Paulo. */
+.cabecalho-folha{display:flex;align-items:center;justify-content:space-between;gap:12px;height:var(--linha);margin:0 0 0;pointer-events:none;user-select:none;-webkit-user-select:none}
+.cab-dias{display:flex;align-items:center;gap:4px;list-style:none;margin:0;padding:0}
+.cab-dias li{width:22px;height:22px;box-sizing:border-box;border:1.5px solid var(--tinta);border-radius:2px;display:grid;place-items:center;font:600 11px/1 Inter,system-ui,sans-serif;color:var(--tinta);background:transparent}
+.cab-dias li[aria-current="date"],.cab-dias li.hoje{background:var(--tinta);color:#fff;border-width:2px;font-weight:700}
+.cab-data{font:700 21px/1 Caveat,cursive;color:var(--tinta);letter-spacing:.03em;border-bottom:1.5px dashed #B3A38C;padding:0 2px 2px;white-space:nowrap}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style></head>
 <body class="mesa">
 <div class="cena">
@@ -163,7 +173,19 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--tinta);margin:0}
    <div class="folha paper-lined" id="folha">
     <div class="quadro-grid" id="grid">
      <header class="cab-l">
-      <p class="text-sm text-neutro-600">sábado, 17 de outubro</p>
+      <!-- 3.12 Cabeçalho de folha — demo: terça (T) + 27/10/2026 (America/Sao_Paulo). Em produção: Intl/Date no fuso SP; sem editar/filtrar. -->
+      <div class="cabecalho-folha" role="group" aria-label="Data de hoje, terça-feira 27/10/2026">
+       <ol class="cab-dias" aria-label="Dia da semana">
+        <li><span aria-hidden="true">D</span><span class="sr-only">Domingo</span></li>
+        <li><span aria-hidden="true">S</span><span class="sr-only">Segunda</span></li>
+        <li class="hoje" aria-current="date"><span aria-hidden="true">T</span><span class="sr-only">Terça, hoje</span></li>
+        <li><span aria-hidden="true">Q</span><span class="sr-only">Quarta</span></li>
+        <li><span aria-hidden="true">Q</span><span class="sr-only">Quinta</span></li>
+        <li><span aria-hidden="true">S</span><span class="sr-only">Sexta</span></li>
+        <li><span aria-hidden="true">S</span><span class="sr-only">Sábado</span></li>
+       </ol>
+       <time class="cab-data" datetime="2026-10-27">27/10/2026</time>
+      </div>
       <h1 id="titulo-quadro" class="titulo text-2xl lg:text-3xl font-semibold">Quadro</h1>
       <p class="text-sm text-neutro-700">As colunas se arrumam sozinhas, pelo último contato e pelo ritmo de cada amigo. Use o botão <i>falei agora</i> do post-it para registrar um contato.</p>
      </header>

@@ -82,6 +82,15 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--tinta);margin:0}
  .abas .aba[aria-current]{width:48px;height:104px}
  .abas .so-desk{display:flex;height:56px}
 }
+
+/* ===== 3.12 Cabeçalho de folha (carimbo escolar D…S + data) =====
+   Demo: terça (T) destacada + 27/10/2026. Em produção: Intl/Date em America/Sao_Paulo. */
+.cabecalho-folha{display:flex;align-items:center;justify-content:space-between;gap:12px;height:var(--linha);margin:0 0 0;pointer-events:none;user-select:none;-webkit-user-select:none}
+.cab-dias{display:flex;align-items:center;gap:4px;list-style:none;margin:0;padding:0}
+.cab-dias li{width:22px;height:22px;box-sizing:border-box;border:1.5px solid var(--tinta);border-radius:2px;display:grid;place-items:center;font:600 11px/1 Inter,system-ui,sans-serif;color:var(--tinta);background:transparent}
+.cab-dias li[aria-current="date"],.cab-dias li.hoje{background:var(--tinta);color:#fff;border-width:2px;font-weight:700}
+.cab-data{font:700 21px/1 Caveat,cursive;color:var(--tinta);letter-spacing:.03em;border-bottom:1.5px dashed #B3A38C;padding:0 2px 2px;white-space:nowrap}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style></head>
 <body class="mesa">
 <div class="cena">
@@ -89,6 +98,19 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--tinta);margin:0}
   <div class="espiral-topo spiral-h" aria-hidden="true"></div>
   <section class="pagina margin-line">
    <div class="folha paper-lined" id="folha">
+    <!-- 3.12 Cabeçalho de folha — demo: terça (T) + 27/10/2026 (America/Sao_Paulo). Em produção: Intl/Date no fuso SP; sem editar/filtrar. -->
+    <div class="cabecalho-folha" role="group" aria-label="Data de hoje, terça-feira 27/10/2026">
+     <ol class="cab-dias" aria-label="Dia da semana">
+      <li><span aria-hidden="true">D</span><span class="sr-only">Domingo</span></li>
+      <li><span aria-hidden="true">S</span><span class="sr-only">Segunda</span></li>
+      <li class="hoje" aria-current="date"><span aria-hidden="true">T</span><span class="sr-only">Terça, hoje</span></li>
+      <li><span aria-hidden="true">Q</span><span class="sr-only">Quarta</span></li>
+      <li><span aria-hidden="true">Q</span><span class="sr-only">Quinta</span></li>
+      <li><span aria-hidden="true">S</span><span class="sr-only">Sexta</span></li>
+      <li><span aria-hidden="true">S</span><span class="sr-only">Sábado</span></li>
+     </ol>
+     <time class="cab-data" datetime="2026-10-27">27/10/2026</time>
+    </div>
     <!-- CADASTRO + BLOCO GRUPOS -->
     <div id="view-cadastro">
      <a href="#" class="inline-flex items-center gap-1 text-sm font-medium text-neutro-700"><i data-lucide="x"></i>Cancelar</a>
@@ -151,7 +173,7 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--tinta);margin:0}
 </div>
 <script>
 const ICO={familia:'house',faculdade:'graduation-cap',trabalho:'briefcase',vizinhanca:'map-pin',neutro:'circle-dashed'};
-const CORES=[{id:'familia',nome:'Família'},{id:'faculdade',nome:'Faculdade'},{id:'trabalho',nome:'Trabalho'},{id:'vizinhanca',nome:'Vizinhança'},{id:'neutro',nome:'Neutro'}];
+const CORES=[{id:'familia',nome:'Pêssego'},{id:'faculdade',nome:'Amarelo'},{id:'trabalho',nome:'Azul'},{id:'vizinhanca',nome:'Verde'},{id:'neutro',nome:'Creme'}]; // label UI ≠ token (familia|faculdade|…)
 const GRUPOS=[
  {id:1,nome:'Faculdade',cor:'faculdade',total_amigos:4,ligado:true},
  {id:2,nome:'Família',cor:'familia',total_amigos:2,ligado:false},
