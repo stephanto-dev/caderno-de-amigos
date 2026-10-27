@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import { auth_state } from './auth'
+import SheetHeader from './components/SheetHeader.vue'
 
 const route = useRoute()
 </script>
@@ -13,6 +14,7 @@ const route = useRoute()
 
       <section class="page page-left margin-line">
         <div class="page-content paper-lined">
+          <SheetHeader />
           <p v-if="auth_state.error" class="session-error" role="alert">{{ auth_state.error }}</p>
           <RouterView />
         </div>
@@ -22,6 +24,7 @@ const route = useRoute()
 
       <section v-if="route.name !== 'board'" class="page page-right margin-line" aria-label="Perfil">
         <div class="page-content paper-lined">
+          <SheetHeader />
           <RouterView name="detail" v-slot="{ Component }">
             <component :is="Component" v-if="Component" />
             <p v-else class="handwritten-note page-prompt">Esta página é de cada amigo.</p>

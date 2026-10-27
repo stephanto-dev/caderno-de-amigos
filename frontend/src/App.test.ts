@@ -1,10 +1,12 @@
-import { mount, flushPromises } from '@vue/test-utils'
+import { enableAutoUnmount, mount, flushPromises } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import App from './App.vue'
 import { auth_state } from './auth'
 import { install_auth_guard_for_router, routes } from './router'
+
+enableAutoUnmount(afterEach)
 
 describe('App navigation', () => {
   afterEach(() => {
@@ -13,6 +15,35 @@ describe('App navigation', () => {
     auth_state.is_initialized = false
     auth_state.error = null
     vi.unstubAllGlobals()
+  })
+
+  it('shows the date header on every authenticated sheet and omits it on the login cover', async () => {
+    auth_state.current_user = 'ana'
+    auth_state.is_initialized = true
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json([])))
+    const router = createRouter({ history: createMemoryHistory(), routes })
+    install_auth_guard_for_router(router)
+    await router.push('/')
+    const wrapper = mount(App, { global: { plugins: [router] } })
+
+    for (const path of ['/', '/quadro', '/amigos', '/amigos/123', '/amigos/novo', '/config']) {
+      await router.push(path)
+      await flushPromises()
+
+      const sheets = wrapper.findAll('.page-content')
+      expect(wrapper.findAll('.cabecalho-folha')).toHaveLength(sheets.length)
+      for (const sheet of sheets) {
+        expect(sheet.element.firstElementChild?.classList.contains('cabecalho-folha')).toBe(true)
+      }
+      expect(wrapper.find('.board-date').exists()).toBe(false)
+    }
+
+    auth_state.current_user = null
+    await router.push('/entrar')
+    await flushPromises()
+
+    expect(wrapper.get('h1').text()).toBe('Caderno de amigos')
+    expect(wrapper.find('.cabecalho-folha').exists()).toBe(false)
   })
 
   it('renders the view selected by the URL', async () => {
