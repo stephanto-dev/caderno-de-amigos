@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 from django.urls import include, path
-from django.views.generic import TemplateView
+from django.views.generic import RedirectView, TemplateView
 
 frontend_view = TemplateView.as_view(template_name="index.html")
 
@@ -16,6 +16,8 @@ urlpatterns = [
     path("amigos/novo", frontend_view),
     path("amigos/<str:friend_id>", frontend_view),
     path("config", frontend_view),
-    path("login", frontend_view),
+    path("login", RedirectView.as_view(url="/entrar")),
+    path("entrar", frontend_view),
+    path("quadro", frontend_view),
     path("", frontend_view, name="home"),
 ]

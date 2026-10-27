@@ -35,13 +35,14 @@ body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--tinta);backgrou
 
 .cena{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px 18px;box-sizing:border-box}
 
-/* Caderno fechado: largura E altura FIXAS (iguais em Entrar e Criar, todos os estados) */
+/* Caderno fechado: tamanho estável por viewport em Entrar, Criar e todos os estados. */
 .caderno{
-  --capa-w: min(340px, calc(100vw - 40px));
-  --capa-h: 520px; /* cabe criar + 3 erros; não muda ao trocar modo */
+  --capa-w: min(400px, calc(100vw - 40px));
+  --capa-h: min(620px, calc(100dvh - 40px));
   position:relative;
   width:var(--capa-w);
   height:var(--capa-h);
+  min-height:520px;
   filter:drop-shadow(0 28px 40px rgba(0,0,0,.4));
 }
 
@@ -126,7 +127,7 @@ body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--tinta);backgrou
   border-radius:10px;
   box-shadow:var(--sombra-papel);
   transform:none;
-  padding:12px 10px 10px;
+  padding:16px 12px 12px;
   flex:1 1 auto;
   min-height:0;
   display:flex;flex-direction:column;
@@ -151,30 +152,30 @@ body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--tinta);backgrou
 
 .campos{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:flex-start}
 .campo-bloco{margin-bottom:4px;flex:none}
-.campo-bloco label{display:block;font:500 12px/14px Inter,sans-serif;color:var(--tinta);margin-bottom:2px}
+.campo-bloco label{display:block;font:500 .9rem/1.2 Inter,sans-serif;color:var(--tinta);margin-bottom:3px}
 .campo{
-  height:36px;padding:0 10px;width:100%;
+  height:44px;padding:0 10px;width:100%;
   background:var(--folha);border:1.5px solid var(--tinta);border-radius:6px;
-  font:400 14px/18px Inter,sans-serif;color:var(--tinta);
+  font:400 1rem/1 Inter,sans-serif;color:var(--tinta);
 }
 .campo::placeholder{color:var(--neutro-500)}
 .campo:focus{outline:none;box-shadow:var(--anel-foco)}
 .campo[aria-invalid="true"]{border-color:var(--erro)}
 /* reserva 1 linha p/ erro — estado erro não muda altura da capa */
-.msg-erro{font:400 11px/14px Inter,sans-serif;color:var(--erro);margin:2px 0 0;min-height:14px}
+.msg-erro{font:400 .8rem/1.25 Inter,sans-serif;color:var(--erro);margin:3px 0 0;min-height:16px}
 .msg-erro:empty,.msg-erro[data-empty="1"]{visibility:hidden}
 
 .acoes{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:auto;flex:none;padding-top:4px}
 .btn-pri{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  min-height:42px;min-width:140px;padding:0 22px;border:0;border-radius:999px;
+  min-height:44px;min-width:140px;padding:0 22px;border:0;border-radius:999px;
   background:var(--primaria);color:#fff;font:600 15px/1 Inter,sans-serif;cursor:pointer;
 }
 .btn-pri:hover:not(:disabled){background:var(--primaria-700)}
 .btn-pri:active:not(:disabled){background:var(--primaria-800)}
 .btn-pri:disabled{opacity:.55;cursor:not-allowed}
 .btn-pri:focus-visible{outline:none;box-shadow:var(--anel-foco)}
-.link-troca{font:500 13px/18px Inter,sans-serif;color:var(--neutro-700);text-decoration:underline;text-underline-offset:3px}
+.link-troca{min-height:44px;display:inline-flex;align-items:center;font:500 13px/18px Inter,sans-serif;color:var(--neutro-700);text-decoration:underline;text-underline-offset:3px}
 .link-troca:focus-visible{outline:none;box-shadow:var(--anel-foco);border-radius:4px}
 [data-lucide]{width:16px;height:16px;stroke-width:2}
 .spin{animation:spin 1s linear infinite}
@@ -182,23 +183,19 @@ body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--tinta);backgrou
 @media (prefers-reduced-motion:reduce){.spin{animation:none}}
 
 @media (min-width:768px){
-  .cena{padding:48px}
-  .caderno{--capa-w:380px;--capa-h:560px}
+  .caderno{--capa-w:480px;--capa-h:min(700px, calc(100dvh - 40px));min-height:560px}
   .bloco-folhas{right:-16px;width:16px}
   .capa{padding:22px 22px 22px 40px;gap:10px;border-radius:7px 12px 12px 7px}
   .marca h1{font-size:1.9rem}
   .marca .sub{font-size:1.25rem}
-  .etiqueta{padding:14px 12px 12px}
-  .campo{height:38px;font-size:15px}
-  .btn-pri{min-height:44px}
+  .etiqueta{padding:16px 12px 12px}
 }
 @media (max-width:400px){
-  .caderno{--capa-h:500px}
+  .caderno{--capa-h:min(580px, calc(100dvh - 40px));min-height:500px}
   .capa{padding:14px 12px 14px 30px;gap:6px}
   .marca h1{font-size:1.3rem}
   .etiqueta{padding:10px 8px 8px}
-  .campo{height:34px}
-  .btn-pri{min-height:40px}
+  .campo{height:40px}
 }
 </style></head>
 <body class="mesa">

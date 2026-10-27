@@ -10,6 +10,8 @@ Status: Aceito
 
 **Atualização 2026-10-25 (CRM-10)**: Migrados os IDs de Friend, Group e Contact de AutoField para UUIDField. URLs e JSON usam UUIDs em formato string (ex: `/api/friends/381f7c9e-0201-4e5c-8ef8-92daa351609f/`). O `contact_id` retornado no POST também é UUID string.
 
+**Atualização 2026-10-26 (CRM-20)**: Cadastro próprio e login por e-mail. Contas novas usam o e-mail em minúsculas como `username` interno; a API recebe `email`.
+
 ## Contexto
 
 Definição dos endpoints da API REST do Django REST Framework que o frontend Vue consome.
@@ -22,9 +24,14 @@ Sem contrato claro, frontend e backend evoluem de forma descoordenada, gerando r
 
 ### Autenticação (sessão)
 
+- `POST /api/register/` — cria conta e sessão; exige CSRF e tem limite de 5 tentativas por minuto
+  - Corpo: `{"email": "...", "password": "...", "password_confirm": "..."}`
+  - Resposta `201`: mesmo formato de `/api/me/` autenticado
+  - E-mail já usado, senhas diferentes ou senha com menos de 8 caracteres retornam `400` com erro no campo correspondente
 - `POST /api/login/` — cria sessão
-  - Corpo: `{"username": "...", "password": "..."}`
-  - Resposta: `{"authenticated": true, "user": "username", "email": "email"}`
+  - Corpo: `{"email": "...", "password": "..."}`
+  - Resposta: `{"authenticated": true, "user": "username", "email": "email"}`; para contas novas, `user` também é o e-mail em minúsculas
+  - Exige CSRF e tem limite de 5 tentativas por minuto
 - `POST /api/logout/` — invalida sessão
 - `GET /api/me/` — verifica se está logado, seta o cookie `csrftoken`
   - Resposta: `{"authenticated": true|false, "user": "username"|null, "email": "email"|null}`

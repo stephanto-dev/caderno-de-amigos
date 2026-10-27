@@ -70,9 +70,10 @@ Relacionamento N:N com `Friend` ([ADR 2026-10-20](ADRs/2026-10-20-modelo-dados-r
 Autenticação por sessão Django com CSRF ([ADR 2026-10-20](ADRs/2026-10-20-autenticacao-por-sessao.md))
 
 ### Autenticação
-- `POST /api/login/` — cria sessão
+- `POST /api/register/` — cria conta por e-mail e inicia sessão; exige CSRF e limita tentativas
+- `POST /api/login/` — recebe e-mail e senha e cria sessão
 - `POST /api/logout/` — invalida sessão
-- `GET /api/me/` — verifica autenticação, seta o cookie csrftoken, retorna `{"authenticated": true|false, "user": "username"|null, "email": "email"|null}`
+- `GET /api/me/` — verifica autenticação, seta o cookie csrftoken, retorna `{"authenticated": true|false, "user": "username"|null, "email": "email"|null}`; contas novas usam o e-mail normalizado como username
 
 ### Friends
 - `GET /api/friends/` — lista amigos do usuário, já ordenada pelo backend (por coluna e urgência), com `column` calculada, último contato, grupos

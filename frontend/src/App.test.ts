@@ -17,7 +17,7 @@ describe('App navigation', () => {
 
   it('renders the view selected by the URL', async () => {
     const router = createRouter({ history: createMemoryHistory(), routes })
-    await router.push('/')
+    await router.push('/quadro')
     await router.isReady()
     const wrapper = mount(App, { global: { plugins: [router] } })
 
@@ -38,14 +38,14 @@ describe('App navigation', () => {
     expect(wrapper.get('.page-right a').attributes('href')).toBe('/amigos')
     expect(wrapper.get('a[aria-current="page"]').text()).toBe('Amigos')
 
-    await router.push('/login')
+    await router.push('/entrar')
     await flushPromises()
-    expect(wrapper.get('h1').text()).toBe('Entrar')
+    expect(wrapper.get('h1').text()).toBe('Caderno de amigos')
   })
 
   it('shows book pages and accessible navigation tabs', async () => {
     const router = createRouter({ history: createMemoryHistory(), routes })
-    await router.push('/')
+    await router.push('/quadro')
     await router.isReady()
     const wrapper = mount(App, { global: { plugins: [router] } })
 
@@ -88,7 +88,7 @@ describe('App navigation', () => {
 
     expect(auth_state.current_user).toBeNull()
     expect(auth_state.current_email).toBeNull()
-    expect(router.currentRoute.value.path).toBe('/login')
+    expect(router.currentRoute.value.path).toBe('/entrar')
   })
 
   it('omits the email row when the account has no email', async () => {

@@ -33,7 +33,7 @@ class TestSessionAuthentication:
         # Act
         response = csrf_client.post(
             reverse("login_user"),
-            {"username": "ana", "password": "senha-segura"},
+            {"email": "ANA@example.com", "password": "senha-segura"},
             HTTP_X_CSRFTOKEN=csrf_token,
         )
         me_response = csrf_client.get(reverse("get_current_user"))
@@ -51,13 +51,15 @@ class TestSessionAuthentication:
         self, csrf_client: APIClient
     ) -> None:
         # Arrange
-        get_user_model().objects.create_user(username="ana", password="senha-segura")
+        get_user_model().objects.create_user(
+            username="ana", email="ana@example.com", password="senha-segura"
+        )
         csrf_client.get(reverse("get_current_user"))
 
         # Act
         response = csrf_client.post(
             reverse("login_user"),
-            {"username": "ana", "password": "incorreta"},
+            {"email": "ana@example.com", "password": "incorreta"},
             HTTP_X_CSRFTOKEN=csrf_client.cookies["csrftoken"].value,
         )
 
@@ -68,7 +70,7 @@ class TestSessionAuthentication:
             "errors": [
                 {
                     "code": "invalid",
-                    "detail": "Usuário ou senha inválidos.",
+                    "detail": "E-mail ou senha incorretos.",
                     "attr": None,
                 }
             ],
@@ -83,7 +85,7 @@ class TestSessionAuthentication:
         # Act
         response = csrf_client.post(
             reverse("login_user"),
-            {"username": "desconhecido", "password": "senha-segura"},
+            {"email": "desconhecido@example.com", "password": "senha-segura"},
             HTTP_X_CSRFTOKEN=csrf_client.cookies["csrftoken"].value,
         )
 
@@ -94,7 +96,7 @@ class TestSessionAuthentication:
             "errors": [
                 {
                     "code": "invalid",
-                    "detail": "Usuário ou senha inválidos.",
+                    "detail": "E-mail ou senha incorretos.",
                     "attr": None,
                 }
             ],
@@ -104,11 +106,14 @@ class TestSessionAuthentication:
         self, csrf_client: APIClient
     ) -> None:
         # Arrange
-        get_user_model().objects.create_user(username="ana", password="senha-segura")
+        get_user_model().objects.create_user(
+            username="ana", email="ana@example.com", password="senha-segura"
+        )
 
         # Act
         response = csrf_client.post(
-            reverse("login_user"), {"username": "ana", "password": "senha-segura"}
+            reverse("login_user"),
+            {"email": "ana@example.com", "password": "senha-segura"},
         )
 
         # Assert
@@ -116,12 +121,14 @@ class TestSessionAuthentication:
 
     def test_logout_invalidates_session(self, csrf_client: APIClient) -> None:
         # Arrange
-        get_user_model().objects.create_user(username="ana", password="senha-segura")
+        get_user_model().objects.create_user(
+            username="ana", email="ana@example.com", password="senha-segura"
+        )
         csrf_client.get(reverse("get_current_user"))
         csrf_token = csrf_client.cookies["csrftoken"].value
         csrf_client.post(
             reverse("login_user"),
-            {"username": "ana", "password": "senha-segura"},
+            {"email": "ana@example.com", "password": "senha-segura"},
             HTTP_X_CSRFTOKEN=csrf_token,
         )
 
@@ -157,7 +164,179 @@ class TestSessionAuthentication:
         responses = [
             csrf_client.post(
                 reverse("login_user"),
-                {"username": "desconhecido", "password": "incorreta"},
+                {"email": "desconhecido@example.com", "password": "incorreta"},
+                HTTP_X_CSRFTOKEN=csrf_token,
+            )
+            for _ in range(6)
+        ]
+
+        # Assert
+        assert [response.status_code for response in responses] == [
+            400,
+            400,
+            400,
+            400,
+            400,
+            429,
+        ]
+
+
+@pytest.mark.django_db
+class TestRegistration:
+    def test_register_creates_user_and_session(self, csrf_client: APIClient) -> None:
+        # Arrange
+        csrf_client.get(reverse("get_current_user"))
+
+        # Act
+        response = csrf_client.post(
+            reverse("register_user"),
+            {
+                "email": "ANA@Example.com",
+                "password": "senha-segura",
+                "password_confirm": "senha-segura",
+            },
+            HTTP_X_CSRFTOKEN=csrf_client.cookies["csrftoken"].value,
+        )
+
+        # Assert
+        assert response.status_code == 201
+        assert response.data == {
+            "authenticated": True,
+            "user": "ana@example.com",
+            "email": "ana@example.com",
+        }
+        assert csrf_client.get(reverse("get_current_user")).data == response.data
+        assert (
+            get_user_model()
+            .objects.get(username="ana@example.com")
+            .check_password("senha-segura")
+        )
+
+    def test_register_rejects_existing_email_ignoring_case(
+        self, csrf_client: APIClient
+    ) -> None:
+        # Arrange
+        get_user_model().objects.create_user(
+            username="legacy", email="ana@example.com", password="senha-segura"
+        )
+        csrf_client.get(reverse("get_current_user"))
+
+        # Act
+        response = csrf_client.post(
+            reverse("register_user"),
+            {
+                "email": "ANA@example.com",
+                "password": "senha-segura",
+                "password_confirm": "senha-segura",
+            },
+            HTTP_X_CSRFTOKEN=csrf_client.cookies["csrftoken"].value,
+        )
+
+        # Assert
+        assert response.status_code == 400
+        assert response.data["errors"][0]["detail"] == "Este e-mail já tem conta."
+        assert response.data["errors"][0]["attr"] == "email"
+
+    def test_register_rejects_different_passwords(self, csrf_client: APIClient) -> None:
+        # Arrange
+        csrf_client.get(reverse("get_current_user"))
+
+        # Act
+        response = csrf_client.post(
+            reverse("register_user"),
+            {
+                "email": "ana@example.com",
+                "password": "senha-segura",
+                "password_confirm": "outra-senha",
+            },
+            HTTP_X_CSRFTOKEN=csrf_client.cookies["csrftoken"].value,
+        )
+
+        # Assert
+        assert response.status_code == 400
+        assert response.data["errors"][0]["detail"] == "As senhas não são iguais."
+        assert response.data["errors"][0]["attr"] == "password_confirm"
+
+    def test_register_rejects_short_password(self, csrf_client: APIClient) -> None:
+        # Arrange
+        csrf_client.get(reverse("get_current_user"))
+
+        # Act
+        response = csrf_client.post(
+            reverse("register_user"),
+            {
+                "email": "ana@example.com",
+                "password": "curta",
+                "password_confirm": "curta",
+            },
+            HTTP_X_CSRFTOKEN=csrf_client.cookies["csrftoken"].value,
+        )
+
+        # Assert
+        assert response.status_code == 400
+        assert (
+            response.data["errors"][0]["detail"]
+            == "A senha precisa ter pelo menos 8 caracteres."
+        )
+        assert response.data["errors"][0]["attr"] == "password"
+
+    def test_register_rejects_email_too_long_for_username(
+        self, csrf_client: APIClient
+    ) -> None:
+        # Arrange
+        csrf_client.get(reverse("get_current_user"))
+        email = f"{'a' * 140}@example.com"
+
+        # Act
+        response = csrf_client.post(
+            reverse("register_user"),
+            {
+                "email": email,
+                "password": "senha-segura",
+                "password_confirm": "senha-segura",
+            },
+            HTTP_X_CSRFTOKEN=csrf_client.cookies["csrftoken"].value,
+        )
+
+        # Assert
+        assert response.status_code == 400
+        assert response.data["errors"][0]["detail"] == (
+            "O e-mail precisa ter no máximo 150 caracteres."
+        )
+        assert response.data["errors"][0]["attr"] == "email"
+
+    def test_register_without_csrf_token_is_forbidden(
+        self, csrf_client: APIClient
+    ) -> None:
+        # Act
+        response = csrf_client.post(
+            reverse("register_user"),
+            {
+                "email": "ana@example.com",
+                "password": "senha-segura",
+                "password_confirm": "senha-segura",
+            },
+        )
+
+        # Assert
+        assert response.status_code == 403
+
+    def test_sixth_register_attempt_in_one_minute_is_throttled(
+        self, csrf_client: APIClient
+    ) -> None:
+        # Arrange
+        csrf_client.get(reverse("get_current_user"))
+        csrf_token = csrf_client.cookies["csrftoken"].value
+
+        # Act
+        responses = [
+            csrf_client.post(
+                reverse("register_user"),
+                {
+                    "email": "ana@example.com",
+                    "password": "curta",
+                    "password_confirm": "curta",
+                },
                 HTTP_X_CSRFTOKEN=csrf_token,
             )
             for _ in range(6)

@@ -17,6 +17,7 @@ export const auth_state = reactive({
   is_loading: false,
   is_initialized: false,
   error: null as string | null,
+  error_field: null as string | null,
 })
 
 function is_session_status(body: unknown): body is SessionStatus {
@@ -43,6 +44,7 @@ function get_error_message_for_browser(error: unknown): string {
 export async function get_session_for_browser(): Promise<void> {
   auth_state.is_loading = true
   auth_state.error = null
+  auth_state.error_field = null
   try {
     const session = await send_api_request('/api/me/')
     if (!is_session_status(session)) throw new Error('Invalid session response')
@@ -60,16 +62,20 @@ export async function get_session_for_browser(): Promise<void> {
   }
 }
 
-export async function login_user_for_browser(username: string, password: string): Promise<boolean> {
+async function send_account_session_for_browser(
+  path: string,
+  body: { email: string; password: string; password_confirm?: string },
+): Promise<boolean> {
   auth_state.is_loading = true
   auth_state.error = null
+  auth_state.error_field = null
   try {
-    const session = await send_api_request('/api/login/', {
+    const session = await send_api_request(path, {
       method: 'POST',
-      body: { username, password },
+      body,
     })
     if (!is_session_status(session) || !session.authenticated || session.user === null) {
-      throw new Error('Invalid login response')
+      throw new Error('Invalid account response')
     }
     auth_state.current_user = session.user
     auth_state.current_email = session.email
@@ -79,10 +85,23 @@ export async function login_user_for_browser(username: string, password: string)
     auth_state.current_user = null
     auth_state.current_email = null
     auth_state.error = get_error_message_for_browser(error)
+    auth_state.error_field = error instanceof ApiError ? error.field : null
     return false
   } finally {
     auth_state.is_loading = false
   }
+}
+
+export async function login_user_for_browser(email: string, password: string): Promise<boolean> {
+  return send_account_session_for_browser('/api/login/', { email, password })
+}
+
+export async function register_user_for_browser(
+  email: string,
+  password: string,
+  password_confirm: string,
+): Promise<boolean> {
+  return send_account_session_for_browser('/api/register/', { email, password, password_confirm })
 }
 
 export async function logout_user_for_browser(): Promise<boolean> {

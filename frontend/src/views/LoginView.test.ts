@@ -5,7 +5,7 @@ import { auth_state } from '../auth'
 import { install_auth_guard_for_router, routes } from '../router'
 import LoginView from './LoginView.vue'
 
-describe('login view', () => {
+describe('account cover', () => {
   beforeEach(() => {
     auth_state.current_user = null
     auth_state.current_email = null
@@ -14,42 +14,63 @@ describe('login view', () => {
   })
   afterEach(() => vi.unstubAllGlobals())
 
-  it('returns to the requested route after a successful login', async () => {
+  it('logs in by email and opens the board', async () => {
     vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce(Response.json({ authenticated: false, user: null, email: null }))
-      .mockResolvedValueOnce(Response.json({ authenticated: true, user: 'ana', email: 'ana@example.com' })))
+      .mockResolvedValueOnce(Response.json({ authenticated: true, user: 'ana@example.com', email: 'ana@example.com' })))
     const router = createRouter({ history: createMemoryHistory(), routes })
     install_auth_guard_for_router(router)
-    await router.push('/login?redirect=/amigos')
+    await router.push('/entrar')
     const wrapper = mount(LoginView, { global: { plugins: [router] } })
 
-    await wrapper.get('input[name="username"]').setValue('ana')
-    await wrapper.get('input[name="password"]').setValue('senha')
+    await wrapper.get('input[name="email"]').setValue('ana@example.com')
+    await wrapper.get('input[name="password"]').setValue('senha-segura')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
 
-    expect(auth_state.current_user).toBe('ana')
-    expect(router.currentRoute.value.path).toBe('/amigos')
+    expect(auth_state.current_email).toBe('ana@example.com')
+    expect(router.currentRoute.value.path).toBe('/quadro')
   })
 
-  it('shows the error and stays on login after invalid credentials', async () => {
+  it('creates an account and opens the board', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(Response.json({ authenticated: false, user: null, email: null }))
+      .mockResolvedValueOnce(Response.json({ authenticated: true, user: 'ana@example.com', email: 'ana@example.com' }, { status: 201 })))
+    const router = createRouter({ history: createMemoryHistory(), routes })
+    install_auth_guard_for_router(router)
+    await router.push('/entrar?modo=criar')
+    const wrapper = mount(LoginView, { global: { plugins: [router] } })
+
+    await wrapper.get('input[name="email"]').setValue('ana@example.com')
+    await wrapper.get('input[name="password"]').setValue('senha-segura')
+    await wrapper.get('input[name="password_confirm"]').setValue('senha-segura')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(auth_state.current_email).toBe('ana@example.com')
+    expect(router.currentRoute.value.path).toBe('/quadro')
+  })
+
+  it('links a register error to the affected field', async () => {
     vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce(Response.json({ authenticated: false, user: null, email: null }))
       .mockResolvedValueOnce(Response.json({
         type: 'validation_error',
-        errors: [{ code: 'invalid', detail: 'Usuário ou senha inválidos.', attr: null }],
+        errors: [{ code: 'invalid', detail: 'Este e-mail já tem conta.', attr: 'email' }],
       }, { status: 400 })))
     const router = createRouter({ history: createMemoryHistory(), routes })
     install_auth_guard_for_router(router)
-    await router.push('/login')
+    await router.push('/entrar?modo=criar')
     const wrapper = mount(LoginView, { global: { plugins: [router] } })
 
-    await wrapper.get('input[name="username"]').setValue('ana')
-    await wrapper.get('input[name="password"]').setValue('errada')
+    await wrapper.get('input[name="email"]').setValue('ana@example.com')
+    await wrapper.get('input[name="password"]').setValue('senha-segura')
+    await wrapper.get('input[name="password_confirm"]').setValue('senha-segura')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Usuário ou senha inválidos.')
-    expect(router.currentRoute.value.path).toBe('/login')
+    expect(wrapper.get('[role="alert"]').text()).toBe('Este e-mail já tem conta.')
+    expect(wrapper.get('input[name="email"]').attributes('aria-invalid')).toBe('true')
+    expect(wrapper.get('input[name="email"]').attributes('aria-describedby')).toBe('email-error')
   })
 })

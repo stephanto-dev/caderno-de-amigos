@@ -7,6 +7,7 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    public readonly field: string | null = null,
   ) {
     super(message)
   }
@@ -17,15 +18,19 @@ function get_csrf_token_for_request(): string | undefined {
   return cookie ? decodeURIComponent(cookie.slice(CSRF_COOKIE_NAME.length + 1)) : undefined
 }
 
-function get_error_detail_for_browser(body: unknown): string | undefined {
+function get_error_for_browser(body: unknown): { detail: string; field: string | null } | undefined {
   if (typeof body !== 'object' || body === null || !('errors' in body) || !Array.isArray(body.errors)) {
     return undefined
   }
   const firstError: unknown = body.errors[0]
-  if (typeof firstError !== 'object' || firstError === null || !('detail' in firstError)) {
+  if (typeof firstError !== 'object' || firstError === null || !('detail' in firstError)
+    || typeof firstError.detail !== 'string') {
     return undefined
   }
-  return typeof firstError.detail === 'string' ? firstError.detail : undefined
+  return {
+    detail: firstError.detail,
+    field: 'attr' in firstError && typeof firstError.attr === 'string' ? firstError.attr : null,
+  }
 }
 
 export async function send_api_request(
@@ -49,7 +54,8 @@ export async function send_api_request(
 
   const responseBody: unknown = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new ApiError(response.status, get_error_detail_for_browser(responseBody) ?? 'Não foi possível concluir a solicitação. Tente novamente.')
+    const error = get_error_for_browser(responseBody)
+    throw new ApiError(response.status, error?.detail ?? 'Não foi possível concluir a solicitação. Tente novamente.', error?.field)
   }
   return responseBody
 }

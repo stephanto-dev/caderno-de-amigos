@@ -12,15 +12,25 @@ describe('authentication guard', () => {
   })
   afterEach(() => vi.unstubAllGlobals())
 
-  it('sends a visitor to login and remembers the requested route', async () => {
+  it('sends a visitor to login without an unused redirect query', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ authenticated: false, user: null, email: null })))
     const router = createRouter({ history: createMemoryHistory(), routes })
     install_auth_guard_for_router(router)
 
     await router.push('/config')
 
-    expect(router.currentRoute.value.path).toBe('/login')
-    expect(router.currentRoute.value.query.redirect).toBe('/config')
+    expect(router.currentRoute.value.path).toBe('/entrar')
+    expect(router.currentRoute.value.query).toEqual({})
+  })
+
+  it('redirects the old login route to enter', async () => {
+    auth_state.current_user = 'ana@example.com'
+    auth_state.is_initialized = true
+    const router = createRouter({ history: createMemoryHistory(), routes })
+
+    await router.push('/login')
+
+    expect(router.currentRoute.value.path).toBe('/entrar')
   })
 
   it('allows a protected route when the session is authenticated', async () => {
@@ -43,6 +53,27 @@ describe('authentication guard', () => {
     await router.push('/')
 
     expect(auth_state.current_user).toBeNull()
-    expect(router.currentRoute.value.path).toBe('/login')
+    expect(router.currentRoute.value.path).toBe('/entrar')
+  })
+
+  it('sends an authenticated user away from the cover', async () => {
+    auth_state.current_user = 'ana@example.com'
+    auth_state.is_initialized = true
+    const router = createRouter({ history: createMemoryHistory(), routes })
+    install_auth_guard_for_router(router)
+
+    await router.push('/entrar?modo=criar')
+
+    expect(router.currentRoute.value.path).toBe('/quadro')
+  })
+
+  it('redirects the old home URL to the board', async () => {
+    auth_state.current_user = 'ana@example.com'
+    auth_state.is_initialized = true
+    const router = createRouter({ history: createMemoryHistory(), routes })
+
+    await router.push('/')
+
+    expect(router.currentRoute.value.path).toBe('/quadro')
   })
 })
