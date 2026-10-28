@@ -3,16 +3,11 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { BoardFriend } from '../api/friends'
 import GroupBadge from './GroupBadge.vue'
+import FriendCadence from './FriendCadence.vue'
 
 const props = defineProps<{ friend: BoardFriend; is_contact_disabled?: boolean }>()
 const emit = defineEmits<{ 'open-contact-sheet': [friend: BoardFriend] }>()
 
-const CADENCE_LABELS = {
-  day: { one: 'dia', many: 'dias' },
-  week: { one: 'semana', many: 'semanas' },
-  month: { one: 'mês', many: 'meses' },
-  year: { one: 'ano', many: 'anos' },
-} as const
 const MAX_GROUP_HEIGHT = 40
 const GROUP_ROW_HEIGHT = 18
 
@@ -66,7 +61,7 @@ onBeforeUnmount(() => group_observer?.disconnect())
       <GroupBadge v-if="friend.groups.length === 0" :group="{ name: 'sem grupo', color: 'neutral' }" />
       <span ref="overflow_badge" class="group-badge group-overflow" role="img" hidden></span>
     </div>
-    <p class="friend-cadence">{{ friend.cadence_amount }} {{ CADENCE_LABELS[friend.cadence_unit][friend.cadence_amount === 1 ? 'one' : 'many'] }}</p>
+    <p class="friend-cadence"><FriendCadence :friend="friend" /></p>
     <p v-if="friend.last_note" class="friend-note" :title="friend.last_note">{{ friend.last_note }}</p>
     <p v-else class="friend-no-note">sem nota ainda</p>
     <button type="button" class="contact-button" :disabled="is_contact_disabled" :aria-label="`Falei agora com ${friend.name}`" @click="emit('open-contact-sheet', friend)">
