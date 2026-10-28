@@ -230,7 +230,7 @@ describe('Board', () => {
     await flushPromises()
 
     expect(wrapper.get('dialog[open] [role="alert"]').text()).toContain('Este amigo não está mais disponível')
-    expect(wrapper.get('[role="alert"]').text()).toContain('Atualize o Quadro')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Atualize os dados deste amigo')
   })
 
   it('preserves the draft without claiming failure or success when the POST response is lost', async () => {

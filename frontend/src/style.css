@@ -157,6 +157,7 @@ body {
     border-radius: 10px 0 0 10px;
     box-shadow: var(--shadow-page), inset -18px 0 24px -14px rgba(0,0,0,.18);
   }
+  .profile-open .page-left { visibility: visible; }
   .page-right {
     z-index: auto;
     visibility: visible;

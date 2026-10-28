@@ -56,7 +56,7 @@ async function keep_note_for_contact(): Promise<void> {
   note_input.value?.focus()
 }
 
-/** Send once, preserve the draft on failure, and let the board apply Django's result. */
+/** Send once, preserve the draft on failure, and let the calling view apply Django's result. */
 async function send_contact_for_sheet(): Promise<void> {
   if (is_saving.value || is_confirming_discard.value) return
   is_saving.value = true
@@ -68,11 +68,11 @@ async function send_contact_for_sheet(): Promise<void> {
   } catch (error) {
     invalid_field.value = error instanceof ApiError ? error.field : null
     if (error instanceof ApiError && error.status === NOT_FOUND_STATUS) {
-      error_message.value = 'Este amigo não está mais disponível. Sua nota continua aqui. Atualize o Quadro antes de registrar.'
+      error_message.value = 'Este amigo não está mais disponível. Sua nota continua aqui. Atualize os dados deste amigo antes de registrar.'
     } else if (error instanceof ApiError && error.status === VALIDATION_ERROR_STATUS) {
       error_message.value = `${error.message} Sua nota continua aqui. Tente novamente após revisar os campos.`
     } else {
-      error_message.value = 'Não conseguimos confirmar o registro. Sua nota continua aqui. Verifique sua conexão e o Quadro antes de tentar novamente.'
+      error_message.value = 'Não conseguimos confirmar o registro. Sua nota continua aqui. Verifique sua conexão e os dados deste amigo antes de tentar novamente.'
     }
   } finally {
     is_saving.value = false

@@ -115,6 +115,22 @@ novamente, pois o DELETE retorna 204 sem corpo. Se só essa busca falhar, a nova
 tentativa repete apenas o GET. Erros ao desfazer permanecem visíveis para permitir
 uma nova tentativa; amigos que já não existem são retirados do Quadro.
 
+## Lista e perfil de amigos
+
+`/amigos` consulta a lista do usuário e filtra nomes no navegador, sem alterar os
+dados recebidos nem fazer uma nova consulta a cada tecla. `/amigos/:id` mantém a
+lista à esquerda e abre o perfil à direita a partir de 1280px; abaixo disso, o
+perfil ocupa a página sobre a lista.
+
+O perfil consulta o amigo pelo ID da rota, ignora respostas de perfis anteriores
+que cheguem atrasadas e apresenta carregamento, erro com nova tentativa e 404.
+Mostra somente os campos do contrato MVP, sem histórico completo de contatos.
+
+O perfil reutiliza `ContactSheet`. Após salvar, a resposta do Django atualiza o
+perfil e a lista, compartilhada em `frontend/src/friends.ts`. `FriendCadence`
+mantém a apresentação do ritmo igual no perfil e nos cartões do Quadro.
+Editar e apagar ficam desabilitados com explicação até a entrega da CRM-16.
+
 ## Diagrama de arquitetura
 
 ```mermaid
