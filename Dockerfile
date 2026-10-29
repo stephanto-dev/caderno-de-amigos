@@ -16,4 +16,4 @@ COPY backend/src ./src
 COPY --from=frontend /app/frontend/dist /app/frontend/dist
 RUN DJANGO_DEBUG=1 python src/manage.py collectstatic --noinput
 EXPOSE 8000
-CMD ["gunicorn", "caderno.wsgi:application", "--chdir", "src", "--bind", "0.0.0.0:8000"]
+CMD ["sh", "-c", "python src/manage.py migrate --noinput && exec gunicorn caderno.wsgi:application --chdir src --bind 0.0.0.0:8000"]

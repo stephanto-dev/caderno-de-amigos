@@ -162,6 +162,14 @@ Use a imagem Docker com Gunicorn. O Compose é exclusivo de desenvolvimento:
 ele liga o modo de depuração e usa `runserver`. A imagem serve o frontend
 compilado junto com o Django; o PostgreSQL continua separado.
 
+Ao iniciar, o container executa `migrate --noinput` antes de iniciar o Gunicorn.
+Isso aplica migrations pendentes em cada deploy e também nos reinícios. Se a
+migration falhar, o servidor não inicia; consulte os logs do deploy para corrigir
+o erro. Não é necessário configurar outro comando de migration no Coolify.
+Esse fluxo pressupõe uma única instância iniciando por vez; ao adicionar réplicas,
+execute migrations em uma etapa única de publicação. Faça backup do banco antes
+de publicar mudanças de schema.
+
 Configure `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`,
 `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` e `POSTGRES_HOST`.
 O modo de depuração fica desligado por padrão; só o ambiente local deve usar
