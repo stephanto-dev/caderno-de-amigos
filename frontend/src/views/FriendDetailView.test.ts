@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import { createMemoryHistory, createRouter } from 'vue-router'
 import FriendDetailView from './FriendDetailView.vue'
 import FriendsView from './FriendsView.vue'
+import { friends_state } from '../friends'
 
 const FRIEND = {
   id: '00000000-0000-4000-8000-000000000001', name: 'Ana Lima',
@@ -35,7 +36,7 @@ beforeAll(() => {
 afterAll(() => { Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal') })
 
 describe('Friend profile', () => {
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => { vi.unstubAllGlobals(); friends_state.friends = [] })
 
   it('shows the owned friend fields returned by Django', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json(FRIEND))
@@ -60,14 +61,180 @@ describe('Friend profile', () => {
     expect(wrapper.text()).not.toContain('não encontrado')
   })
 
-  it('explains that editing and deletion are not available yet', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(FRIEND)))
-    const { wrapper } = await get_profile_for_test()
+  it('edits the prefilled friend and updates the profile and list without navigation', async () => {
+    const saved_friend = { ...FRIEND, name: 'Ana Silva', cadence_amount: 2 }
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json(FRIEND))
+      .mockResolvedValueOnce(Response.json(FRIEND.groups.map((group) => ({ ...group, friends_count: 1 }))))
+      .mockResolvedValueOnce(Response.json(saved_friend))
+    vi.stubGlobal('fetch', fetch)
+    const { wrapper, router } = await get_profile_for_test()
+    await flushPromises()
+    friends_state.friends = [{ ...FRIEND, cadence_unit: 'week', column: 'on_track', groups: [] }]
+    await wrapper.get('button[name="edit-friend"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.get('button[name="edit-friend"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.get('button[name="delete-friend"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.get('#friend-actions-help').text()).toContain('ainda não estão disponíveis')
+    expect(wrapper.get<HTMLInputElement>('input[name="name"]').element.value).toBe(FRIEND.name)
+    expect(wrapper.get<HTMLInputElement>('input[name="cadence_unit"][value="week"]').element.checked).toBe(true)
+    expect(wrapper.get('button.group-chip').attributes('aria-pressed')).toBe('true')
+    await wrapper.get('input[name="name"]').setValue(saved_friend.name)
+    await wrapper.get('input[name="cadence_amount"]').setValue(2)
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(fetch).toHaveBeenLastCalledWith(`/api/friends/${FRIEND.id}/`, expect.objectContaining({
+      method: 'PATCH', body: JSON.stringify({ name: 'Ana Silva', cadence_amount: 2, cadence_unit: 'week', groups: [FRIEND.groups[0]!.id] }),
+    }))
+    expect(wrapper.get('h1').text()).toBe('Ana Silva')
+    expect(wrapper.text()).toContain('a cada 2 semanas')
+    expect(wrapper.find('form').exists()).toBe(false)
+    expect(friends_state.friends[0]?.name).toBe('Ana Silva')
+    expect(router.currentRoute.value.path).toBe(`/amigos/${FRIEND.id}`)
+  })
+
+  it('keeps the edited fields and links a rejected group to the group picker', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(Response.json(FRIEND))
+      .mockResolvedValueOnce(Response.json(FRIEND.groups.map((group) => ({ ...group, friends_count: 1 }))))
+      .mockResolvedValueOnce(Response.json({ type: 'validation_error', errors: [
+        { code: 'does_not_exist', attr: 'groups', detail: 'Este grupo não está disponível.' },
+      ] }, { status: 400 })))
+    const { wrapper } = await get_profile_for_test()
+    await flushPromises()
+    await wrapper.get('button[name="edit-friend"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('input[name="name"]').setValue('Ana Silva')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.get<HTMLInputElement>('input[name="name"]').element.value).toBe('Ana Silva')
+    expect(wrapper.get('#friend-groups-error').text()).toContain('Este grupo não está disponível.')
+    expect(wrapper.get('.friend-groups').attributes('aria-invalid')).toBe('true')
+    expect(wrapper.get('h1').text()).toBe(FRIEND.name)
+  })
+
+  it('cancels a friend edit without sending a patch', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json(FRIEND)).mockResolvedValueOnce(Response.json([]))
+    vi.stubGlobal('fetch', fetch)
+    const { wrapper } = await get_profile_for_test()
+    await flushPromises()
+    await wrapper.get('button[name="edit-friend"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('input[name="name"]').setValue('Outro nome')
+    await wrapper.get('button[name="cancel-friend-edit"]').trigger('click')
+
+    expect(wrapper.get('h1').text()).toBe(FRIEND.name)
+    expect(wrapper.find('form').exists()).toBe(false)
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('deletes only after confirmation, removes the friend from the list and returns there', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json(FRIEND)).mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetch)
+    const { wrapper, router } = await get_profile_for_test()
+    await flushPromises()
+    friends_state.friends = [{ ...FRIEND, cadence_unit: 'week', column: 'on_track', groups: [] }]
+
+    await wrapper.get('button[name="delete-friend"]').trigger('click')
+    expect(wrapper.get('[role="alert"]').text()).toContain('contatos')
+    expect(fetch).toHaveBeenCalledTimes(1)
+    await wrapper.get('button[name="confirm-delete-friend"]').trigger('click')
+    await flushPromises()
+
+    expect(fetch).toHaveBeenLastCalledWith(`/api/friends/${FRIEND.id}/`, expect.objectContaining({ method: 'DELETE' }))
+    expect(friends_state.friends).toEqual([])
+    expect(router.currentRoute.value.path).toBe('/amigos')
+  })
+
+  it('cancels friend deletion without contacting the deletion endpoint', async () => {
+    const fetch = vi.fn().mockResolvedValue(Response.json(FRIEND))
+    vi.stubGlobal('fetch', fetch)
+    const { wrapper } = await get_profile_for_test()
+    await flushPromises()
+    await wrapper.get('button[name="delete-friend"]').trigger('click')
+    await wrapper.get('button[name="cancel-delete-friend"]').trigger('click')
+
+    expect(wrapper.find('button[name="confirm-delete-friend"]').exists()).toBe(false)
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the profile and permits retrying a failed deletion', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(Response.json(FRIEND))
+      .mockRejectedValueOnce(new TypeError('Failed to fetch')))
+    const { wrapper, router } = await get_profile_for_test()
+    await flushPromises()
+    await wrapper.get('button[name="delete-friend"]').trigger('click')
+    await wrapper.get('button[name="confirm-delete-friend"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Não foi possível apagar o amigo.')
+    expect(wrapper.get('button[name="confirm-delete-friend"]').attributes('disabled')).toBeUndefined()
+    expect(router.currentRoute.value.path).toBe(`/amigos/${FRIEND.id}`)
+  })
+
+  it('keeps a saved group rename when the friend edit is cancelled', async () => {
+    const group = { ...FRIEND.groups[0], name: 'Universidade', color: 'work', friends_count: 1 }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(Response.json(FRIEND))
+      .mockResolvedValueOnce(Response.json(FRIEND.groups.map((group) => ({ ...group, friends_count: 1 }))))
+      .mockResolvedValueOnce(Response.json(group)))
+    const { wrapper } = await get_profile_for_test()
+    await flushPromises()
+    await wrapper.get('button[name="edit-friend"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('input[name="name"]').setValue('Nome ainda não salvo')
+    await wrapper.get('button[name="edit-groups"]').trigger('click')
+    await wrapper.get('button.group-chip').trigger('click')
+    await wrapper.get('input[name="group_name"]').setValue(group.name)
+    await wrapper.get('input[name="group_color"][value="work"]').setValue(true)
+    await wrapper.get('button[name="save-group"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get<HTMLInputElement>('input[name="name"]').element.value).toBe('Nome ainda não salvo')
+    await wrapper.get('button[name="cancel-friend-edit"]').trigger('click')
+
+    expect(wrapper.get('h1').text()).toBe(FRIEND.name)
+    expect(wrapper.get('.profile-groups .group-work').text()).toBe(group.name)
+  })
+
+  it('does not leave a different profile when an earlier deletion finishes late', async () => {
+    let finish_deletion: (response: Response) => void = () => { throw new Error('Deletion not started') }
+    const pending_deletion = new Promise<Response>((complete) => { finish_deletion = complete })
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json(FRIEND))
+      .mockReturnValueOnce(pending_deletion)
+      .mockResolvedValueOnce(Response.json(OTHER_FRIEND))
+    vi.stubGlobal('fetch', fetch)
+    const { wrapper, router } = await get_profile_for_test()
+    await flushPromises()
+    await wrapper.get('button[name="delete-friend"]').trigger('click')
+    await wrapper.get('button[name="confirm-delete-friend"]').trigger('click')
+    await wrapper.get('button[name="confirm-delete-friend"]').trigger('click')
+    expect(fetch).toHaveBeenCalledTimes(2)
+
+    await router.push(`/amigos/${OTHER_FRIEND.id}`)
+    await flushPromises()
+    finish_deletion(new Response(null, { status: 204 }))
+    await flushPromises()
+
+    expect(wrapper.get('h1').text()).toBe(OTHER_FRIEND.name)
+    expect(wrapper.find('button[name="confirm-delete-friend"]').exists()).toBe(false)
+    expect(wrapper.get('button[name="delete-friend"]').attributes('disabled')).toBeUndefined()
+    expect(router.currentRoute.value.path).toBe(`/amigos/${OTHER_FRIEND.id}`)
+  })
+
+  it('keeps a confirmed group deletion when the friend edit is cancelled', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(Response.json(FRIEND))
+      .mockResolvedValueOnce(Response.json(FRIEND.groups.map((group) => ({ ...group, friends_count: 1 }))))
+      .mockResolvedValueOnce(new Response(null, { status: 204 })))
+    const { wrapper } = await get_profile_for_test()
+    await flushPromises()
+    await wrapper.get('button[name="edit-friend"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('button[name="edit-groups"]').trigger('click')
+    await wrapper.get('button.group-chip').trigger('click')
+    await wrapper.get('button[name="delete-group"]').trigger('click')
+    await wrapper.get('button[name="confirm-delete-group"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('button[name="cancel-friend-edit"]').trigger('click')
+
+    expect(wrapper.get('h1').text()).toBe(FRIEND.name)
+    expect(wrapper.get('.profile-groups').text()).toBe('sem grupo')
   })
 
   it('explains missing contact, note and groups without blank placeholders', async () => {

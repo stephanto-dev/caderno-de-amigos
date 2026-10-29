@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
-import { get_friend_for_board } from '../api/friends'
-import type { BoardFriend, RecordedContact } from '../api/friends'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { get_friend_for_board, send_friend_deletion_for_owner } from '../api/friends'
+import type { BoardFriend, FriendGroup, RecordedContact } from '../api/friends'
 import { ApiError } from '../api/http'
 import FriendCadence from '../components/FriendCadence.vue'
 import GroupBadge from '../components/GroupBadge.vue'
 import ContactSheet from '../components/ContactSheet.vue'
-import { set_friend_for_list } from '../friends'
+import FriendForm from '../components/FriendForm.vue'
+import { set_friend_for_list, remove_friend_for_list } from '../friends'
 
 const NOT_FOUND_STATUS = 404
 const CONTACT_DATE_FORMAT = new Intl.DateTimeFormat('pt-BR')
@@ -15,6 +16,7 @@ const COLUMN_LABELS = {
   just_talked: 'Falei agora', overdue: 'Faz um tempinho', this_week: 'Essa semana', on_track: 'Em dia',
 } as const
 const route = useRoute()
+const router = useRouter()
 const friend = ref<BoardFriend | null>(null)
 const profile_heading = ref<HTMLHeadingElement | null>(null)
 const is_loading = ref(true)
@@ -23,7 +25,84 @@ const is_not_found = ref(false)
 const is_contact_sheet_open = ref(false)
 const contact_button = ref<HTMLButtonElement | null>(null)
 const contact_announcement = ref('')
+const is_editing = ref(false)
+const is_delete_confirmation_open = ref(false)
+const is_deleting = ref(false)
+const deletion_error = ref('')
+const friend_announcement = ref('')
+const edit_button = ref<HTMLButtonElement | null>(null)
+const delete_button = ref<HTMLButtonElement | null>(null)
+const delete_confirmation_button = ref<HTMLButtonElement | null>(null)
 let request_version = 0
+
+function open_friend_editor(): void {
+  is_editing.value = true
+  is_delete_confirmation_open.value = false
+  contact_announcement.value = ''
+  friend_announcement.value = ''
+}
+
+async function close_friend_editor(): Promise<void> {
+  is_editing.value = false
+  await nextTick()
+  edit_button.value?.focus()
+}
+
+function set_saved_friend_for_profile(saved_friend: BoardFriend): void {
+  set_friend_for_list(saved_friend)
+  if (saved_friend.id !== friend.value?.id) return
+  friend.value = saved_friend
+  friend_announcement.value = 'Amigo atualizado.'
+  void close_friend_editor()
+}
+
+/** Group edits are saved immediately, even if the owner later cancels the friend edit. */
+function set_updated_group_for_profile(saved_group: FriendGroup): void {
+  if (!friend.value) return
+  friend.value = {
+    ...friend.value,
+    groups: friend.value.groups.map((group) => group.id === saved_group.id ? saved_group : group)
+      .sort((first, second) => first.name.localeCompare(second.name, 'pt-BR', { sensitivity: 'base' })),
+  }
+}
+
+function remove_group_for_profile(group_id: string): void {
+  if (!friend.value) return
+  friend.value = { ...friend.value, groups: friend.value.groups.filter((group) => group.id !== group_id) }
+}
+
+async function open_friend_deletion_confirmation(): Promise<void> {
+  is_delete_confirmation_open.value = true
+  deletion_error.value = ''
+  await nextTick()
+  delete_confirmation_button.value?.focus()
+}
+
+async function close_friend_deletion_confirmation(): Promise<void> {
+  is_delete_confirmation_open.value = false
+  deletion_error.value = ''
+  await nextTick()
+  delete_button.value?.focus()
+}
+
+async function send_friend_deletion_for_profile(): Promise<void> {
+  if (!friend.value || !is_delete_confirmation_open.value || is_deleting.value) return
+  const friend_id = friend.value.id
+  const current_request_version = request_version
+  is_deleting.value = true
+  deletion_error.value = ''
+  try {
+    await send_friend_deletion_for_owner(friend_id)
+    remove_friend_for_list(friend_id)
+    if (current_request_version === request_version) await router.push('/amigos')
+  } catch {
+    if (current_request_version === request_version) {
+      deletion_error.value = 'Não foi possível apagar o amigo. Tente novamente.'
+    }
+  } finally {
+    if (current_request_version === request_version) is_deleting.value = false
+  }
+}
 
 async function close_contact_sheet_for_profile(): Promise<void> {
   is_contact_sheet_open.value = false
@@ -44,6 +123,11 @@ async function get_friend_for_view(): Promise<void> {
   const current_request_version = ++request_version
   const friend_id = String(route.params.id)
   is_contact_sheet_open.value = false
+  is_editing.value = false
+  is_delete_confirmation_open.value = false
+  is_deleting.value = false
+  deletion_error.value = ''
+  friend_announcement.value = ''
   contact_announcement.value = ''
   friend.value = null
   is_loading.value = true
@@ -83,31 +167,42 @@ onBeforeUnmount(() => { request_version += 1 })
       <button type="button" class="stamp" @click="get_friend_for_view">Tentar novamente</button>
     </div>
     <template v-else-if="friend">
-      <p class="profile-cadence">a cada <FriendCadence :friend="friend" /></p>
-      <button ref="contact_button" type="button" name="record-contact" class="stamp profile-contact-button" @click="contact_announcement = ''; is_contact_sheet_open = true">registrar contato</button>
-      <p v-if="contact_announcement" class="profile-feedback" role="status">{{ contact_announcement }}</p>
-      <dl class="profile-details">
-        <div>
-          <dt>Grupos</dt>
-          <dd class="profile-groups">
-            <GroupBadge v-for="group in friend.groups" :key="group.id" :group="group" />
-            <GroupBadge v-if="friend.groups.length === 0" :group="{ name: 'sem grupo', color: 'neutral' }" />
-          </dd>
+      <p v-if="friend_announcement" class="profile-feedback" role="status">{{ friend_announcement }}</p>
+      <FriendForm v-if="is_editing" :key="friend.id" :friend="friend" @saved="set_saved_friend_for_profile"
+        @cancel="close_friend_editor" @group_updated="set_updated_group_for_profile" @group_deleted="remove_group_for_profile" />
+      <template v-else>
+        <p class="profile-cadence">a cada <FriendCadence :friend="friend" /></p>
+        <button ref="contact_button" type="button" name="record-contact" class="stamp profile-contact-button" :disabled="is_deleting" @click="contact_announcement = ''; is_contact_sheet_open = true">registrar contato</button>
+        <p v-if="contact_announcement" class="profile-feedback" role="status">{{ contact_announcement }}</p>
+        <dl class="profile-details">
+          <div>
+            <dt>Grupos</dt>
+            <dd class="profile-groups">
+              <GroupBadge v-for="group in friend.groups" :key="group.id" :group="group" />
+              <GroupBadge v-if="friend.groups.length === 0" :group="{ name: 'sem grupo', color: 'neutral' }" />
+            </dd>
+          </div>
+          <div><dt>No Quadro</dt><dd>{{ COLUMN_LABELS[friend.column] }}</dd></div>
+          <div>
+            <dt>Último contato</dt>
+            <dd><time v-if="friend.last_contact_at" :datetime="friend.last_contact_at">{{ CONTACT_DATE_FORMAT.format(new Date(friend.last_contact_at)) }}</time><span v-else>Nenhum contato registrado ainda.</span></dd>
+          </div>
+          <div><dt>Última nota</dt><dd class="profile-note handwritten-note">{{ friend.last_note || 'Nenhuma nota registrada ainda.' }}</dd></div>
+        </dl>
+        <div class="profile-actions">
+          <button ref="edit_button" type="button" name="edit-friend" :disabled="is_deleting" @click="open_friend_editor">Editar amigo</button>
+          <button ref="delete_button" type="button" name="delete-friend" :disabled="is_deleting" @click="open_friend_deletion_confirmation">Apagar amigo</button>
         </div>
-        <div><dt>No Quadro</dt><dd>{{ COLUMN_LABELS[friend.column] }}</dd></div>
-        <div>
-          <dt>Último contato</dt>
-          <dd><time v-if="friend.last_contact_at" :datetime="friend.last_contact_at">{{ CONTACT_DATE_FORMAT.format(new Date(friend.last_contact_at)) }}</time><span v-else>Nenhum contato registrado ainda.</span></dd>
+        <div v-if="is_delete_confirmation_open" class="friend-deletion" :aria-busy="is_deleting">
+          <p role="alert">Apagar {{ friend.name }} e todos os seus contatos? Essa ação não pode ser desfeita. Os grupos continuam no caderno.</p>
+          <p v-if="deletion_error" class="deletion-error" role="alert">{{ deletion_error }}</p>
+          <div class="profile-actions">
+            <button ref="delete_confirmation_button" type="button" name="confirm-delete-friend" :disabled="is_deleting" @click="send_friend_deletion_for_profile">{{ is_deleting ? 'Apagando…' : 'Confirmar exclusão' }}</button>
+            <button type="button" name="cancel-delete-friend" :disabled="is_deleting" @click="close_friend_deletion_confirmation">Cancelar</button>
+          </div>
         </div>
-        <div><dt>Última nota</dt><dd class="profile-note handwritten-note">{{ friend.last_note || 'Nenhuma nota registrada ainda.' }}</dd></div>
-      </dl>
-      <!-- CRM-15 permits placeholders until CRM-16 provides editing and deletion. -->
-      <div class="profile-actions" aria-describedby="friend-actions-help">
-        <button type="button" name="edit-friend" disabled>Editar amigo</button>
-        <button type="button" name="delete-friend" disabled>Apagar amigo</button>
-      </div>
-      <p id="friend-actions-help" class="profile-actions-help">Editar e apagar ainda não estão disponíveis.</p>
-      <ContactSheet v-if="is_contact_sheet_open" :friend="friend" @close="close_contact_sheet_for_profile" @recorded="set_recorded_contact_for_profile" />
+        <ContactSheet v-if="is_contact_sheet_open" :friend="friend" @close="close_contact_sheet_for_profile" @recorded="set_recorded_contact_for_profile" />
+      </template>
     </template>
   </div>
 </template>
@@ -129,6 +224,9 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .profile-state p { margin: 0 0 var(--notebook-line); }
 .profile-state .stamp { box-sizing: border-box; min-height: 44px; }
 .profile-actions { display: flex; flex-wrap: wrap; gap: 8px 16px; }
-.profile-actions button { min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--neutral-600); text-decoration: underline; text-underline-offset: 3px; cursor: not-allowed; }
-.profile-actions-help { margin: 0; color: var(--neutral-600); font-size: .875rem; }
+.profile-actions button { min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--neutral-700); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.profile-actions button:disabled { opacity: .45; cursor: wait; }
+.friend-deletion { margin-top: var(--notebook-line); }
+.friend-deletion p { margin: 0 0 8px; }
+.deletion-error, .profile-actions button[name="confirm-delete-friend"] { color: var(--error); }
 </style>
