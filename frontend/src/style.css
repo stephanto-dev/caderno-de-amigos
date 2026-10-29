@@ -20,7 +20,9 @@ body {
 .group-work { --group-color: var(--ruling); }
 .group-neighborhood { --group-color: var(--tab-green); }
 .group-neutral { --group-color: var(--paper); }
-.group-badge { display: inline-flex; align-items: center; gap: 3px; box-sizing: border-box; height: 18px; max-width: 100%; padding: 0 6px; border-radius: 4px; background: var(--group-color); box-shadow: inset 0 0 0 1px rgb(43 36 32 / 32%); color: var(--neutral-700); font: 500 .75rem/18px var(--font-ui); white-space: nowrap; }
+.group-badge { position: relative; isolation: isolate; filter: drop-shadow(0 1px 1px rgb(43 36 32 / 18%)); display: inline-flex; align-items: center; gap: 3px; box-sizing: border-box; height: 18px; max-width: 100%; padding: 0 7px; color: var(--ink); font: 500 .75rem/18px var(--font-ui); white-space: nowrap; }
+.group-badge::before { content: ''; position: absolute; z-index: -1; inset: 0; background: color-mix(in srgb, var(--group-color) 78%, var(--sheet)); clip-path: polygon(0 15%, 6% 4%, 23% 7%, 41% 0, 62% 5%, 80% 2%, 97% 8%, 100% 31%, 98% 56%, 100% 82%, 94% 96%, 73% 92%, 52% 100%, 31% 94%, 13% 98%, 2% 89%, 3% 63%, 0 42%); pointer-events: none; }
+@media (forced-colors: active) { .group-badge { outline: 1px solid CanvasText; } }
 .group-badge[hidden] { display: none; }
 .group-badge > span { overflow: hidden; text-overflow: ellipsis; }
 
@@ -112,7 +114,6 @@ body {
 
 .tab-board { background: var(--primary-100); }
 .tab-friends { background: var(--highlight); }
-.tab-new { background: var(--tab-green); }
 .tab-config { background: var(--margin-rule); }
 .tabs .tab[aria-current="page"] { height: 48px; }
 

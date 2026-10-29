@@ -254,7 +254,6 @@ async function send_account_for_browser(): Promise<void> {
 .field-error, .form-error { margin: 0; color: var(--error); font: 400 .875rem/var(--notebook-line) var(--font-ui); overflow-wrap: anywhere; }
 .form-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1rem; }
 .form-actions button { min-height: 3rem; max-width: 100%; height: auto; padding: .5rem 1.375rem; background: var(--primary); color: var(--sheet); font-size: 1.625rem; line-height: var(--notebook-line); }
-.form-actions button:hover:not(:disabled) { background: var(--primary-hover); color: var(--sheet); }
 .form-actions button:active:not(:disabled) { background: var(--primary-pressed); }
 .form-actions button:disabled { opacity: .6; cursor: wait; }
 .switch-link {

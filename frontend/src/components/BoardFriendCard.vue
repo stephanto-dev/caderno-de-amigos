@@ -92,18 +92,14 @@ h3 a { color: inherit; text-decoration: none; }
 h3 a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .friend-groups { display: flex; flex-wrap: wrap; gap: 4px; max-height: 40px; margin: 2px 0; overflow: hidden; }
 svg { width: 12px; height: 12px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
-.group-overflow { background: var(--sheet); font-weight: 600; }
+.group-overflow { --group-color: var(--sheet); font-weight: 600; }
 .friend-cadence { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--neutral-700); font: 500 .75rem/1.25rem var(--font-ui); }
 .friend-note { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 4px 0 0; color: var(--pen-ink); font: 500 1.3125rem/1.5rem var(--font-handwriting); }
 .two-group-rows .friend-note { -webkit-line-clamp: 1; }
 .friend-no-note { margin: 4px 0 0; color: var(--neutral-700); font: italic .75rem/1.5rem var(--font-ui); }
 .contact-button { display: flex; align-items: center; align-self: flex-start; min-height: 44px; margin-top: auto; padding: 0 2px; border: 0; border-radius: var(--radius-sm); background: transparent; cursor: pointer; }
 .contact-button:disabled { opacity: .55; cursor: wait; }
-.contact-button .stamp { position: relative; isolation: isolate; padding: 0 8px; border-color: var(--primary-800); color: var(--primary-800); white-space: nowrap; }
-/* Requested addition to CRM-13: a hand-colored fill replaces the flat hover background. */
-.contact-button .stamp::before { content: ''; position: absolute; z-index: -1; inset: 1px; background: color-mix(in srgb, var(--primary) 38%, transparent); mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 28'%3E%3Cpath d='M1 23 7 4 9 25 15 2 17 24 23 3 25 26 31 2 33 25 39 4 41 24 47 2 49 26 55 3 57 24 63 2 65 25 71 4 73 26 79 2 81 24 87 3 89 26 95 2 97 25 103 4 105 24 111 2 113 25 119 4' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat; clip-path: inset(0 100% 0 0); transition: clip-path var(--duration-medium) var(--ease-out); }
-.contact-button:hover .stamp, .contact-button:focus-visible .stamp { background: transparent; }
-.contact-button:hover .stamp::before, .contact-button:focus-visible .stamp::before { clip-path: inset(0); }
+.contact-button .stamp { padding: 0 8px; border-color: var(--primary-800); color: var(--primary-800); white-space: nowrap; }
 .contact-button svg { display: none; width: 16px; height: 16px; }
 .birthday-stamp { position: absolute; right: -.25rem; top: calc(100% - .375rem); z-index: 2; max-width: calc(100% + .5rem); box-sizing: border-box; margin: 0;
  display: flex; align-items: center; gap: 3px; padding: 2px 6px 2px 5px; background: var(--sheet); color: var(--primary-800); border: 1.5px solid var(--primary-800); border-radius: 4px;
@@ -114,5 +110,5 @@ svg { width: 12px; height: 12px; flex: none; fill: none; stroke: currentColor; s
 @media (forced-colors: active) { .birthday-stamp { border-color: CanvasText; } }
 @media (min-width: 1024px) { .contact-button svg { display: inline-block; } }
 @media (max-width: 359px) { .contact-button .stamp { padding: 0 4px; font-size: 1.125rem; } }
-@media (prefers-reduced-motion: reduce) { .friend-postit, .contact-button .stamp::before { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .friend-postit { transition: none; } }
 </style>

@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { get_friend_for_board, get_friends_for_board, get_groups_for_board, send_contact_deletion_for_friend } from '../api/friends'
-import type { BoardFriend, FriendGroup, RecordedContact } from '../api/friends'
+import { get_friend_for_board, get_friends_for_board, send_contact_deletion_for_friend } from '../api/friends'
+import type { BoardFriend, RecordedContact } from '../api/friends'
 import BoardFriendCard from '../components/BoardFriendCard.vue'
 import ContactSheet from '../components/ContactSheet.vue'
-import GroupBadge from '../components/GroupBadge.vue'
 import { ApiError } from '../api/http'
 
 const SKELETONS_PER_COLUMN = 2
@@ -30,11 +29,9 @@ const contact_undo_state = ref<'ready' | 'deleted' | 'missing'>('ready')
 const is_undoing = ref(false)
 const has_undo_error = ref(false)
 let toast_timeout: ReturnType<typeof setTimeout> | undefined
-const groups = ref<FriendGroup[]>([])
 const is_loading = ref(true)
 const has_error = ref(false)
 const expanded_columns = ref<BoardFriend['column'][]>([])
-const has_ungrouped_friends = computed(() => friends.value.some((friend) => friend.groups.length === 0))
 const columns = computed(() => BOARD_COLUMNS.map((column) => ({
   ...column,
   friends: friends.value.filter((friend) => friend.column === column.value),
@@ -156,9 +153,7 @@ async function get_friends_for_view(): Promise<void> {
   is_loading.value = true
   has_error.value = false
   try {
-    const [board_friends, board_groups] = await Promise.all([get_friends_for_board(), get_groups_for_board()])
-    friends.value = board_friends
-    groups.value = board_groups
+    friends.value = await get_friends_for_board()
   } catch {
     has_error.value = true
   } finally {
@@ -172,17 +167,7 @@ onBeforeUnmount(stop_contact_feedback_timeout)
 
 <template>
   <div ref="board_element" class="board-view">
-    <header class="board-header">
-      <h1 class="view-title" tabindex="-1">Quadro</h1>
-      <p class="board-introduction">As colunas se arrumam sozinhas, pelo último contato e pelo ritmo de cada amigo.</p>
-    </header>
-    <div v-if="!is_loading && !has_error" class="board-legend" aria-label="Legenda de grupos">
-      <p>Seus grupos. O post-it usa a cor do primeiro grupo em ordem alfabética, e todos vêm escritos nele:</p>
-      <div class="legend-badges">
-        <GroupBadge v-for="group in groups" :key="group.id" :group="group" />
-        <GroupBadge v-if="has_ungrouped_friends" :group="{ name: 'sem grupo', color: 'neutral' }" />
-      </div>
-    </div>
+    <h1 class="sr-only" tabindex="-1">Quadro</h1>
     <div v-if="is_loading" class="board-state" role="status" aria-busy="true">
       <span class="sr-only">Carregando seu quadro…</span>
       <div class="state-columns" aria-hidden="true">
@@ -249,16 +234,10 @@ onBeforeUnmount(stop_contact_feedback_timeout)
 .contact-toast button:disabled { opacity: .55; cursor: wait; }
 .contact-toast button:focus-visible { box-shadow: 0 0 0 2px var(--ink), 0 0 0 4px var(--ruling); }
 @media (min-width: 1024px) { .contact-toast { bottom: 24px; } }
-.board-header p, .board-legend p, .column-description { margin: 0; }
-.board-introduction, .board-legend > p { font-size: .875rem; line-height: var(--notebook-line); }
-.board-introduction { color: var(--neutral-700); }
-.board-legend { margin-top: var(--notebook-line); min-width: 0; }
-.board-legend > p { display: none; color: var(--neutral-600); }
-.legend-badges { display: flex; flex-wrap: wrap; column-gap: 8px; }
-.legend-badges :deep(.group-badge) { height: 24px; margin: 4px 0; padding: 0 8px; }
 .board-columns, .state-columns { display: grid; }
 .state-columns { gap: var(--notebook-line); }
 .board-column { min-width: 0; margin-top: var(--notebook-line); }
+.column-description { margin: 0; }
 .board-state { margin-top: var(--notebook-line); }
 .board-state .board-column { margin-top: 0; }
 h2, .skeleton-label { margin: 0; font: 600 1.1875rem/var(--notebook-line) var(--font-title); }
@@ -285,9 +264,6 @@ h2, .skeleton-label { margin: 0; font: 600 1.1875rem/var(--notebook-line) var(--
 @keyframes board-pulse { 50% { opacity: .45; } }
 @media (min-width: 1024px) {
   .board-view, .state-columns { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 24px; align-items: start; }
-  .board-header { grid-column: 1 / 3; }
-  .board-legend { grid-column: 3 / 5; margin-top: 0; }
-  .board-legend > p { display: block; }
   .board-columns { display: contents; }
   .board-state { grid-column: 1 / -1; }
   .friend-list, .mobile-collapsed { display: grid; grid-template-columns: minmax(0, 1fr); }
@@ -296,7 +272,6 @@ h2, .skeleton-label { margin: 0; font: 600 1.1875rem/var(--notebook-line) var(--
 }
 @media (min-width: 1280px) {
   .board-view, .state-columns { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 112px minmax(0, 1fr) minmax(0, 1fr); }
-  .board-legend { grid-column: 4 / 6; }
   .board-column[data-column="on_track"] { grid-column: 4; }
   .board-column[data-column="just_talked"] { grid-column: 5; }
 }

@@ -159,7 +159,6 @@ onBeforeUnmount(() => { request_version += 1 })
 .history-empty { margin: 0; }
 .field-error { display: flex; gap: .375rem; margin: 0; font: 400 .875rem/var(--notebook-line) var(--font-ui); color: var(--error); }
 .stamp-quiet { position: relative; border-color: var(--neutral-700); color: var(--neutral-700); }
-.stamp-quiet:hover { background: var(--neutral-100); border-color: var(--ink); color: var(--ink); }
 .stamp-quiet::after { content: ''; position: absolute; inset: -8px -4px; }
 .stamp-quiet[aria-busy='true'] { opacity: .6; cursor: wait; }
 .history-skeleton li { display: grid; grid-template-columns: 7rem minmax(0, 1fr); column-gap: 16px; }

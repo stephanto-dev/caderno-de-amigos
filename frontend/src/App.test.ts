@@ -61,6 +61,7 @@ describe('App navigation', () => {
     await router.push('/amigos/novo')
     await flushPromises()
     expect(wrapper.get('h1').text()).toBe('Novo amigo')
+    expect(wrapper.get('a[aria-current="page"]').text()).toBe('Amigos')
 
     await router.push('/amigos/123')
     await flushPromises()
@@ -85,7 +86,7 @@ describe('App navigation', () => {
     expect(wrapper.get('nav[aria-label="Seções"]').text()).toContain('Quadro')
     expect(wrapper.get('nav[aria-label="Seções"]').text()).toContain('Amigos')
     expect(Array.from(wrapper.findAll('nav[aria-label="Seções"] a')).map((tab) => tab.text())).toEqual([
-      'Quadro', 'Amigos', '+ novo', 'config',
+      'Quadro', 'Amigos', 'config',
     ])
     expect(wrapper.get('a[aria-current="page"]').text()).toBe('Quadro')
 

@@ -11,7 +11,7 @@ async function send_logout_for_browser(): Promise<void> {
 
 <template>
   <div class="config-view">
-    <h1 class="view-title">Configurações</h1>
+    <h1 class="sr-only">Configurações</h1>
     <section class="account-section" aria-label="Conta">
       <h2>Conta</h2>
       <div class="account-details">
@@ -26,7 +26,6 @@ async function send_logout_for_browser(): Promise<void> {
 </template>
 
 <style scoped>
-.view-title { overflow-wrap: anywhere; }
 .account-section { margin-top: var(--notebook-line); }
 .account-section h2 { margin: 0 0 var(--notebook-line); font: 600 1.1875rem/var(--notebook-line) var(--font-title); }
 .account-details { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: var(--notebook-line); }

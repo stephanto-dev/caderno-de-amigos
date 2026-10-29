@@ -40,14 +40,8 @@ const route = useRoute()
         <RouterLink
           to="/amigos"
           class="tab tab-friends"
-          :aria-current="route.name === 'friends' || route.name === 'friend-detail' ? 'page' : undefined"
+          :aria-current="route.name === 'friends' || route.name === 'friend-detail' || route.name === 'new-friend' ? 'page' : undefined"
         >Amigos</RouterLink>
-        <RouterLink
-          to="/amigos/novo"
-          class="tab tab-new"
-          :aria-current="route.name === 'new-friend' ? 'page' : undefined"
-        >+ novo</RouterLink>
-        <!-- CRM-19 asks for five tabs; Bom falar is not implemented yet, so Config follows the three existing routes. -->
         <RouterLink
           to="/config"
           class="tab tab-config"

@@ -162,7 +162,7 @@ onMounted(get_groups_for_picker)
     <p v-if="is_loading" role="status">Carregando grupos…</p>
     <div v-else-if="has_load_error" role="alert">
       <p>Não foi possível carregar os grupos. Tente novamente.</p>
-      <button type="button" name="retry-groups" class="group-action" @click="get_groups_for_picker">Tentar novamente</button>
+      <button type="button" name="retry-groups" class="stamp group-action" @click="get_groups_for_picker">Tentar novamente</button>
     </div>
     <fieldset v-else class="group-fields" :disabled="is_saving" :aria-busy="is_saving">
       <legend class="group-heading">
@@ -177,7 +177,7 @@ onMounted(get_groups_for_picker)
           <svg v-if="!is_editing_groups && selected_group_ids.includes(group.id)" class="selected-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
           <GroupBadge :group="group" />
         </button>
-        <button ref="new_group_button" type="button" name="new-group" class="group-action" :aria-expanded="is_editor_open && !edited_group" @click="open_group_editor()">+ novo grupo</button>
+        <button ref="new_group_button" type="button" name="new-group" class="stamp group-action" :aria-expanded="is_editor_open && !edited_group" @click="open_group_editor()">+ novo grupo</button>
       </div>
       <div v-if="is_delete_confirmation_open && edited_group" class="group-editor">
         <p role="alert">Apagar '{{ edited_group.name }}'?
@@ -186,8 +186,8 @@ onMounted(get_groups_for_picker)
         </p>
         <p v-if="error_message" class="group-error" role="alert">{{ error_message }}</p>
         <div class="group-editor-actions">
-          <button ref="delete_confirmation_button" type="button" name="confirm-delete-group" class="group-action delete-group" @click="send_group_deletion_for_picker">{{ is_saving ? 'Apagando…' : 'Apagar grupo' }}</button>
-          <button type="button" name="cancel-delete-group" class="group-action" @click="close_group_deletion_confirmation">Cancelar</button>
+          <button ref="delete_confirmation_button" type="button" name="confirm-delete-group" class="stamp group-action delete-group" @click="send_group_deletion_for_picker">{{ is_saving ? 'Apagando…' : 'Apagar grupo' }}</button>
+          <button type="button" name="cancel-delete-group" class="stamp group-action" @click="close_group_deletion_confirmation">Cancelar</button>
         </div>
       </div>
       <div v-else-if="is_editor_open" class="group-editor">
@@ -209,9 +209,9 @@ onMounted(get_groups_for_picker)
         <p v-if="error_field === 'color'" id="group-color-error" class="group-error" role="alert">{{ error_message }}</p>
         <p v-if="error_message && error_field !== 'name' && error_field !== 'color'" class="group-error" role="alert">{{ error_message }}</p>
         <div class="group-editor-actions">
-          <button type="button" name="save-group" class="group-action" @click="send_group_for_picker">{{ is_saving ? 'Salvando…' : (edited_group ? 'Salvar grupo' : 'Criar grupo') }}</button>
-          <button v-if="edited_group" type="button" name="delete-group" class="group-action delete-group" @click="open_group_deletion_confirmation">Apagar grupo</button>
-          <button type="button" class="group-action" @click="close_group_editor">Cancelar</button>
+          <button type="button" name="save-group" class="stamp group-action" @click="send_group_for_picker">{{ is_saving ? 'Salvando…' : (edited_group ? 'Salvar grupo' : 'Criar grupo') }}</button>
+          <button v-if="edited_group" type="button" name="delete-group" class="stamp group-action delete-group" @click="open_group_deletion_confirmation">Apagar grupo</button>
+          <button type="button" class="stamp group-action" @click="close_group_editor">Cancelar</button>
         </div>
       </div>
     </fieldset>
@@ -231,16 +231,16 @@ onMounted(get_groups_for_picker)
 .group-chips{display:flex;flex-wrap:wrap;gap:1.25rem .5rem;padding:.625rem 0}
 .group-chip{position:relative;min-width:2.75rem;max-width:100%;padding:0;border:0;border-radius:4px;background:none;cursor:pointer}
 .group-chip:nth-child(3n+1){transform:rotate(-1.5deg)}.group-chip:nth-child(3n+2){transform:rotate(1deg)}.group-chip:nth-child(3n){transform:rotate(-.5deg)}
-.group-chip :deep(.group-badge){height:2.75rem;max-width:100%;padding:0 .875rem;border:1.5px dashed var(--neutral-500);border-radius:4px;background:var(--sheet);box-shadow:none;
+.group-chip :deep(.group-badge){height:2.75rem;max-width:100%;padding:0 .875rem;
  font:500 .9375rem/1 var(--font-ui);color:var(--ink)}
-.group-chip[aria-pressed="true"] :deep(.group-badge){padding-left:2rem;border:2px solid var(--ink);background:var(--group-color);box-shadow:var(--shadow-paper)}
+.group-chip[aria-pressed="true"] :deep(.group-badge){padding-left:2rem}
+.group-chip[aria-pressed="true"] :deep(.group-badge>span){font-weight:700}
 .selected-check{position:absolute;z-index:1;left:.75rem;top:calc(50% - .4375rem);width:.875rem;height:.875rem;fill:none;stroke:var(--ink);stroke-width:2.5}
-.group-chip:hover :deep(.group-badge){border-color:var(--primary)}
+.group-chip:not(:disabled):hover :deep(.group-badge){color:var(--pen-ink)}
 
 .group-chip:not([aria-pressed]){transform:none}
-.group-chip:not([aria-pressed]) :deep(.group-badge){border:2px dashed var(--pen-ink);background:var(--group-color);text-decoration:underline;text-underline-offset:3px}
-.group-chips>.group-action{height:2.75rem;min-height:0;padding:0 .875rem;border:1.5px dashed var(--neutral-500);border-radius:4px;background:none;cursor:pointer;
- font:500 .9375rem/1 var(--font-ui);color:var(--neutral-700)}
+.group-chip:not([aria-pressed]) :deep(.group-badge){text-decoration:underline;text-underline-offset:3px}
+.group-chips>.group-action{min-height:2.75rem;padding:0 .875rem}
 
 .group-editor{margin:0}
 .group-editor>p:not(.group-error){margin:0;font:400 1rem/var(--notebook-line) var(--font-ui)}
@@ -250,15 +250,15 @@ onMounted(get_groups_for_picker)
 .group-editor .field[aria-invalid="true"]{background:linear-gradient(var(--error),var(--error)) no-repeat 0 calc(100% - .25rem)/100% 2.5px}
 .group-colors{display:flex;flex-wrap:wrap;gap:1.25rem .5rem;padding:0 0 .625rem}
 .group-colors>legend{width:100%;padding:0 0 .625rem}
-.group-color-choice{display:inline-flex;align-items:center;gap:.5rem;height:2.75rem;padding:0 .875rem 0 .625rem;border:1.5px solid var(--neutral-500);border-radius:var(--radius-pill);background:var(--sheet);cursor:pointer}
-.group-color-choice input{width:1.125rem;height:1.125rem;margin:0;accent-color:var(--primary)}
-.group-color-choice:has(input:checked){border:2px solid var(--primary);background:var(--primary-50)}
+.group-color-choice{position:relative;display:inline-flex;align-items:center;min-height:2.75rem;padding:0 .5rem;cursor:pointer}
+.group-color-choice input{position:absolute;width:1px;height:1px;margin:0;opacity:0}
+.group-color-choice:has(input:checked)::before{content:"";position:absolute;inset:0;border:2px solid var(--pen-ink);border-radius:50% 46% 52% 44%/60% 50% 55% 45%;transform:rotate(-2deg)}
+.group-color-choice:has(input:focus-visible){box-shadow:var(--focus-ring);border-radius:var(--radius-sm)}
+.group-color-choice:hover :deep(.group-badge){color:var(--pen-ink)}
 .group-color-choice :deep(.group-badge){height:1.5rem;padding:0 .5rem;font:500 .875rem/1.5rem var(--font-ui);color:var(--ink)}
 .group-editor-actions{display:flex;flex-wrap:wrap;gap:1.25rem 1rem;padding:.625rem 0}
-.group-editor-actions>.group-action{height:2.75rem;min-height:0;padding:0 1rem;border:1.5px solid var(--neutral-500);border-radius:var(--radius-pill);background:var(--sheet);cursor:pointer;
- font:500 .9375rem/1 var(--font-ui);color:var(--ink)}
-.group-editor-actions>[name="save-group"]{border:2px solid var(--primary);color:var(--primary-800);font-weight:600}
-.group-editor-actions>.delete-group{border-color:var(--error);color:var(--error)}
+.group-editor-actions>.group-action{min-height:2.75rem;padding:0 1rem}
+.group-editor-actions>.delete-group{--primary:var(--error)}
 
 .group-editor>label,.group-colors>legend{display:block;padding:0;font:700 1.375rem/var(--notebook-line) var(--font-handwriting);color:var(--pen-ink)}
 

@@ -40,7 +40,7 @@ onMounted(get_friends_for_view)
 <template>
   <div class="friends-view">
     <header class="friends-header">
-      <h1 class="view-title">Amigos</h1>
+      <h1 class="sr-only">Amigos</h1>
       <RouterLink to="/amigos/novo" class="stamp">novo amigo</RouterLink>
     </header>
     <label class="friends-search">
@@ -74,12 +74,14 @@ onMounted(get_friends_for_view)
 </template>
 
 <style scoped>
-.friends-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.friends-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 16px; }
 .friends-header .stamp { display: inline-flex; align-items: center; min-height: 44px; }
 .friends-search { display: flex; align-items: center; gap: 12px; height: calc(var(--notebook-line) * 2); }
 svg { flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
-.friends-search input { box-sizing: border-box; width: 100%; min-width: 0; height: 48px; padding: 0 12px; border: 1.5px solid var(--ink); border-radius: var(--radius-sm); background: var(--sheet); color: var(--ink); font: 1rem var(--font-ui); }
-.friends-search input::placeholder { color: var(--neutral-700); }
+.friends-search input { box-sizing: border-box; width: 100%; min-width: 0; height: 48px; padding: 8px 4px 0; border: 0; border-radius: 0; appearance: none; background: linear-gradient(var(--neutral-500), var(--neutral-500)) no-repeat 0 calc(100% - .3125rem)/100% 1.5px; color: var(--pen-ink); caret-color: var(--pen-ink); font: 400 1rem/var(--notebook-line) var(--font-ui); }
+.friends-search input:focus { outline: none; box-shadow: none; background: linear-gradient(var(--focus), var(--focus)) no-repeat 0 calc(100% - .25rem)/100% 3px, linear-gradient(var(--highlight-50), var(--highlight-50)) no-repeat 0 calc(100% - .3125rem)/100% 1.6875rem; }
+.friends-search:focus-within > svg { color: var(--pen-ink); }
+.friends-search input::placeholder { color: var(--neutral-700); opacity: 1; font: 500 1.375rem/var(--notebook-line) var(--font-handwriting); }
 .friends-search input:disabled { opacity: .55; }
 .friends-list { margin: 0; padding: 0; list-style: none; }
 .friend-row { display: flex; align-items: center; gap: 12px; min-height: calc(var(--notebook-line) * 2); padding: 0 8px; border-radius: var(--radius-sm); color: var(--ink); text-decoration: none; }
