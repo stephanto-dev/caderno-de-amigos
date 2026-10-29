@@ -7,6 +7,8 @@ const RECORDED_CONTACT = {
   cadence_amount: 3,
   cadence_unit: 'week',
   column: 'just_talked',
+  birthday: null,
+  is_birthday_today: false,
   last_contact_at: '2026-10-27T15:00:00Z',
   last_note: 'Conversamos sobre a viagem',
   groups: [],
@@ -82,6 +84,44 @@ describe('Contact registration API', () => {
 
 describe('Friend writing API', () => {
   afterEach(() => vi.unstubAllGlobals())
+
+  it('sends and returns the birthday supplied by Django', async () => {
+    const friend_data = {
+      name: 'Bruno', cadence_amount: 1, cadence_unit: 'month' as const, birthday: '29/02',
+    }
+    const saved_friend = { ...RECORDED_CONTACT, ...friend_data, is_birthday_today: true }
+    const fetch = vi.fn().mockResolvedValue(Response.json(saved_friend, { status: 201 }))
+    vi.stubGlobal('fetch', fetch)
+
+    expect(await send_friend_creation_for_owner(friend_data)).toEqual(saved_friend)
+    expect(fetch).toHaveBeenCalledExactlyOnceWith('/api/friends/', expect.objectContaining({
+      method: 'POST', body: JSON.stringify(friend_data),
+    }))
+  })
+
+  it('sends null to clear a birthday when editing', async () => {
+    const fetch = vi.fn().mockResolvedValue(Response.json(RECORDED_CONTACT))
+    vi.stubGlobal('fetch', fetch)
+
+    const saved_friend = await send_friend_update_for_owner(RECORDED_CONTACT.id, { birthday: null })
+
+    expect(saved_friend.birthday).toBeNull()
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(`/api/friends/${RECORDED_CONTACT.id}/`, expect.objectContaining({
+      method: 'PATCH', body: JSON.stringify({ birthday: null }),
+    }))
+  })
+
+  it.each([undefined, 1203])('rejects a response with a missing or invalid birthday: %s', async (birthday) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ ...RECORDED_CONTACT, birthday })))
+
+    await expect(get_friend_for_board(RECORDED_CONTACT.id)).rejects.toThrow('Invalid board friend response')
+  })
+
+  it.each([undefined, 'false', null])('rejects a response with a missing or nonboolean birthday flag: %s', async (is_birthday_today) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ ...RECORDED_CONTACT, is_birthday_today })))
+
+    await expect(get_friend_for_board(RECORDED_CONTACT.id)).rejects.toThrow('Invalid board friend response')
+  })
 
   it('creates a friend with group IDs and returns the board fields supplied by Django', async () => {
     const friend_data = {

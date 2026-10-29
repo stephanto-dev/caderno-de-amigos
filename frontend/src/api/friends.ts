@@ -21,6 +21,8 @@ export interface BoardFriend {
   name: string
   cadence_amount: number
   cadence_unit: typeof CADENCE_UNITS[number]
+  birthday: string | null
+  is_birthday_today: boolean
   column: typeof BOARD_COLUMNS[number]
   last_contact_at: string | null
   last_note: string | null
@@ -32,6 +34,7 @@ export interface FriendWriteData {
   name: string
   cadence_amount: number
   cadence_unit: BoardFriend['cadence_unit']
+  birthday?: string | null
   groups?: string[]
 }
 
@@ -66,6 +69,8 @@ function is_board_friend(body: unknown): body is BoardFriend {
     && 'cadence_amount' in body && typeof body.cadence_amount === 'number'
     && Number.isInteger(body.cadence_amount) && body.cadence_amount > 0
     && 'cadence_unit' in body && CADENCE_UNITS.some((unit) => unit === body.cadence_unit)
+    && 'birthday' in body && (body.birthday === null || typeof body.birthday === 'string')
+    && 'is_birthday_today' in body && typeof body.is_birthday_today === 'boolean'
     && 'column' in body && BOARD_COLUMNS.some((column) => column === body.column)
     && 'last_contact_at' in body && (body.last_contact_at === null || typeof body.last_contact_at === 'string')
     && 'last_note' in body && (body.last_note === null || typeof body.last_note === 'string')

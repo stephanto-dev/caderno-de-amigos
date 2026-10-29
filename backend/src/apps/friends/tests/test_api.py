@@ -764,6 +764,8 @@ class TestFriendBirthdayAPI:
             "32/01",
             "1/02",
             "01/2",
+            "12/3",
+            "1/",
             "2000-02-29",
             "29/02/2000",
             "",
@@ -807,7 +809,11 @@ class TestFriendBirthdayAPI:
         # Assert
         assert response.status_code == 400
         assert response.data["type"] == "validation_error"
-        assert any(error["attr"] == "birthday" for error in response.data["errors"])
+        assert any(
+            error["attr"] == "birthday"
+            and error["detail"] == "Essa data não existe. Ex.: 12/03."
+            for error in response.data["errors"]
+        )
         friend.refresh_from_db()
         assert friend.name == "Ana"
         assert friend.birthday_day == 29

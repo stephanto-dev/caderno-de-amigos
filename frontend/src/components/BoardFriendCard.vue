@@ -51,7 +51,8 @@ onBeforeUnmount(() => group_observer?.disconnect())
 </script>
 
 <template>
-  <li class="friend-postit" :class="[`group-${friend.groups[0]?.color ?? 'neutral'}`, { 'two-group-rows': has_two_group_rows }]" :aria-labelledby="`friend-${friend.id}`">
+  <li class="friend-postit" :class="[`group-${friend.groups[0]?.color ?? 'neutral'}`, { 'two-group-rows': has_two_group_rows }]"
+    :aria-labelledby="`friend-${friend.id}${friend.is_birthday_today ? ` birthday-${friend.id}` : ''}`">
     <h3 :id="`friend-${friend.id}`" :title="friend.name">
       <RouterLink :to="`/amigos/${friend.id}`">{{ friend.name }}</RouterLink>
     </h3>
@@ -70,11 +71,17 @@ onBeforeUnmount(() => group_observer?.disconnect())
         falei agora
       </span>
     </button>
+    <p v-if="friend.is_birthday_today" :id="`birthday-${friend.id}`" class="birthday-stamp">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1M2 21h20M7 8v3M12 8v3M17 8v3M7 4h.01M12 4h.01M17 4h.01" />
+      </svg>
+      <span>Aniversário hoje</span>
+    </p>
   </li>
 </template>
 
 <style scoped>
-.friend-postit { --rotation: -1.5deg; position: relative; display: flex; flex-direction: column; box-sizing: border-box; min-width: 0; height: calc(var(--notebook-line) * 6); padding: 10px 10px 6px; background: var(--group-color); box-shadow: var(--shadow-paper); transform: rotate(var(--rotation)); transition: transform var(--duration-fast) var(--ease-out); line-height: 1.25; }
+.friend-postit { --rotation: -1.5deg; position: relative; container-type: inline-size; display: flex; flex-direction: column; box-sizing: border-box; min-width: 0; height: calc(var(--notebook-line) * 6); padding: 10px 10px 6px; background: var(--group-color); box-shadow: var(--shadow-paper); transform: rotate(var(--rotation)); transition: transform var(--duration-fast) var(--ease-out); line-height: 1.25; }
 .friend-postit:nth-child(4n + 2) { --rotation: 1deg; }
 .friend-postit:nth-child(4n + 3) { --rotation: 2deg; }
 .friend-postit:nth-child(4n + 4) { --rotation: -1deg; }
@@ -98,6 +105,13 @@ svg { width: 12px; height: 12px; flex: none; fill: none; stroke: currentColor; s
 .contact-button:hover .stamp, .contact-button:focus-visible .stamp { background: transparent; }
 .contact-button:hover .stamp::before, .contact-button:focus-visible .stamp::before { clip-path: inset(0); }
 .contact-button svg { display: none; width: 16px; height: 16px; }
+.birthday-stamp { position: absolute; right: -.25rem; top: calc(100% - .375rem); z-index: 2; max-width: calc(100% + .5rem); box-sizing: border-box; margin: 0;
+ display: flex; align-items: center; gap: 3px; padding: 2px 6px 2px 5px; background: var(--sheet); color: var(--primary-800); border: 1.5px solid var(--primary-800); border-radius: 4px;
+ box-shadow: var(--shadow-paper); transform: rotate(-2.5deg); font: 600 .75rem/1rem var(--font-ui); pointer-events: none; }
+.birthday-stamp svg { width: 14px; height: 14px; }
+.birthday-stamp::before { content: ''; position: absolute; inset: -4px auto auto 50%; width: 18px; height: 7px; margin-left: -9px; background: rgb(43 36 32 / 8%); transform: rotate(4deg); }
+@container (max-width: 8.25rem) { .birthday-stamp { padding: 2px 5px; } .birthday-stamp svg { display: none; } }
+@media (forced-colors: active) { .birthday-stamp { border-color: CanvasText; } }
 @media (min-width: 1024px) { .contact-button svg { display: inline-block; } }
 @media (max-width: 359px) { .contact-button .stamp { padding: 0 4px; font-size: 1.125rem; } }
 @media (prefers-reduced-motion: reduce) { .friend-postit, .contact-button .stamp::before { transition: none; } }

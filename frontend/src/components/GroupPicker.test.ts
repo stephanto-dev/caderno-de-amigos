@@ -105,6 +105,7 @@ describe('Group selection and creation', () => {
     const saved_group = { ...EXISTING_GROUP, name: 'Universidade', color: 'work' }
     friends_state.friends = [{
       id: 'friend-id', name: 'Ana', cadence_amount: 1, cadence_unit: 'month', column: 'overdue',
+      birthday: null, is_birthday_today: false,
       last_contact_at: null, last_note: null, groups: [{ ...EXISTING_GROUP, color: 'college' }],
     }]
     const fetch = vi.fn().mockResolvedValueOnce(Response.json([EXISTING_GROUP]))
@@ -133,6 +134,7 @@ describe('Group selection and creation', () => {
   it('deletes a group only after confirmation, clears its selection and keeps its friends', async () => {
     friends_state.friends = [{
       id: 'friend-id', name: 'Ana', cadence_amount: 1, cadence_unit: 'month', column: 'overdue',
+      birthday: null, is_birthday_today: false,
       last_contact_at: null, last_note: null, groups: [{ ...EXISTING_GROUP, color: 'college' }],
     }]
     const fetch = vi.fn().mockResolvedValueOnce(Response.json([EXISTING_GROUP]))
