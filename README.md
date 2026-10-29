@@ -2,21 +2,63 @@
 
 [![CI](https://github.com/stephanto-dev/caderno-de-amigos/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/stephanto-dev/caderno-de-amigos/actions/workflows/ci.yml)
 
-CRM pessoal para lembrar de falar com os amigos. Cadastre amigos, escolha o
-ritmo de contato, organize grupos e registre quando vocês conversaram. O Quadro
-mostra quem está em dia e de quem faz tempo que você não tem notícias.
+Um CRM pessoal com cara de caderno, feito para lembrar de falar com os amigos.
+Não é um painel de vendas: não tem placar, não tem "atrasado" em vermelho, não tem culpa.
 
-Cada conta tem seus próprios amigos, grupos e contatos. O projeto nasceu como
-estudo de Django e ainda está em desenvolvimento. Não envia lembretes por e-mail
-nem notificações automáticas.
+## Por que existe
+
+Dá para gostar dos amigos e mesmo assim não puxar conversa. Com o tempo a gente
+esquece há quanto tempo não fala com alguém e o que estava rolando na vida da pessoa.
+O caderno guarda isso e mostra, com calma, quem seria bom chamar agora e qual foi
+o último assunto registrado.
+
+O projeto tem dois objetivos:
+
+1. **Uso pessoal.** Manter contato com os amigos no dia a dia. Só vira produto
+   se o uso mostrar valor.
+2. **Aprendizado.** Praticar Django e Python de perto, com decisões registradas
+   e entregas pequenas e verificáveis.
+
+## O que ele faz
+
+- **Cadastro simples.** Dá para começar preenchendo só o nome: o ritmo já vem
+  como "falar a cada 1 mês" e pode ser ajustado depois.
+- **"Falar a cada"**: cada amigo tem seu próprio ritmo de contato (dias, semanas,
+  meses ou anos).
+- **Quadro de post-its** em quatro colunas: "Faz um tempinho", "Essa semana",
+  "Em dia" e "Falei agora", calculadas a partir do último contato e do ritmo
+  escolhido. Cada post-it tem o botão "falei agora".
+- **Registrar contato** (mensagem, ligação ou encontro) com uma nota rápida,
+  que aparece em destaque no cartão do amigo.
+- **Grupos opcionais** com cor de uma paleta fixa. Um amigo pode estar em vários.
+- **Conta própria** com e-mail e senha, numa capa de caderno fechado. Cada conta
+  tem seus próprios amigos, grupos e contatos.
+- **Desktop e celular**, com layouts adaptados a cada tela e atalhos de teclado
+  no registro de contato.
+
+Fora do MVP: notificações por e-mail ou push, integração com WhatsApp, sugestão
+de mensagem por IA e recuperação de senha.
 
 ## Stack
 
-- Backend: Python 3.11+, Django 5 e Django REST Framework.
-- Frontend: Vue 3, TypeScript, Vite e Tailwind CSS.
-- Banco: PostgreSQL 16.
-- Produção: Gunicorn e WhiteNoise servem API e frontend na mesma origem.
-- Qualidade: pytest, Vitest, Ruff, mypy e vue-tsc; dependências Python com `uv`.
+- **Backend:** Python 3.11+, Django 5, Django REST Framework e PostgreSQL 16.
+- **Frontend:** Vue 3 (SPA), TypeScript, Vite e Tailwind CSS.
+- **Deploy:** arquitetura prevista para um único container Docker no Coolify.
+  Gunicorn e WhiteNoise servem a API Django e o frontend compilado na mesma
+  origem. O PostgreSQL roda num serviço separado.
+- **Testes:** pytest + pytest-django com PostgreSQL real e Vitest no frontend.
+- **Qualidade:** Ruff, mypy e vue-tsc; dependências Python com `uv`.
+
+## Estrutura
+
+```text
+backend/   API Django (código em backend/src)
+frontend/  App Vue
+design/    Identidade visual, spec de telas, tokens e protótipos
+docs/      Arquitetura, ADRs e guias de engenharia
+```
+
+O código, os nomes da API e do banco são em inglês. A interface é em português.
 
 ## Desenvolvimento
 
@@ -178,8 +220,9 @@ limites e precisam ser configuradas e verificadas na hospedagem.
 ## Documentação
 
 - [Arquitetura do sistema](docs/arquitetura.md)
-- [ADRs (Architecture Decision Records)](docs/ADL.md)
+- [ADRs (registros de decisões de arquitetura)](docs/ADL.md)
 - [Guias de engenharia](docs/engineering/README.md)
+- [Design: identidade e spec](design/README.md)
 - [Como contribuir](CONTRIBUTING.md)
 - [Código de conduta](CODE_OF_CONDUCT.md)
 - [Como reportar vulnerabilidades](SECURITY.md)
