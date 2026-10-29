@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from calendar import monthrange
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING, ClassVar, NotRequired, TypedDict
 from uuid import UUID
 
@@ -12,6 +13,7 @@ from django.db import transaction
 from django.db.models import Max, OuterRef, Prefetch, QuerySet, Subquery
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 from apps.friends.models import Contact, Friend, Group
 from apps.friends.services.board import BoardService, Column
@@ -34,6 +36,7 @@ class FriendWriteData(TypedDict):
     cadence_amount: NotRequired[int]
     cadence_unit: NotRequired[str]
     groups: NotRequired[list[Group]]
+    birthday: NotRequired[date | None]
 
 
 @dataclass(frozen=True)
@@ -44,6 +47,7 @@ class BoardFriend:
     column: Column
     last_contact: datetime | None
     last_note: str | None
+    is_birthday_today: bool
 
 
 class FriendsService:
@@ -76,11 +80,14 @@ class FriendsService:
     @transaction.atomic
     def create_friend_for_owner(self, friend_data: FriendWriteData) -> BoardFriend:
         """Create a friend for the authenticated owner and return its board fields."""
+        birthday = friend_data.get("birthday")
         friend = Friend.objects.create(
             owner=self.owner,
             name=friend_data["name"],
             cadence_amount=friend_data["cadence_amount"],
             cadence_unit=friend_data["cadence_unit"],
+            birthday_day=birthday.day if birthday is not None else None,
+            birthday_month=birthday.month if birthday is not None else None,
         )
         if "groups" in friend_data:
             friend.groups.set(friend_data["groups"])
@@ -90,9 +97,18 @@ class FriendsService:
     def update_friend_for_owner(
         self, friend_id: UUID, friend_data: FriendWriteData
     ) -> BoardFriend:
-        """Apply supplied fields and replace groups when a group list is supplied."""
+        """Apply supplied fields, preserving omitted birthday and groups.
+
+        An explicit None birthday clears both columns; its validation year
+        is never persisted.
+        """
         friend = get_object_or_404(self.friends_for_owner, pk=friend_id)
-        updated_fields = set(friend_data) - {"groups"}
+        updated_fields = set(friend_data) - {"groups", "birthday"}
+        if "birthday" in friend_data:
+            birthday = friend_data["birthday"]
+            friend.birthday_day = birthday.day if birthday is not None else None
+            friend.birthday_month = birthday.month if birthday is not None else None
+            updated_fields.update({"birthday_day", "birthday_month"})
         if updated_fields:
             friend.name = friend_data.get("name", friend.name)
             friend.cadence_amount = friend_data.get(
@@ -139,7 +155,21 @@ class FriendsService:
             column=BoardService().calculate_column(friend, last_contact),
             last_contact=last_contact,
             last_note=friend.last_note,
+            is_birthday_today=self._is_birthday_today_for_friend(friend),
         )
+
+    def _is_birthday_today_for_friend(self, friend: Friend) -> bool:
+        """Check the birthday in the default São Paulo zone, without a query.
+
+        A 29/02 birthday falls on 28/02 in years without a leap day.
+        Use the project zone even if a caller activates another time zone.
+        """
+        if friend.birthday_day is None or friend.birthday_month is None:
+            return False
+        today = timezone.localdate(timezone=timezone.get_default_timezone())
+        last_day_of_birthday_month = monthrange(today.year, friend.birthday_month)[1]
+        birthday_day = min(friend.birthday_day, last_day_of_birthday_month)
+        return today.month == friend.birthday_month and today.day == birthday_day
 
     def _get_sort_key_for_friend(
         self, board_friend: BoardFriend

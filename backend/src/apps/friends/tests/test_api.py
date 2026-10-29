@@ -142,6 +142,8 @@ class TestFriendsReadAPI:
         assert response.data == {
             "id": str(friend.id),
             "name": "Ana",
+            "birthday": None,
+            "is_birthday_today": False,
             "cadence_amount": 30,
             "cadence_unit": Friend.CadenceUnit.DAY,
             "column": "on_track",
@@ -329,6 +331,8 @@ class TestFriendsWriteAPI:
         assert response.data == {
             "id": str(friend.id),
             "name": "Bia",
+            "birthday": None,
+            "is_birthday_today": False,
             "cadence_amount": 2,
             "cadence_unit": Friend.CadenceUnit.WEEK,
             "column": "overdue",
@@ -583,6 +587,306 @@ class TestFriendsWriteAPI:
 
         # Assert
         assert response.status_code == 403
+
+
+@pytest.mark.django_db
+class TestFriendBirthdayAPI:
+    def test_birthday_today_is_returned_in_all_friend_representations(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        created = client.post(
+            reverse("list_friends"),
+            {
+                "name": "Bia",
+                "cadence_amount": 1,
+                "cadence_unit": "month",
+                "birthday": "22/10",
+                "is_birthday_today": False,
+            },
+            format="json",
+        )
+        friend_id = created.data["id"]
+        listed = client.get(reverse("list_friends"))
+        detail = client.get(reverse("get_friend", args=[friend_id]))
+        contact = client.post(
+            reverse("record_contact", args=[friend_id]), {"kind": "call"}
+        )
+        cleared = client.patch(
+            reverse("get_friend", args=[friend_id]),
+            {"birthday": None, "is_birthday_today": True},
+            format="json",
+        )
+
+        # Assert
+        assert created.status_code == 201
+        assert listed.status_code == 200
+        assert detail.status_code == 200
+        assert contact.status_code == 201
+        assert cleared.status_code == 200
+        assert created.data["is_birthday_today"] is True
+        assert listed.data[0]["is_birthday_today"] is True
+        assert detail.data["is_birthday_today"] is True
+        assert contact.data["is_birthday_today"] is True
+        assert cleared.data["is_birthday_today"] is False
+
+    @pytest.mark.parametrize(
+        "birthday_day,birthday_month", [(21, 10), (22, 9), (None, None)]
+    )
+    def test_birthday_not_today_returns_false(
+        self, birthday_day: int | None, birthday_month: int | None
+    ) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        friend.birthday_day = birthday_day
+        friend.birthday_month = birthday_month
+        friend.save(update_fields=["birthday_day", "birthday_month"])
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.get(reverse("get_friend", args=[friend.id]))
+
+        # Assert
+        assert response.status_code == 200
+        assert response.data["is_birthday_today"] is False
+
+    def test_birthday_changes_at_sao_paulo_midnight_even_with_utc_active(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        friend.birthday_day = 22
+        friend.birthday_month = 10
+        friend.save(update_fields=["birthday_day", "birthday_month"])
+        client = APIClient()
+        client.force_authenticate(owner)
+        url = reverse("get_friend", args=[friend.id])
+
+        # Act
+        with timezone.override("UTC"):
+            with time_machine.travel("2026-10-22T02:59:59Z", tick=False):
+                before = client.get(url)
+            with time_machine.travel("2026-10-22T03:00:00Z", tick=False):
+                birthday = client.get(url)
+            with time_machine.travel("2026-10-23T03:00:00Z", tick=False):
+                after = client.get(url)
+
+        # Assert
+        assert before.status_code == birthday.status_code == after.status_code == 200
+        assert before.data["is_birthday_today"] is False
+        assert birthday.data["is_birthday_today"] is True
+        assert after.data["is_birthday_today"] is False
+
+    @pytest.mark.parametrize(
+        "today",
+        ["2024-02-29T15:00:00Z", "2025-02-28T15:00:00Z", "2100-02-28T15:00:00Z"],
+    )
+    def test_leap_day_birthday_matches_last_day_of_february(self, today: str) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        friend.birthday_day = 29
+        friend.birthday_month = 2
+        friend.save(update_fields=["birthday_day", "birthday_month"])
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        with time_machine.travel(today, tick=False):
+            response = client.get(reverse("get_friend", args=[friend.id]))
+
+        # Assert
+        assert response.status_code == 200
+        assert response.data["birthday"] == "29/02"
+        assert response.data["is_birthday_today"] is True
+
+    @pytest.mark.parametrize("today", ["2024-02-28T15:00:00Z", "2025-03-01T15:00:00Z"])
+    def test_leap_day_birthday_does_not_match_other_dates(self, today: str) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        friend.birthday_day = 29
+        friend.birthday_month = 2
+        friend.save(update_fields=["birthday_day", "birthday_month"])
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        with time_machine.travel(today, tick=False):
+            response = client.get(reverse("get_friend", args=[friend.id]))
+
+        # Assert
+        assert response.status_code == 200
+        assert response.data["is_birthday_today"] is False
+
+    @pytest.mark.parametrize("birthday", ["29/02", "01/09", "31/12", None])
+    def test_create_friend_accepts_birthday(self, birthday: str | None) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("list_friends"),
+            {
+                "name": "Bia",
+                "cadence_amount": 1,
+                "cadence_unit": "month",
+                "birthday": birthday,
+            },
+            format="json",
+        )
+
+        # Assert
+        assert response.status_code == 201
+        assert response.data["birthday"] == birthday
+        friend = Friend.objects.get(pk=response.data["id"])
+        if birthday is None:
+            assert friend.birthday_day is None
+            assert friend.birthday_month is None
+        else:
+            assert friend.birthday_day == int(birthday[:2])
+            assert friend.birthday_month == int(birthday[3:])
+
+    @pytest.mark.parametrize(
+        "birthday",
+        [
+            "31/04",
+            "30/02",
+            "00/01",
+            "01/00",
+            "01/13",
+            "32/01",
+            "1/02",
+            "01/2",
+            "2000-02-29",
+            "29/02/2000",
+            "",
+            " 01/01",
+            "01/01 ",
+            "01/01\n",
+            "abc01/01",
+            "２９/０２",
+            2902,
+            [],
+            {},
+        ],
+    )
+    @pytest.mark.parametrize("request_method", ["post", "patch"])
+    def test_invalid_birthday_returns_field_error_without_changing_friend(
+        self, birthday: object, request_method: str
+    ) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        friend.birthday_day = 29
+        friend.birthday_month = 2
+        friend.save(update_fields=["birthday_day", "birthday_month"])
+        client = APIClient()
+        client.force_authenticate(owner)
+        body = {
+            "name": "Bia",
+            "cadence_amount": 1,
+            "cadence_unit": "month",
+            "birthday": birthday,
+        }
+
+        # Act
+        if request_method == "post":
+            response = client.post(reverse("list_friends"), body, format="json")
+        else:
+            response = client.patch(
+                reverse("get_friend", args=[friend.id]), body, format="json"
+            )
+
+        # Assert
+        assert response.status_code == 400
+        assert response.data["type"] == "validation_error"
+        assert any(error["attr"] == "birthday" for error in response.data["errors"])
+        friend.refresh_from_db()
+        assert friend.name == "Ana"
+        assert friend.birthday_day == 29
+        assert friend.birthday_month == 2
+        assert Friend.objects.count() == 1
+
+    @pytest.mark.parametrize("birthday", ["01/09", None])
+    def test_patch_friend_replaces_or_clears_birthday(
+        self, birthday: str | None
+    ) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        friend.birthday_day = 29
+        friend.birthday_month = 2
+        friend.save(update_fields=["birthday_day", "birthday_month"])
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.patch(
+            reverse("get_friend", args=[friend.id]),
+            {"birthday": birthday},
+            format="json",
+        )
+
+        # Assert
+        assert response.status_code == 200
+        assert response.data["birthday"] == birthday
+        friend.refresh_from_db()
+        if birthday is None:
+            assert friend.birthday_day is None
+            assert friend.birthday_month is None
+        else:
+            assert friend.birthday_day == 1
+            assert friend.birthday_month == 9
+
+    def test_patch_without_birthday_preserves_existing_birthday(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        friend.birthday_day = 29
+        friend.birthday_month = 2
+        friend.save(update_fields=["birthday_day", "birthday_month"])
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.patch(
+            reverse("get_friend", args=[friend.id]), {"name": "Bia"}, format="json"
+        )
+
+        # Assert
+        assert response.status_code == 200
+        friend.refresh_from_db()
+        assert friend.name == "Bia"
+        assert friend.birthday_day == 29
+        assert friend.birthday_month == 2
+        assert response.data["birthday"] == "29/02"
+
+    def test_list_and_detail_return_formatted_birthday(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Ana")
+        friend.birthday_day = 1
+        friend.birthday_month = 9
+        friend.save(update_fields=["birthday_day", "birthday_month"])
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        list_response = client.get(reverse("list_friends"))
+        detail_response = client.get(reverse("get_friend", args=[friend.id]))
+
+        # Assert
+        assert list_response.status_code == 200
+        assert detail_response.status_code == 200
+        assert list_response.data[0]["birthday"] == "01/09"
+        assert detail_response.data["birthday"] == "01/09"
 
 
 @pytest.mark.django_db
