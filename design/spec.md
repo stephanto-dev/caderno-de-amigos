@@ -2,11 +2,28 @@
 
 _Substitui a spec v1 (direção A). Referências: `tokens.css`, `tailwind.config.js` (plugin com os utilitários), `prototipo/index.html` (`?tela=inicio|amigos|perfil|cadastro|registrar|vazio|atalhos|config`), `direcoes/grupos-chips.html` (`?estado=normal|editando|form-editar|confirmar-apagar|erro-nome`), `direcoes/auth-capa.html` (`?modo=entrar|criar` & `?estado=normal|erro|carregando`), `direcoes/quadro.html`, `direcoes/cabecalho-folha.html` (3.12), prints em `prints/` (incl. `desktop-auth-*`, `mobile-auth-*`, `auth-capa-estados.png`, `desktop-quadro.png`, `mobile-quadro.png`, `cabecalho-folha.png`, `forms-pauta-*.png`), `direcoes/forms-pauta.html` (3.13). Ref visual do carimbo escolar: `ref-folha-data.png`._
 
+**Atualizado em 29/10/2026 (9d3110b).** Decisões aprovadas pelo Vinicius depois de revisar o commit `9d3110b`:
+1. **Navegação com 3 abas:** quadro · amigos · config, todas em minúsculas (3.7, 7.4). Saem "bom falar" (o papel dela fica com a coluna "Faz um tempinho" do Quadro, 7.2), "+ novo" e "?". O novo amigo nasce do carimbo "novo amigo" no cabeçalho da folha Amigos (3.3), e em `/amigos/novo` a aba ativa continua "amigos".
+2. **"Tentar novamente" em todo lugar** (3.1, 7.6, §6). "Tentar de novo" e "tente de novo" saem.
+3. **Documentado como está no 9d3110b:** etiquetas de grupo em papel rasgado (7.3, 7.10) e o preenchimento de canetinha no hover e no foco de todo `.stamp` (3.16). Ele substitui o hover `neutro-100` do "ver mais antigos" (3.15), o `primaria-700` do botão da capa (3.8) e o hover liso do carimbo (3.1). **Regra nova:** a canetinha nunca pode baixar o contraste do texto abaixo de AA; o texto fica sempre por cima do traço e legível. Os botões de grupo do 9d3110b quebram essa regra (2,91:1, ver 3.16).
+4. **A spec continua valendo e o código volta:** cabeçalho visível do Quadro (título, introdução e legenda, 7.3); adesivo de grupo ligado com borda 2px tinta + sombra e modo editar tracejado (3.13); títulos visíveis das folhas Config (3.7.1) e Amigos (3.3); "+ novo grupo" tracejado e ações do editor de grupo em pills de 44px (3.13; a versão do código não é melhor, motivo lá). No livro aberto, o novo amigo ganha conteúdo na página direita (3.17).
+
+**Ajustes no código (card do TL)**
+1. **Quadro:** voltar o cabeçalho visível: `h1` "Quadro", introdução e legenda de grupos (com o `GET /grupos/`), como em 7.3. Hoje é só um `h1.sr-only`.
+2. **Grupo selecionado:** voltar o adesivo ligado (borda 2px `ink`, fundo da cor do grupo, `shadow-paper`, check) e o desligado tracejado (3.13). Hoje o ligado só fica em negrito.
+3. **Modo editar dos grupos:** voltar a borda 2px tracejada `pen-ink` com a cor do grupo e o nome sublinhado (3.13). Hoje só sublinha.
+4. **Legibilidade da canetinha nos botões de grupo:** "+ novo grupo" e as ações do editor deixam de ser `.stamp` e voltam a tracejado/pills (3.13); e, em todo `.stamp` com texto `primaria`, o texto e a borda passam para `primaria-800` no hover e no foco (hoje 2,91:1 sobre o traço; com `primaria-800`, 4,82:1; 3.16).
+5. **Novo amigo no desktop (≥1280):** a página direita mostra o rascunho da página do amigo, em vez de ficar vazia (3.17).
+6. **Config e Amigos:** títulos visíveis de novo (`h1.view-title` em vez de `sr-only`; 3.7.1 e 3.3).
+7. **Abas em minúsculas:** "quadro" e "amigos" (hoje "Quadro" e "Amigos" no `App.vue` e no `App.test.ts`). P2.
+8. **Erro do Quadro (achado na revisão):** o `BoardView.vue` ainda diz "Verifique sua conexão e tente de novo." e "Tentar de novo"; trocar por "tente novamente" e "Tentar novamente" (7.6).
+9. **Seletor de cor do grupo (PR seguinte, junto com o item 5):** voltar as pills de 44px com radio nativo e label Pêssego/Amarelo/Azul/Verde/Creme (3.13), no lugar do círculo desenhado à mão do 9d3110b. Decidido em 29/10/2026.
+
 ## 0. O que mudou em relação à v1 (resumo para o Tech Lead)
 | Antes (v1) | Agora (v2) |
 |---|---|
 | Fundo creme, cartões brancos com borda | Mesa `#7A5A3E` sólida + página pautada (`.paper-lined`) com margem (`.margin-line`) e espiral (`.spiral-h` / `.spiral-v`), tudo em CSS |
-| Sidebar (desktop) e tab bar com FAB (celular) | **Abas de divisória = `router-link`**: borda direita a partir de 1024px, penduradas embaixo no celular. O FAB sai; "+ novo" vira aba |
+| Sidebar (desktop) e tab bar com FAB (celular) | **Abas de divisória = `router-link`**: borda direita a partir de 1024px, penduradas embaixo no celular. O FAB sai. Desde 29/10/2026 (9d3110b), **3 abas: quadro · amigos · config**; o novo amigo nasce do carimbo "novo amigo" da folha Amigos (3.7) |
 | Lista + detalhe a partir de 1024px | **Duas páginas só a partir de 1280px** (`screens.livro`). De 1024 a 1279px: uma página com abas à direita. Abaixo de 1280px, o perfil desliza por cima da página |
 | Cartão com avatar e botão pill | Item de 3 linhas: nome (Fraunces) + metadados (Inter) · nota (Caveat, azul caneta) · carimbo "registrar" |
 | Espaçamento 8/16/24 livre | **Ritmo vertical fixo: token único `--linha: 32px`**. Line-height e espaço vertical da página sempre em múltiplos de 32 (`mt-l1`, `h-l2`…) |
@@ -24,13 +41,13 @@ _Substitui a spec v1 (direção A). Referências: `tokens.css`, `tailwind.config
       <section class="pagina pg-l margin-line"><div class="folha paper-lined"> listas/forms </div></section>
       .spiral-v (meio, ≥1280)
       <section class="pagina pg-r margin-line"> perfil </section>   ← <1280: absoluto por cima, translateX
-      <nav class="abas"> router-link × 5 (+ "?" ≥1024): bom falar · quadro · amigos · + novo · config </nav>
+      <nav class="abas"> router-link × 3: quadro · amigos · config </nav>
       sheet/painel de registro
 ```
 - A `.pagina` não rola; quem rola é a `.folha` (`overflow-y:auto`). A pauta usa `background-attachment: local` para rolar junto com o texto, e a margem (pseudo-elemento da `.pagina`) fica parada.
 - Padding da folha: `32px 16px 64px 52px` no celular e `32px 40px 64px 80px` a partir de 1024. O topo e a base são sempre múltiplos de 32.
 - Altura: a `.cena` usa `100dvh`, e a página ocupa o restante. A altura da página não precisa ser múltipla de 32, porque a pauta é infinita.
-- Rotas: `/entrar` (capa, não autenticado; ver 3.8) · `/` · `/quadro` · `/amigos` · `/amigos/:id` · `/amigos/novo` · `/config` · `?registrar=1`. No livro aberto, `/amigos/:id` mostra a lista à esquerda e o perfil à direita; abaixo de 1280px, a mesma rota mostra só o perfil (página por cima, com "‹ Voltar").
+- Rotas: `/entrar` (capa, não autenticado; ver 3.8) · `/` (redireciona para `/quadro`) · `/quadro` · `/amigos` · `/amigos/:id` · `/amigos/novo` · `/config` · `?registrar=1`. No livro aberto, `/amigos/:id` mostra a lista à esquerda e o perfil à direita; abaixo de 1280px, a mesma rota mostra só o perfil (página por cima, com "‹ Voltar").
 
 ## 2. Ritmo vertical (regra dura)
 - Um token: `--linha` (CSS) / `L = 32` (Tailwind). A pauta, os line-heights (`fontSize` com `lineHeight: 32px` em todos os tamanhos) e o spacing `l1`–`l6` derivam dele.
@@ -43,14 +60,16 @@ _Substitui a spec v1 (direção A). Referências: `tokens.css`, `tailwind.config
 Estados comuns: **foco** `box-shadow: var(--anel-foco)` (2px folha + 2px `#2F6185`); **desabilitado** opacidade .45 e sem hover; **carregando** spinner `loader-2` de 16px antes do texto, largura fixa e `aria-busy`.
 
 ### 3.1 Item "Bom falar com" (`li.card`, 3 linhas + 1 de respiro)
+> **Sem aba própria desde 29/10/2026 (9d3110b):** a aba "bom falar" saiu e o `/` redireciona para `/quadro`. Quem pede contato agora aparece na coluna "Faz um tempinho" do Quadro (7.2). A anatomia abaixo fica como referência do item de lista; o carimbo segue a canetinha de 3.16.
+
 - L1: nome Fraunces 19/600 (link para o perfil; hover `primaria-700`) + `· tipo, tempo` em Inter 12 `neutro-600`, com truncamento na linha.
 - L2: `.nota` com "→" e a última nota; grifo `.marca` opcional em uma palavra-chave. Limite de 1 linha no celular e 2 no livro (`line-clamp`); se cortar, a nota inteira fica no histórico do perfil (3.15).
-- L3: `.carimbo` "✎ registrar" (Caveat 21/700, borda 2px primária, rotação −2°). Hover: fundo `primaria-50`, cor 700. Active: fundo `primaria-100`, `scale(.97)`. Foco: anel. Desabilitado: .45. Carregando: o ícone vira spinner. Alvo: 28px de altura dentro de 32, com 44px de largura mínima. Para o toque, estender a área com `::after` de `inset: -8px`.
+- L3: `.carimbo` "✎ registrar" (Caveat 21/700, borda 2px primária, rotação −2°). Hover e foco: preenchimento de canetinha (3.16; substitui o fundo `primaria-50` / cor 700). Active: texto `primaria-800` e `scale(.97)`, sem fundo. Foco: anel. Desabilitado: .45. Carregando: o ícone vira spinner. Alvo: 28px de altura dentro de 32, com 44px de largura mínima. Para o toque, estender a área com `::after` de `inset: -8px`.
 - `mb-l1` entre itens.
 - **Selecionado** (livro aberto, perfil exibido): faixa `marca-texto-50` via `::before` deslocada por `--pauta-offset`, para alinhar exatamente às linhas, mais `aria-current`.
 - **Sem nota:** L2 em Inter 14 itálico `neutro-600`, "sem nota ainda. que tal perguntar como a pessoa está?".
 - **Carregando:** 3 itens skeleton (barras `neutro-100` de 12px de altura centradas nas linhas L1 e L2), pulso de opacidade de 1,2s.
-- **Erro:** em papel, `bg-erro-50` com borda `erro`, "Não conseguimos abrir seu caderno agora." + botão secundário "Tentar de novo".
+- **Erro:** em papel, `bg-erro-50` com borda `erro`, "Não conseguimos abrir seu caderno agora." + botão secundário "Tentar novamente".
 - **Lista vazia com amigos:** `.nota` "Tudo em dia por aqui. Aproveite o dia."
 
 ### 3.2 Post-it de aniversário
@@ -59,7 +78,9 @@ Estados comuns: **foco** `box-shadow: var(--anel-foco)` (2px folha + 2px `#2F618
 > **Fora do escopo de 3.14 (29/10/2026):** a feature de aniversário não tem lista de próximos. Este post-it de "próximos 7 dias" não entra com ela; fica para um card futuro.
 
 ### 3.3 Linha da lista de amigos
-`h-l2` (2 linhas): nome Fraunces 19 com truncamento / "último contato: …" Inter 14 `neutro-600` com truncamento, mais chevron. Hover `marca-texto-50/60`; selecionado como no 3.1. Busca: `.campo` com ícone, bloco `h-l2`. Busca vazia: `.nota` "ninguém com "xyz" por aqui." + carimbo "adicionar xyz".
+**Cabeçalho da folha Amigos (29/10/2026):** depois do `.cabecalho-folha` (3.12), o título Fraunces "Amigos" **visível** (`h1.view-title`, como nas outras folhas; não vira `sr-only`) e, na mesma linha, à direita, o carimbo **"novo amigo"** (`router-link` para `/amigos/novo`, área de toque ≥ 44px). Como a aba "+ novo" saiu, esse carimbo é o caminho visível para o cadastro, junto com "adicionar xyz" da busca vazia e "adicionar primeiro amigo" do estado vazio. Se não couber ao lado do título, quebra para a linha de baixo.
+
+`h-l2` (2 linhas): nome Fraunces 19 com truncamento / "último contato: …" Inter 14 `neutro-600` com truncamento, mais chevron. Hover `marca-texto-50/60`; selecionado como no 3.1. Busca (decidido 29/10/2026, mantém o 9d3110b): campo sublinhado sem caixa, ícone de lupa 20px à esquerda, altura de 2 linhas da pauta (input 48px), sublinhado 1,5px `neutro-500`; placeholder "Buscar por nome" em Caveat 22/500 `neutro-700` (opacidade 1); texto digitado Inter 16 `pen-ink`. Foco: faixa de marca-texto + traço `focus` 3px embaixo (como os campos do 3.13), lupa vira `pen-ink`. Desabilitado (carregando/erro): opacidade .55. Rótulo `sr-only` "Buscar amigos por nome". Busca vazia: `.nota` "ninguém com "xyz" por aqui." + carimbo "adicionar xyz".
 
 ### 3.4 Perfil
 - Cabeçalho com `.reserva-canto` + `.polaroid.fita` (96px; 76px abaixo de 1024): nome Fraunces 28/30, "da faculdade · a cada 3 semanas" Inter 14, "🎂(cake) 12/mar · curte <marca>escalada</marca>…" Inter 14 e carimbo "registrar contato" (+ `kbd R` no desktop). São 4 linhas; a polaroid cabe nelas e **termina antes de "Histórico"** (`mt-l1`).
@@ -100,12 +121,15 @@ Estados comuns: **foco** `box-shadow: var(--anel-foco)` (2px folha + 2px `#2F618
 - Erro: faixa `bg-erro-50` dentro do papel, "Não deu pra salvar. Sua nota continua aqui." Sucesso: o sheet fecha, toast "Contato registrado. Boa conversa!" com "Desfazer" e o item sai da lista (fade 240ms + colapso de altura **em múltiplos de 32**, ou seja, colapsa as 4 linhas).
 
 ### 3.7 Abas (`nav.abas` > `router-link.aba`)
-- Rótulos Caveat 20/700, nesta ordem: "bom falar" (`primaria-100`, `/`) · "quadro" (`papel`, `/quadro`) · "amigos" (`marca-texto`, `/amigos`) · "+ novo" (`aba-verde`, `/amigos/novo`) · **"config"** (`margem` `#D9837A`, `/config`, decisão 26/10/2026) · "?" (`pauta`, só ≥1024, abre os atalhos). "config" fica **depois de "+ novo" e antes do "?"**.
-- ≥1024: verticais (`writing-mode: vertical-rl`), 42×104 ("?": 56), raio `0 8px 8px 0`, saindo 42px da borda direita a partir de top 64. Celular: horizontais, **altura 44px** (alvo mínimo; ativa 48), raio `0 0 8px 8px`, fixas embaixo. Com 5 abas no celular ("bom falar", "quadro", "amigos", "+ novo", "config"): padding horizontal de 8px, `gap` de 4px e `left` de 12px, para caber em 390px (mesmo ajuste de densidade que o Quadro usou ao passar de 3 para 4).
-- **Ativa** (`.router-link-exact-active` / `aria-current="page"`): fundo `primaria`, texto branco, 6px mais "para fora". Hover: `filter: brightness(.97)`. Foco: anel. No perfil, a ativa é a aba da lista de origem.
+- **3 abas (decisão de 29/10/2026, 9d3110b).** Rótulos Caveat 20/700, nesta ordem: **"quadro"** (`primaria-100`, `/quadro`; o `/` redireciona para cá) · **"amigos"** (`marca-texto`, `/amigos`) · **"config"** (`margem` `#D9837A`, `/config`). Saíram "bom falar" (a coluna "Faz um tempinho" do Quadro cumpre esse papel, 7.2), "+ novo" e "?". A aba "quadro" herdou o `primaria-100` da antiga "bom falar" (antes era `papel`).
+- **Minúsculas:** as três abas em minúsculas, como os outros rótulos em Caveat ("config" já é assim). O nome acessível é o texto visível. Hoje o código escreve "Quadro" e "Amigos" com maiúscula (`App.vue`, `App.test.ts`): ajuste P2 do card do TL.
+- **Novo amigo sem aba:** entra pelo carimbo "novo amigo" no cabeçalho da folha Amigos (3.3), por "adicionar {busca}" e por "adicionar primeiro amigo". Em `/amigos/novo`, a aba ativa é **"amigos"** (`aria-current="page"`).
+- **Atalhos sem aba:** o "?" saiu da nav; o modal de 3.10 abre só pela tecla.
+- ≥1024: verticais (`writing-mode: vertical-rl`), 42×104 (ativa 48×104), raio `0 8px 8px 0`, saindo 42px da borda direita a partir de top 64. Celular: horizontais, **altura 44px** (alvo mínimo; ativa 48), raio `0 0 8px 8px`, fixas embaixo, padding `12px 8px 0`, `gap` de 4px e `left` de 12px (os valores ficam como no código; com 3 abas sobra espaço em 360px).
+- **Ativa** (`.router-link-exact-active` / `aria-current="page"`): fundo `primaria`, texto branco, 6px mais "para fora". Hover: `filter: brightness(.97)`. Foco: anel. No perfil (`/amigos/:id`) e no novo amigo (`/amigos/novo`), a ativa é "amigos".
 
 ### 3.7.1 Configurações (`/config`, MVP mínimo — 26/10/2026)
-Página simples diretamente na folha, sem cartão ao redor da conta e sem tema nem notificações: título Fraunces "Configurações", o **e-mail da conta logada** em Inter 16 `neutro-700`, com rótulo E-mail em Caveat e quebra de linha para endereços longos, e o carimbo/botão **"Sair"** (logout; Caveat como os outros carimbos, ou botão secundário de 44px com texto "Sair" — o carimbo basta). Sem outros campos no MVP. Escopo: só identificar a conta e sair.
+Página simples diretamente na folha, sem cartão ao redor da conta e sem tema nem notificações: título Fraunces "Configurações" **visível** (`h1.view-title`, com `overflow-wrap: anywhere`; não vira `sr-only`, mantido em 29/10/2026), o **e-mail da conta logada** em Inter 16 `neutro-700`, com rótulo E-mail em Caveat e quebra de linha para endereços longos, e o carimbo/botão **"Sair"** (logout; Caveat como os outros carimbos, ou botão secundário de 44px com texto "Sair" — o carimbo basta). Sem outros campos no MVP. Escopo: só identificar a conta e sair.
 
 ### 3.8 Auth — capa (`/entrar`, decisão 26/10/2026)
 _Conta própria no MVP (produto.md, 26/10): self-signup na **capa do caderno**. UI de login/cadastro = caderno **fechado** (capa frontal), não a folha aberta das telas autenticadas. Ideia do Vinicius. Protótipo: `direcoes/auth-capa.html`. Prints: `prints/desktop-auth-entrar.png`, `prints/desktop-auth-criar.png`, `prints/mobile-auth-entrar.png`, `prints/mobile-auth-criar.png`, `prints/auth-capa-estados.png`._
@@ -137,6 +161,7 @@ _Feedback Vinicius 26/10: (1) 1ª versão = "cartão com espiral"; (2) cor peach
 - **Formulário = etiqueta pautada colada NA capa:** 100% **dentro** do retângulo da capa (padding interno generoso; `overflow:hidden` na capa). Sem rotação que cause overflow (rotação zerada na v3). Fita washi CSS (`.fita`, `marca-texto`) no topo, também dentro. Toggle Entrar | Criar conta em Inter, rótulos Caveat, campos sublinhados em Inter e botão primário em carimbo terracota. **Nunca** a etiqueta invade a mesa nem ultrapassa a borda inferior/direita.
 - Mobile: capa quase full-width com margem na mesa. Desktop: largura máxima de 30rem. Altura cresce com o conteúdo quando necessário.
 - Contraste AA em todos os textos/botões (tokens já checados em `identidade.md`).
+- **Hover e foco do "Entrar"/"Criar conta" (9d3110b, 29/10/2026):** o botão é um `.stamp` cheio (fundo `primaria`, texto `folha`, 5,04:1). O hover liso `primaria-700` saiu e vale a canetinha de 3.16. Sobre o fundo `primaria`, a caneta `primaria` a 38% não aparece; no carimbo cheio, a caneta é `primaria-800` a 38% (texto `folha` sobre o traço: 6,09:1). Hoje o código usa a caneta padrão, e o hover fica sem retorno visual.
 
 **Estados**
 - **Normal:** campos vazios ou preenchíveis; primário habilitado quando o HTML `required` estiver satisfeito (validação de vazio fica no browser/`required`).
@@ -155,17 +180,17 @@ _Feedback Vinicius 26/10: (1) 1ª versão = "cartão com espiral"; (2) cor peach
 **Microcopy (pt-BR)** — ver também §6: Entrar · Criar conta · Já tenho conta · E-mail · Senha · Repetir senha · Entrando… · Criando… · E-mail ou senha incorretos. · Este e-mail já tem conta. · As senhas não são iguais. · A senha precisa ter pelo menos 8 caracteres. · Caderno de amigos · seu ritmo com as pessoas que importam.
 
 ### 3.9 Estado vazio
-Na folha: `.cabecalho-folha` (3.12), título e, depois de `mt-l2`, duas `.nota` ("Seu caderno está em branco." / "Comece por alguém de quem você sente falta."), Inter "Só o nome já basta." e o carimbo "adicionar primeiro amigo". No livro aberto, a página direita fica em branco quando nenhum perfil está aberto (decisão de 29/10/2026). Não há ilustração (a página em branco já é a ilustração).
+Na folha: `.cabecalho-folha` (3.12), título e, depois de `mt-l2`, duas `.nota` ("Seu caderno está em branco." / "Comece por alguém de quem você sente falta."), Inter "Só o nome já basta." e o carimbo "adicionar primeiro amigo". No livro aberto, a página direita fica em branco quando nenhum perfil está aberto (decisão de 29/10/2026). Exceção: em `/amigos/novo`, ela mostra o rascunho do novo amigo (3.17). Não há ilustração (a página em branco já é a ilustração).
 
 ### 3.10 Atalhos (modal)
-`.papel` max-w 384, Inter, lista de pares com `kbd` (borda tinta). Abre com "?" (aba ou tecla); fecha com Esc ou clique fora.
+`.papel` max-w 384, Inter, lista de pares com `kbd` (borda tinta). Abre com a tecla "?" (a aba "?" saiu em 29/10/2026; os atalhos ainda não estão no código); fecha com Esc ou clique fora.
 | Tecla | Ação |
 |---|---|
 | N | Novo amigo |
 | R | Registrar contato com a pessoa aberta |
 | J / K | Próxima / anterior (a documentar no MVP; ausente no protótipo) |
 | / | Buscar |
-| 1 / 2 / 3 | Bom falar com / Quadro / Amigos |
+| 1 / 2 / 3 | quadro / amigos / config (as 3 abas, na ordem) |
 | Ctrl/⌘ + Enter | Salvar formulário ou registro |
 | Esc | Fechar |
 | ? | Atalhos |
@@ -178,7 +203,7 @@ Pill `tinta` com texto branco, 48px, `check` `#B9CDB1`, `role="status"`, 2,4s, "
 _Decisão de grupo (MVP, 27/10/2026): carimbo escolar de dia + data em **todas** as folhas autenticadas. Não reabrir. Protótipo: `direcoes/quadro.html`, `direcoes/grupos-chips.html`, `direcoes/cabecalho-folha.html`. Prints: `prints/desktop-quadro.png`, `prints/mobile-quadro.png`, `prints/cabecalho-folha.png`. Ref: `ref-folha-data.png`._
 
 **Onde entra**
-- Em **todas** as folhas autenticadas: `/` (bom falar), `/quadro`, `/amigos`, `/amigos/:id`, `/amigos/novo`, `/config` (e qualquer outra folha aberta autenticada).
+- Em **todas** as folhas autenticadas: `/quadro` (o `/` redireciona para ele), `/amigos`, `/amigos/:id`, `/amigos/novo`, `/config` (e qualquer outra folha aberta autenticada).
 - **Fora:** `/entrar` (capa fechada — não autenticado). O protótipo `direcoes/auth-capa.html` **não** recebe este bloco.
 
 **O que é**
@@ -293,13 +318,15 @@ linha 10│ [✓ Faculdade] [Família] [Trabalho] …      ← adesivos, 2 linha
   - **Número:** `width:4rem`, centralizado, `tabular-nums`, sem setinhas (o CRM-16 já tira), sublinhado como os outros campos, Inter 16. O alvo de 48px pega 1rem da linha de cima, que está em branco (margem do Nome).
   - **Unidades:** 4 radios nativos escondidos, mas focáveis (as setas funcionam). O texto é Inter 16 em minúsculas (`text-transform`). A marcada fica com peso 600 e um **círculo à mão** de 2px `pen-ink` (`border-radius` irregular + `rotate(-2deg)`). Cada opção tem 48px de alvo, que desce 1rem para a linha em branco de baixo, e largura mínima de 44px.
   - O `legend` "Unidade do ritmo" continua no DOM e é lido pelo leitor de tela, mas fica escondido visualmente (`sr-only`). O rótulo visível da frase é "Falar a cada".
-- **Grupos como adesivos:**
+- **Grupos como adesivos** (mantido em 29/10/2026; o 9d3110b tirou o tracejado do desligado, a borda e a sombra do ligado e o tracejado do modo editar, e isso volta):
   - **Desligado:** `aria-pressed=false`, fundo `sheet`, borda 1,5px **tracejada** `neutral-500`.
   - **Ligado:** `aria-pressed=true`, fundo da cor do grupo, borda 2px `ink`, `shadow-paper` e o `svg.selected-check` à esquerda (o estado nunca depende só da cor).
   - 44px de altura, levemente tortos (−1,5° / 1° / −0,5°, em ciclo).
+  - **Dentro do chip, o adesivo é o próprio chip** (retângulo com borda). O papel rasgado da etiqueta (7.3) fica desligado no chip: sem `::before` rasgado e sem `drop-shadow` em `.group-chip .group-badge`, para não desenhar duas formas.
   - **Modo editar:** o botão perde `aria-pressed`, como no CRM-16. O adesivo fica reto, com a cor do grupo, borda 2px tracejada `pen-ink` e nome sublinhado, e o link vira "pronto".
-  - "+ novo grupo": tracejado, reto, `neutral-700`.
-  - Editor de grupo: o campo segue a mesma anatomia. As cores continuam pills de 44px com radio nativo e label Pêssego/Amarelo/Azul/Verde/Creme. As ações são pills de 44px.
+  - "+ novo grupo": 44px, borda 1,5px **tracejada** `neutral-500`, raio 4, reto, fundo transparente, Inter 15/500 `neutral-700`. **Não é `.stamp`** (sem Caveat, sem giro, sem canetinha).
+  - Editor de grupo: o campo segue a mesma anatomia. As cores continuam pills de 44px com radio nativo e label Pêssego/Amarelo/Azul/Verde/Creme. As ações ("Salvar grupo"/"Criar grupo", "Apagar grupo", "Cancelar") são **pills de 44px**, Inter 15/500, borda 1,5px `neutral-500`, fundo `sheet`, texto `ink`; "Salvar/Criar grupo" com borda 2px `primary` e texto `primary-800` 600; "Apagar grupo" com borda e texto `error`. **Não são `.stamp`.**
+  - **Por que a spec fica (29/10/2026):** o 9d3110b trocou esses botões por `.stamp` (Caveat, giro e canetinha). A versão do código não é melhor: (1) a Caveat fica para rótulos e para o "Salvar amigo" ("Não fazer" abaixo), e um bloco com vários carimbos tortos disputa atenção com o "Salvar amigo", que é o primário do formulário; (2) no hover e no foco, o texto `primaria` sobre a canetinha cai para 2,91:1, abaixo de AA (3.16). O "Tentar novamente" do erro ao carregar grupos pode seguir como carimbo, com o texto `primaria-800` no hover (3.16).
 - **"Salvar amigo" = carimbo:** `button.save-friend`, Caveat 26/700 `sheet` sobre `primary`, `radius-sm`, `rotate(-2deg)`, moldura interna (anel `primary` de 3px + filete `sheet` 80%), 48px. Hover `primary-hover`, active `primary-pressed` + `scale(.97)`, foco `--focus-ring`. Fica uma linha em branco acima.
 - **"Cancelar edição":** link Inter 15/500 `neutral-700` sublinhado, 48px de alvo, ao lado do carimbo. Quebra para a linha de baixo se não couber.
 
@@ -586,7 +613,7 @@ _Protótipo: `historico-perfil.html` (`?estado=lista|carregando-mais|fim|vazio|c
   - Coluna 2: `p.history-note.nota` (Caveat 22/500 `caneta`), com a nota inteira. `white-space: pre-wrap` (respeita a quebra de linha que a pessoa digitou) e `overflow-wrap: anywhere`. **Nota longa quebra em quantas linhas precisar, sempre de 32**, sem corte nem "ler mais".
   - Sem nota: `p.history-no-note` "sem nota", Inter 14 itálico `neutro-600` (5,84:1).
 - Rodapé `p.history-footer` numa linha: carimbo secundário "ver mais antigos" **ou** a linha de fim **ou** o erro ao carregar mais.
-- Carimbo secundário: o mesmo `.carimbo` (Caveat 21/700, 28px de altura, -2°), com borda e texto `neutro-700` (8,79:1). Hover: fundo `neutro-100`, borda e texto `tinta`. Área de toque estendida com `::after` (inset -8px), ≥ 44px. Não usa cor nova.
+- Carimbo secundário: o mesmo `.carimbo` (Caveat 21/700, 28px de altura, -2°), com borda e texto `neutro-700` (8,79:1). Hover e foco: canetinha de 3.16 (substitui o fundo `neutro-100` desde o 9d3110b); borda e texto continuam `neutro-700` (5,07:1 sobre o traço). Área de toque estendida com `::after` (inset -8px), ≥ 44px. Não usa cor nova.
 - Região viva: `p.sr-only[role=status]` dentro da seção, vazia até a primeira carga de "mais antigos".
 
 **Data**
@@ -653,10 +680,52 @@ _Protótipo: `historico-perfil.html` (`?estado=lista|carregando-mais|fim|vazio|c
 
 **Fechado em 29/10/2026:** o `POST` devolve o `contact` criado (TL, CRM-25); "Desfazer" no perfil fica fora da v1 e o "Desfazer" do Quadro tira o item do histórico (PM/TL, CRM-26); "Última nota" sai do perfil (PM, CRM-26); o texto de repetir é "Tentar novamente" (PM); a linha "é isso, esse foi o primeiro contato." só aparece depois de um "ver mais antigos", e uma lista de até 20 termina sem rodapé (PM).
 
+### 3.16 Canetinha no hover e no foco de todo carimbo (`.stamp`) (9d3110b, 29/10/2026)
+_Começou no botão "falei agora" do Quadro (7.3, pedido de 27/10/2026). Desde o 9d3110b vale para todo `.stamp` e substitui os hovers lisos: fundo `primaria-50` / cor 700 do carimbo (3.1), fundo `neutro-100` do "ver mais antigos" (3.15) e `primaria-700` do botão da capa (3.8)._
+
+- **Desenho:** `.stamp::before` atrás do texto. O carimbo recebe `position: relative; isolation: isolate`; o `::before` tem `z-index: -1`, `inset: 1px` e `pointer-events: none`. Cor: `color-mix(in srgb, var(--primary) 38%, transparent)`. A forma é uma máscara SVG em zigue-zague (`viewBox 0 0 120 28`, traço de 3,5 com pontas e junções redondas, `100% 100%`), que parece uma canetinha passada de um lado para o outro.
+- **Animação:** em repouso, `clip-path: inset(0 100% 0 0)`; no hover ou no `:focus-visible`, `inset(0)`, da esquerda para a direita, em `--duration-medium` (200ms) com `--ease-out`. Com `prefers-reduced-motion`, as durações zeram e o traço aparece de uma vez.
+- **Quando não aparece:** `:disabled`, dentro de um `fieldset` desabilitado (`:disabled *`) e com `aria-disabled="true"` (por exemplo, o "carregando…" de 3.15).
+- **Foco:** o traço não substitui o anel; no `:focus-visible` aparecem os dois.
+- **Carimbo dentro de botão** (`.contact-button` do post-it, 7.3): o hover e o foco do botão pintam o carimbo de dentro.
+- **Active:** sem fundo; texto `primaria-800`, `rotate(-2deg) scale(.97)`.
+- **Cor da caneta = `--primary` do carimbo.** Onde o componente troca `--primary` (por exemplo, `--primary: var(--error)`), a caneta acompanha. No carimbo cheio da capa, a caneta é `primaria-800` (3.8).
+- **Regra de legibilidade (nova, 29/10/2026):** o preenchimento **nunca** pode baixar o contraste do texto abaixo de AA. O texto fica sempre por cima do traço (`::before` com `z-index: -1` dentro do `isolation`), sem opacidade e sem mudar de peso. O contraste é medido contra a parte mais escura do traço: a cor da caneta a 38% misturada ao fundo real (folha, cor do post-it ou fundo do botão). O carimbo em Caveat 21/700 conta como texto grande no WCAG (≥ 18,66px em negrito), então o mínimo é 3:1; texto menor precisa de 4,5:1. Na folha, a meta é 4,5:1.
+
+| Carimbo | Texto | Fundo | Sem traço | Com traço (38%) | Resultado |
+|---|---|---|---|---|---|
+| padrão, texto `primaria` ("novo amigo", "registrar contato", "Tentar novamente", "Sair", "adicionar…" e os botões de grupo do 9d3110b) | `primaria` | folha | 5,04 | **2,91** | ❌ quebra a regra |
+| **correção:** texto e borda `primaria-800` no hover e no foco | `primaria-800` | folha | 8,36 | 4,82 | ✅ |
+| "falei agora" (7.3) | `primaria-800` | post-its | 5,24–6,64 | 3,39 (verde) – 4,07 (creme) | ✅ texto grande |
+| secundário "ver mais antigos" (3.15) | `neutro-700` | folha | 8,79 | 5,07 | ✅ |
+| "Apagar grupo" do 9d3110b (`--primary: erro`) | `erro` | folha | 6,35 | 3,44 | ✅ texto grande, mas volta a pill (3.13) |
+| cheio da capa (3.8), caneta `primaria-800` | `folha` | `primaria` | 5,04 | 6,09 | ✅ |
+
+- **Correção (card do TL, item 4):** `.stamp:is(:hover, :focus-visible)` troca texto e borda para `primaria-800` em todo carimbo de texto `primaria`; os botões de grupo voltam a ser tracejado/pills sem `.stamp` (3.13). Hoje, no 9d3110b, todos os carimbos de texto `primaria` ficam com 2,91:1 no hover; os botões de grupo são os mais visíveis, porque vários ficam juntos no formulário.
+
+### 3.17 Novo amigo no livro aberto: página direita (≥1280, 29/10/2026)
+_Hoje (9d3110b), em `/amigos/novo` no livro aberto, a página direita aparece só com o `.cabecalho-folha`, porque a rota não tem `detail`. Ela não pode ficar vazia._
+
+- **Mostra o rascunho da página do amigo**, que vai sendo escrito ao vivo enquanto o formulário da esquerda é preenchido, como a página nova do caderno aberta ao lado. Mesmo layout do perfil (3.4), sem ações:
+  - `.cabecalho-folha` (3.12), como em toda folha.
+  - L1: `.nota` "rascunho: a página aparece aqui enquanto você escreve.".
+  - Nome em Fraunces 28 `tinta`, com o que estiver no campo Nome. Campo vazio: "Novo amigo" em `neutro-600` (5,84:1).
+  - "a cada {n} {unidade}" em Inter 14 `neutro-700`, com a mesma frase e o mesmo singular/plural do perfil.
+  - Aniversário (3.14) só quando o campo estiver preenchido; sem convite "+ adicionar", porque o rascunho não é editável.
+  - Grupos marcados como etiquetas em papel rasgado (7.3), em ordem alfabética; nenhum marcado → etiqueta "sem grupo".
+  - "Histórico" em Fraunces 19/600 + `.nota` "o primeiro contato entra aqui.".
+  - Tudo na pauta, em linhas de 32.
+- **Não é interativo:** nada clicável, sem "registrar contato", sem editar e sem apagar. Como o conteúdo repete o formulário, o bloco do rascunho tem `aria-hidden="true"`; o leitor de tela já tem o formulário.
+- **Dados:** só o estado que o formulário já tem (nome, ritmo, aniversário, grupos marcados com nome e cor). Sem request, campo ou API nova. Sugestão: um `ref` compartilhado (por exemplo, `new_friend_draft`) que o `FriendForm` atualiza, e um componente de rascunho como `detail` da rota `new-friend`. Limpa ao sair da rota.
+- **Ao salvar:** a rota vai para `/amigos/:id` e o perfil de verdade ocupa a página direita (o rascunho vira a página).
+- **Abaixo de 1280:** não aparece; o cadastro ocupa a página única, como hoje.
+- **Plano B, se o rascunho não couber no card:** a página direita mostra só a `.nota` "a página do novo amigo aparece aqui depois de salvar." Nunca fica vazia.
+
 ## 4. Motion
 | Elemento | Duração | Curva |
 |---|---|---|
 | Hover de carimbo, botão e aba | 120ms | `ease-saida` |
+| Canetinha do carimbo (3.16) | 200ms (`--duration-medium`) | `ease-saida`, `clip-path` da esquerda para a direita |
 | Perfil deslizando por cima (<1280) | 280ms entra / 200ms sai | `ease-saida` / `ease-entrada`, `translateX(100%+24px → 0)` |
 | Sheet (celular) | 280 / 200ms | `translateY(105% → 0)` |
 | Painel (livro aberto) | 280ms | opacidade + `translateX(24px→0)` |
@@ -672,8 +741,8 @@ _Protótipo: `historico-perfil.html` (`?estado=lista|carregando-mais|fim|vazio|c
 - Alvos: carimbo com área de toque estendida (≥ 44); abas de **44px** de altura no celular; demais ≥ 44.
 
 ## 6. Textos (pt-BR)
-bom falar · quadro · amigos · + novo · config · Configurações · Sair · Entrar · Criar conta · Já tenho conta · E-mail · Senha · Repetir senha · Entrando… · Criando… · E-mail ou senha incorretos. · Este e-mail já tem conta. · As senhas não são iguais. · A senha precisa ter pelo menos 8 caracteres. · Caderno de amigos · seu ritmo com as pessoas que importam · Grupos · editar · pronto · + novo grupo · salvar · apagar grupo · cancelar · Você já tem um grupo com esse nome. · Apagar '{nome}'? {N} amigos saem desse grupo, mas continuam no seu caderno. · Apagar '{nome}'? Nenhum amigo está nesse grupo. · registrar · registrar contato · Falei com {nome} · Mensagem / Ligação / Encontro · Nota rápida (opcional) · Registrar · Novo amigo · Só o nome já basta. O resto pode vir depois. · Falar a cada · Salvar amigo · Os outros estão em dia. · Seu caderno está em branco. · Histórico · Contatos com {nome}, do mais recente ao mais antigo · sem nota · ver mais antigos · carregando… · é isso, esse foi o primeiro contato. · Mais {N} contatos carregados. / Mais 1 contato carregado. · Esse é o primeiro contato. · Carregando o histórico… · nenhum contato ainda. que tal registrar o primeiro? · É só usar o carimbo “registrar contato”, aqui em cima. · Não deu pra abrir o histórico agora. · Não deu pra trazer os mais antigos. · Tentar novamente · mensagem / ligação / encontro
-**Proibido:** atrasado, pendente, vencido, "há N dias sem falar".
+quadro · amigos · config · novo amigo · Configurações · Sair · Entrar · Criar conta · Já tenho conta · E-mail · Senha · Repetir senha · Entrando… · Criando… · E-mail ou senha incorretos. · Este e-mail já tem conta. · As senhas não são iguais. · A senha precisa ter pelo menos 8 caracteres. · Caderno de amigos · seu ritmo com as pessoas que importam · Grupos · editar · pronto · + novo grupo · salvar · apagar grupo · cancelar · Você já tem um grupo com esse nome. · Apagar '{nome}'? {N} amigos saem desse grupo, mas continuam no seu caderno. · Apagar '{nome}'? Nenhum amigo está nesse grupo. · registrar · registrar contato · Falei com {nome} · Tentar novamente · Verifique sua conexão e tente novamente. · Mensagem / Ligação / Encontro · Nota rápida (opcional) · Registrar · Novo amigo · Só o nome já basta. O resto pode vir depois. · Falar a cada · Salvar amigo · Os outros estão em dia. · Seu caderno está em branco. · Histórico · Contatos com {nome}, do mais recente ao mais antigo · sem nota · ver mais antigos · carregando… · é isso, esse foi o primeiro contato. · Mais {N} contatos carregados. / Mais 1 contato carregado. · Esse é o primeiro contato. · Carregando o histórico… · nenhum contato ainda. que tal registrar o primeiro? · É só usar o carimbo “registrar contato”, aqui em cima. · Não deu pra abrir o histórico agora. · Não deu pra trazer os mais antigos. · Tentar novamente · mensagem / ligação / encontro
+**Proibido:** atrasado, pendente, vencido, "há N dias sem falar". **Não usar** "Tentar de novo" / "tente de novo" (29/10/2026: é "Tentar novamente" / "tente novamente").
 
 
 ## Zoom e fonte do navegador
@@ -683,7 +752,7 @@ bom falar · quadro · amigos · + novo · config · Configurações · Sair · 
 _Status: **aprovada para o MVP** (Vinicius, 16/10/2026: "entra completo no MVP, com arrastar e grupos"); **simplificada em 20/10/2026: janela fixa de 7 dias e sem arrastar**; **grupos N:N em 20/10/2026** (um amigo pode estar em 0, 1 ou vários grupos); **editar/apagar grupos no MVP em 21/10 e 26/10/2026** (modo editar nos chips do cadastro, sem tela de gerenciar); **aba config no MVP em 26/10/2026** (e-mail + Sair); **conta própria / capa auth no MVP em 26/10/2026** (`/entrar`, ver 3.8); **cabeçalho de folha (dia + data carimbo) no MVP em 27/10/2026** (3.12; em todas as folhas autenticadas, não na capa). Protótipo: `direcoes/quadro.html` (`?estado=normal|vazio|coluna-vazia|carregando|erro|registrando`); chips: `direcoes/grupos-chips.html`; cabeçalho: `direcoes/cabecalho-folha.html`. Prints: `prints/desktop-quadro.png`, `prints/mobile-quadro.png`, `prints/quadro-estados.png`, `prints/grupos-chips-estados.png`, `prints/cabecalho-folha.png`. Contraste: resultado na seção 7.10 (script `contraste-quadro.py`, na cópia local do projeto). A direção "Caderno físico" não muda: nenhuma cor, fonte ou utilitário novo — o cabeçalho só reusa Inter, Caveat e `tinta`._
 
 ### 7.1 O que é
-Uma aba nova, **"quadro"** (`router-link` para `/quadro`, fundo `papel`, entre "bom falar" e "amigos"), que mostra **todos** os amigos como post-its em 4 colunas sobre a própria folha pautada. Sem cortiça: cortiça pediria textura ou uma cor fora da paleta, e as duas coisas são proibidas pela identidade.
+Uma aba nova, **"quadro"** (`router-link` para `/quadro`, primeira aba, antes de "amigos"; fundo `primaria-100` desde 29/10/2026, antes `papel`), que mostra **todos** os amigos como post-its em 4 colunas sobre a própria folha pautada. Sem cortiça: cortiça pediria textura ou uma cor fora da paleta, e as duas coisas são proibidas pela identidade.
 
 ### 7.2 Colunas (calculadas, nunca salvas)
 Para cada amigo: `d` = dias desde o último contato (datas no fuso do usuário), `f` = frequência em dias, `falta = f − d`. A ordem de avaliação importa:
@@ -696,12 +765,13 @@ Para cada amigo: `d` = dias desde o último contato (datas no fuso do usuário),
 | 4 | **Em dia** | o resto | conversa recente, tudo certo | `falta` crescente |
 
 - No quadro, da esquerda para a direita: Faz um tempinho → Essa semana → Em dia → Falei agora.
-- "Faz um tempinho" tem **exatamente** as mesmas pessoas da lista "Bom falar com" (3.1). As duas telas precisam usar a mesma função. Troquei "Faz tempo" por "Faz um tempinho" para manter o tom sem culpa (6. Textos).
+- "Faz um tempinho" tem **exatamente** as mesmas pessoas da lista "Bom falar com" (3.1). As duas telas precisam usar a mesma função. Desde 29/10/2026 não há aba "bom falar": esta coluna é o lugar dessa lista. Troquei "Faz tempo" por "Faz um tempinho" para manter o tom sem culpa (6. Textos).
 - "Essa semana" usa uma janela **fixa** de 7 dias, igual para todos os amigos (decisão de 20/10/2026, para deixar a regra simples). Efeito aceito: amigos com ritmo de até 7 dias vão de "Falei agora" direto para "Essa semana" e quase nunca aparecem em "Em dia". Pela conta, com ritmo de até 9 dias a pessoa já entra em "Essa semana" no dia 2 (exemplo: f=7 e d=2 dão falta = 5).
 - Nada de contagem de dias. O post-it mostra só "3 semanas", como a lista atual.
 
 ### 7.3 Componentes
 **`QuadroView`** (`/quadro`): `.cabecalho-folha` (3.12) no topo da `.folha` + título "Quadro" e uma explicação de 2–3 linhas + legenda de grupos + 4 `QuadroColuna`. A data longa em Inter ("sábado, 17 de outubro") **sai**; o carimbo D…S + `DD/MM/AAAA` a substitui. A **legenda lista os grupos do usuário** (`GET /grupos/`), em ordem alfabética, cada um como etiqueta com nome e cor; "sem grupo" entra no fim se algum amigo não tiver grupo. Na legenda, a etiqueta tem 24px de altura e ocupa uma linha da pauta (margem de 4px acima e abaixo). Abaixo de 1024px, a legenda vem sem a frase de introdução.
+- **Mantido em 29/10/2026:** o 9d3110b trocou título, explicação e legenda por um `h1.sr-only`. A spec continua valendo e o código volta (card do TL, item 1): título "Quadro" visível, introdução "As colunas se arrumam sozinhas, pelo último contato e pelo ritmo de cada amigo." e legenda "Seus grupos. O post-it usa a cor do primeiro grupo em ordem alfabética, e todos vêm escritos nele:" (a frase só ≥1024), como antes do 9d3110b.
 
 **`QuadroColuna`**: `section` com `aria-labelledby`, título Fraunces 19/600 (1 linha) + descrição Inter 12 `neutro-600` (1 linha) + `ul` de post-its. O cabeçalho ocupa 2 linhas.
 
@@ -709,13 +779,13 @@ Para cada amigo: `d` = dias desde o último contato (datas no fuso do usuário),
 - Altura de **6 linhas (192px)** em todas as larguras (antes eram 5 a partir de 1024px; a linha a mais é para as etiquetas de grupo), com `row-gap` de 1 linha.
 - Conteúdo: nome em Fraunces 19/600 com truncamento (link para `/amigos/:id`; o `cake` de "próximos 7 dias" saiu do escopo em 29/10/2026, ver 3.14) · **selo "Aniversário hoje"** só no dia, pendurado no canto inferior direito, fora do fluxo (3.14) · **etiquetas de grupo** (ver abaixo) · tempo em Inter 12/500 `neutro-700`, numa linha própria · nota em Caveat 21/24 `caneta`, até 2 linhas (`line-clamp`); quando as etiquetas ocupam 2 linhas, a nota cai para 1 linha, para o post-it manter a altura fixa. Sem nota: Inter 12 itálico, "sem nota ainda" · botão **"falei agora"**.
 - Botão: `button` de **44px** de altura com o `.carimbo` de 28px dentro, em **`primaria-800`** (texto e borda), porque a `primaria` base não passa AA sobre as cores de post-it. Ícone `pen-line` só a partir de 1024px. O botão aparece em **todos** os post-its e em todas as larguras, inclusive em "Falei agora", onde serve para registrar mais um contato no mesmo dia.
-- **Hover e foco do botão (pedido adicional de 27/10/2026):** preenchimento em traços irregulares, como canetinha, usando a terracota `primaria` com 38% de opacidade atrás do texto; durante hover e foco, o texto mantém a cor original `primaria-800`, conforme escolha do responsável. O preenchimento aparece da esquerda para a direita; com movimento reduzido, aparece sem animação. Substitui o fundo liso do hover do protótipo.
+- **Hover e foco do botão (pedido adicional de 27/10/2026):** preenchimento em traços irregulares, como canetinha, usando a terracota `primaria` com 38% de opacidade atrás do texto; durante hover e foco, o texto mantém a cor original `primaria-800`, conforme escolha do responsável. O preenchimento aparece da esquerda para a direita; com movimento reduzido, aparece sem animação. Substitui o fundo liso do hover do protótipo. Desde o 9d3110b é a regra de todo `.stamp` (3.16).
 - Giro só em CSS: `--r` alternando −1,5° / 1° / 2° / −1° por `nth-child(4n+…)`. Hover e foco: 0°. Com `prefers-reduced-motion`, sem transição.
 
 **Cor = primeiro grupo, mas nunca sozinha.** Um amigo pode estar em 0, 1 ou vários grupos (7.7), e a API devolve os grupos de cada amigo em ordem alfabética pelo nome.
 - **Cor do post-it:** a cor do **primeiro** grupo da lista (ordem alfabética). Sem grupo: post-it `neutro` (`papel`) com a etiqueta "sem grupo".
-- **Etiquetas:** o post-it mostra **todos** os grupos como etiquetas pequenas: nome e cor, 18px de altura, Inter 12/500 `neutro-700`, raio 4, padding 0 6px, fundo da cor do grupo e contorno interno de 1px `tinta` a 32% (para a etiqueta continuar visível quando tem a mesma cor do post-it). O nome está sempre escrito, então a cor nunca informa nada sozinha. Um nome longo trunca dentro da etiqueta, com reticências.
-- **Quebra e "+N":** as etiquetas quebram linha (`flex-wrap`, `gap` de 4px) e ocupam no máximo 2 linhas (40px). Se não couberem, mostram as que cabem e, no fim, uma etiqueta "+N" (fundo folha, Inter 12/600) com `role="img"`, `aria-label="e mais N grupos: {nomes}"` e `title` com os mesmos nomes. Antes das etiquetas, um `sr-only` "Grupos:". A conta é feita no front, medindo a altura da caixa (no Vue, com `ResizeObserver`), porque depende da largura da coluna e da fonte.
+- **Etiquetas:** o post-it mostra **todos** os grupos como etiquetas pequenas: nome e cor, 18px de altura, Inter 12/500 **`tinta`**, padding 0 7px, em **papel rasgado** (9d3110b, 29/10/2026): um `::before` atrás do texto (`z-index: -1`, `isolation: isolate` na etiqueta) com fundo `color-mix(in srgb, cor-do-grupo 78%, folha)` e borda irregular por `clip-path: polygon(…)` (18 pontos), mais `filter: drop-shadow(0 1px 1px rgb(43 36 32 / 18%))`. O papel mais claro e a sombra separam a etiqueta do post-it quando os dois têm a mesma cor (substituem o contorno de 1px `tinta` 32%). Em `forced-colors`, a etiqueta ganha `outline: 1px solid CanvasText`. Contraste em 7.10. Nos chips do formulário, o rasgado fica desligado (3.13). O nome está sempre escrito, então a cor nunca informa nada sozinha. Um nome longo trunca dentro da etiqueta, com reticências.
+- **Quebra e "+N":** as etiquetas quebram linha (`flex-wrap`, `gap` de 4px) e ocupam no máximo 2 linhas (40px). Se não couberem, mostram as que cabem e, no fim, uma etiqueta "+N" (papel rasgado em `folha`, Inter 12/600) com `role="img"`, `aria-label="e mais N grupos: {nomes}"` e `title` com os mesmos nomes. Antes das etiquetas, um `sr-only` "Grupos:". A conta é feita no front, medindo a altura da caixa (no Vue, com `ResizeObserver`), porque depende da largura da coluna e da fonte.
 - **Badges sem ícones de categoria (decisão de 29/10/2026):** mostram nome e cor. Os grupos têm nome livre, então casa, diploma, maleta e localização podem sugerir uma categoria que não corresponde ao grupo. O nome escrito identifica o grupo sem depender da cor. O check dos chips selecionados permanece como indicador de seleção.
 - **Cores (todas já existem nos tokens, nenhuma nova):** `familia` → label UI **Pêssego** (`primaria-100`) · `faculdade` → **Amarelo** (`marca-texto`) · `trabalho` → **Azul** (`pauta`) · `vizinhanca` → **Verde** (`aba-verde`) · `neutro` → **Creme** (`papel`). Token interno ≠ label (tabela em 3.5). Os grupos são ilimitados, mas há só 5 cores, e vários grupos podem usar a mesma cor. A regra antiga ("máximo de 5 grupos; acima disso, o resto vai para 'sem grupo'") saiu.
 
@@ -724,7 +794,7 @@ Para cada amigo: `d` = dias desde o último contato (datas no fuso do usuário),
 - **1024–1279:** uma página, 4 colunas iguais e abas à direita.
 - **<1024 (celular): lista agrupada**, sem colunas com rolagem horizontal. Cada coluna vira uma seção vertical com post-its em grade de 2. "Faz um tempinho" e "Essa semana" vêm abertas. "Em dia" e "Falei agora" começam recolhidas, com um resumo ("Bruno Lima, Vó Teresa e mais 1 · mostrar", botão de 2 linhas = 64px, `aria-expanded`).
   - **Por quê:** (1) rolagem horizontal com encaixe esconde 3 de 4 colunas e ninguém descobre "Em dia"; (2) gesto horizontal compete com o "voltar" do sistema; (3) a folha do caderno já rola na vertical em todas as telas; (4) o que importa no celular é "com quem falar", e as duas primeiras seções respondem isso de cara.
-- Abas no celular com **5 itens** ("bom falar", "quadro", "amigos", "+ novo", "config"): padding horizontal de 8px, `gap` de 4px e `left` de 12px, para caber em 390px. Altura **44px** no celular (ativa 48), para seguir a regra de alvo mínimo. Ver 3.7.
+- Abas no celular com **3 itens** ("quadro", "amigos", "config"; 29/10/2026): padding horizontal de 8px, `gap` de 4px e `left` de 12px. Altura **44px** no celular (ativa 48), para seguir a regra de alvo mínimo. Ver 3.7.
 - O post-it de aniversário decorativo (3.2) **não** aparece no quadro, para não ser confundido com um amigo. No dia do aniversário, o post-it da pessoa ganha o selo "Aniversário hoje" (3.14).
 
 ### 7.5 Interações
@@ -744,7 +814,7 @@ Para cada amigo: `d` = dias desde o último contato (datas no fuso do usuário),
 | **Quadro vazio** (nenhum amigo) | `.nota` "Seu quadro está em branco." + carimbo "adicionar primeiro amigo". Texto reduzido a pedido do responsável em 27/10/2026. A partir de 1024px, as 4 colunas aparecem com um contorno tracejado de post-it (`neutro-400`) para explicar o formato. No celular, só o convite |
 | **Coluna vazia** | `.nota` por coluna: "ninguém por aqui. aproveite o dia." (Faz um tempinho) · "nada chegando nos próximos dias." (Essa semana) · "ainda ninguém. um contato já muda isso." (Em dia) · "ninguém hoje ainda." (Falei agora). As notas valem para todas as larguras |
 | **Carregando** | Descrição da coluna como barra skeleton + 2 post-its skeleton (`neutro-100`, 6 linhas) por coluna, com pulso de 1,2s |
-| **Erro ao carregar** | Papel `erro-50` com borda `erro` ocupando a largura do quadro: "Não conseguimos abrir seu caderno agora." / "Verifique sua conexão e tente de novo." + botão secundário "Tentar de novo" (44px). Uma leitura com falha não confirma que os dados estão salvos |
+| **Erro ao carregar** | Papel `erro-50` com borda `erro` ocupando a largura do quadro: "Não conseguimos abrir seu caderno agora." / "Verifique sua conexão e tente novamente." + botão secundário "Tentar novamente" (44px). Uma leitura com falha não confirma que os dados estão salvos |
 | **Registrando / salvando / erro ao salvar** | Disparado pelo botão "falei agora" (ver 7.5.2): post-it com contorno tracejado e sheet 3.6 aberto. Durante o POST, o botão "Registrar" mostra spinner e `aria-busy` (3) |
 
 ### 7.7 Impacto na API (Django)
@@ -793,9 +863,9 @@ Sem biblioteca de arrastar: decisão de 20/10/2026, lógica simples. O quadro n�
 3. O botão "falei agora" de cada post-it **abre o sheet 3.6**; fechar sem registrar não muda nada e não cria contato.
 4. Grupos N:N e opcionais (7.7, decisão de 20/10/2026): nome livre e uma de 5 cores; o post-it usa a cor do primeiro grupo em ordem alfabética e mostra todos os grupos como etiquetas (até 2 linhas, depois "+N"). Sem grupo = post-it neutro com a etiqueta "sem grupo".
 5. Celular: lista agrupada, com "Em dia" e "Falei agora" recolhidas (sem arrastar, como em todas as larguras).
-6. Aba "quadro" (cor `papel`) e abas com 44px no celular.
+6. Aba "quadro" e abas com 44px no celular. Desde 29/10/2026, "quadro" é a primeira de 3 abas, com `primaria-100` (era `papel`).
 7. Editar/apagar grupos no MVP via modo editar nos chips (3.5 / 7.7; 21/10 e 26/10/2026): sem tela de gerenciar; `PATCH`/`DELETE`/`total_amigos`; apagar nunca remove amigo.
-8. Aba **"config"** (cor `margem`, `/config`) depois de "+ novo" e antes do "?" (26/10/2026): MVP = e-mail logado + Sair.
+8. Aba **"config"** (cor `margem`, `/config`, 26/10/2026): MVP = e-mail logado + Sair. Desde 29/10/2026 é a última das 3 abas (quadro · amigos · config).
 9. **Cabeçalho de folha** (3.12, 27/10/2026): D S T Q Q S S + data carimbo de hoje (SP) em todas as folhas autenticadas; não na capa `/entrar`; sem editar/filtrar.
 10. **Formulários na pauta** (3.13, CRM-22, 29/10/2026): direção A "Escrever na pauta", escolhida pelo Vinicius para novo amigo, editar amigo, grupos e config (se ganhar campos); a capa `/entrar` fica fora. **Só visual, 1:1 com os campos do `FriendForm.vue` do CRM-16** (Nome, Falar a cada = número + unidade, Grupos; nenhum campo novo). Exceção à regra 6 da identidade aprovada: rótulos de campo e o carimbo "Salvar amigo" em Caveat; valor digitado e controles em Inter. Card CRM-22 em cima do CRM-16, que continua como está.
 11. **Aniversário** (3.14, CRM-23 back / CRM-24 front, 29/10/2026): campo opcional "Aniversário (dia/mês)" no Novo/Editar (`birthday` = "dd/mm" ou `null`, limpar = `null`; dia e mês juntos ou nenhum) e selo "Aniversário hoje" no post-it só no dia. O selo é calculado no **backend** (America/Sao_Paulo; 29/02 vira 28/02 em ano não bissexto) e o front só lê a flag de aniversário hoje vinda da API (`is_birthday_today`), sem calcular datas. Decisões do PM: rótulo "(dia/mês, opcional)", erro sem sufixo e entrada incompleta com o mesmo erro, validada pela API. O selo é um adesivo carimbado em Inter 12/600 `primaria-800`, pendurado fora do fluxo no canto inferior direito, para não mudar a altura de 6 linhas do post-it. Sem ano, idade, notificação, lista de próximos, ordenar ou filtrar.
@@ -820,4 +890,12 @@ Descartados: `primaria-600` no carimbo (3,16–4,00, falha em todas), `primaria-
 | etiqueta e "+N" · neutro-700 `#4F443A` | 6,86 ✅ | 6,85 ✅ | 6,40 ✅ | 5,51 ✅ | 6,98 ✅ | 8,79 ✅ |
 | chip do cadastro · tinta `#2B2420` | 11,07 ✅ | 11,05 ✅ | 10,33 ✅ | 8,89 ✅ | 11,27 ✅ | 14,19 ✅ |
 
-O pior caso é 5,51:1 (etiqueta ou post-it `vizinhanca`), acima de 4,5:1. Descartado para a etiqueta: `neutro-600` (4,25 no azul, 3,66 no verde). O contorno de 1px da etiqueta é só um reforço visual e não carrega informação, porque o nome vem escrito.
+O pior caso é 5,51:1 (etiqueta ou post-it `vizinhanca`), acima de 4,5:1. Descartado para a etiqueta: `neutro-600` (4,25 no azul, 3,66 no verde). O contorno de 1px da etiqueta é só um reforço visual e não carrega informação, porque o nome vem escrito. _(Tabela de 20/10/2026, antes do 9d3110b.)_
+
+**Etiquetas em papel rasgado (29/10/2026, 9d3110b).** O texto passou a `tinta` e o fundo da etiqueta é a cor do grupo misturada a 78% com `folha`. Medido sobre o fundo misturado (o texto fica todo dentro do papel):
+
+| Texto | Pêssego `#F3DDD3` | Amarelo `#F7DFA0` | Azul `#D4DDE5` | Verde `#C8D4BE` | Creme `#ECE2D0` | "+N" folha `#FBF6EE` |
+|---|---|---|---|---|---|---|
+| etiqueta · tinta `#2B2420` | 11,71 ✅ | 11,67 ✅ | 11,11 ✅ | 9,92 ✅ | 11,87 ✅ | 14,19 ✅ |
+
+O pior caso é 9,92:1 (Verde). O contorno de 1px saiu; o rasgado e a sombra só separam a etiqueta do post-it e não carregam informação. Em `forced-colors`, `outline: 1px solid CanvasText`.

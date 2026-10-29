@@ -74,6 +74,36 @@ describe('Board', () => {
     expect(wrapper.get('dialog[open]').text()).toContain('Falei com Bruno')
   })
 
+  it('lists all account groups in the legend including a group without friends', async () => {
+    const empty_group = { id: '00000000-0000-4000-8000-000000000005', name: 'Cinema', color: 'work', friends_count: 0 }
+    set_fetch_for_board_test(vi.fn().mockResolvedValue(Response.json([FRIEND_WITH_GROUPS])), [
+      empty_group, ...FRIEND_WITH_GROUPS.groups,
+    ])
+    const wrapper = mount(BoardView, { global: { stubs: { RouterLink: RouterLinkStub } } })
+
+    await flushPromises()
+
+    expect(wrapper.get('.board-header h1').text()).toBe('Quadro')
+    expect(wrapper.get('.board-header h1').classes()).not.toContain('sr-only')
+    expect(wrapper.get('.board-header').isVisible()).toBe(true)
+    expect(wrapper.get('.board-introduction').text()).toBe('As colunas se arrumam sozinhas, pelo último contato e pelo ritmo de cada amigo.')
+    const legend = wrapper.get('[aria-label="Legenda de grupos"]')
+    expect(legend.isVisible()).toBe(true)
+    expect(legend.findAll('.group-badge').map((badge) => badge.text())).toEqual(['Cinema', 'Escalada', 'Faculdade'])
+    expect(legend.text()).not.toContain('sem grupo')
+  })
+
+  it('adds the ungrouped label to the end of the legend when needed', async () => {
+    set_fetch_for_board_test(vi.fn().mockResolvedValue(Response.json([{ ...FRIEND_WITH_GROUPS, groups: [] }])), FRIEND_WITH_GROUPS.groups)
+    const wrapper = mount(BoardView, { global: { stubs: { RouterLink: RouterLinkStub } } })
+
+    await flushPromises()
+
+    expect(wrapper.get('[aria-label="Legenda de grupos"]').findAll('.group-badge').map((badge) => badge.text())).toEqual([
+      'Escalada', 'Faculdade', 'sem grupo',
+    ])
+  })
+
   it('expands a collapsed mobile section through an accessible button', async () => {
     const friends = ['Bruno', 'Ana', 'Teresa'].map((name, index) => ({
       ...FRIEND_WITH_GROUPS,
@@ -482,7 +512,7 @@ describe('Board', () => {
 
     await flushPromises()
 
-    expect(wrapper.get('[role="alert"]').text()).toContain('Tentar de novo')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Tentar novamente')
     expect(wrapper.text()).not.toContain('Seu quadro está em branco.')
   })
 

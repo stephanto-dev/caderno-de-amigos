@@ -36,12 +36,12 @@ const route = useRoute()
           to="/quadro"
           class="tab tab-board"
           :aria-current="route.name === 'board' ? 'page' : undefined"
-        >Quadro</RouterLink>
+        >quadro</RouterLink>
         <RouterLink
           to="/amigos"
           class="tab tab-friends"
           :aria-current="route.name === 'friends' || route.name === 'friend-detail' || route.name === 'new-friend' ? 'page' : undefined"
-        >Amigos</RouterLink>
+        >amigos</RouterLink>
         <RouterLink
           to="/config"
           class="tab tab-config"
