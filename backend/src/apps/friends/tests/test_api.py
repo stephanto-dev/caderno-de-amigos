@@ -3,6 +3,7 @@
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager
 from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 import pytest
 import time_machine
@@ -896,6 +897,151 @@ class TestFriendBirthdayAPI:
 
 
 @pytest.mark.django_db
+class TestContactHistoryAPI:
+    def test_history_returns_contact_fields_newest_first(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia", days_since_contact=1)
+        older_contact = Contact.objects.get(friend=friend)
+        recent_contact = Contact.objects.create(
+            friend=friend, kind=Contact.Kind.CALL, note="Conversa boa"
+        )
+        create_friend_for_owner(owner, "Caio", days_since_contact=0)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.get(reverse("record_contact", args=[friend.id]))
+
+        # Assert
+        assert response.status_code == 200
+        assert response.data == {
+            "next": None,
+            "results": [
+                {
+                    "id": str(contact.id),
+                    "kind": contact.kind,
+                    "date": timezone.localtime(contact.date).isoformat(),
+                    "note": contact.note,
+                }
+                for contact in [recent_contact, older_contact]
+            ],
+        }
+
+    @pytest.mark.parametrize("has_mixed_dates", [False, True])
+    def test_history_cursors_return_45_unique_contacts_in_stable_order(
+        self, has_mixed_dates: bool
+    ) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia")
+        contacts = [
+            Contact.objects.create(
+                friend=friend,
+                kind=Contact.Kind.MESSAGE,
+                date=timezone.now()
+                - timedelta(days=1 if has_mixed_dates and index >= 25 else 0),
+            )
+            for index in range(45)
+        ]
+        expected_ids = [
+            str(contact.id)
+            for contact in sorted(
+                contacts, key=lambda contact: (contact.date, contact.id), reverse=True
+            )
+        ]
+        client = APIClient()
+        client.force_authenticate(owner)
+        url = reverse("record_contact", args=[friend.id])
+        received_ids: list[str] = []
+        cursor: str | None = None
+
+        # Act
+        for expected_page_size in [20, 20, 5]:
+            response = client.get(url, {"cursor": cursor} if cursor else {})
+            assert response.status_code == 200
+            assert len(response.data["results"]) == expected_page_size
+            received_ids.extend(contact["id"] for contact in response.data["results"])
+            cursor = response.data["next"]
+            if expected_page_size == 20:
+                assert isinstance(cursor, str)
+                assert "http" not in cursor
+
+        # Assert
+        assert cursor is None
+        assert received_ids == expected_ids
+        assert len(set(received_ids)) == 45
+
+    def test_history_without_contacts_returns_empty_page(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.get(reverse("record_contact", args=[friend.id]))
+
+        # Assert
+        assert response.status_code == 200
+        assert response.data == {"next": None, "results": []}
+
+    def test_history_for_other_owner_returns_404(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        other_owner = User.objects.create_user(username="bia")
+        friend = create_friend_for_owner(other_owner, "Bia", days_since_contact=0)
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.get(reverse("record_contact", args=[friend.id]))
+
+        # Assert
+        assert response.status_code == 404
+
+    def test_history_for_unknown_friend_returns_404(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.get(reverse("record_contact", args=[uuid4()]))
+
+        # Assert
+        assert response.status_code == 404
+
+    def test_history_without_login_returns_403(self) -> None:
+        # Arrange
+        url = reverse("record_contact", args=[uuid4()])
+
+        # Act
+        response = APIClient().get(url)
+
+        # Assert
+        assert response.status_code == 403
+
+    def test_history_with_invalid_cursor_returns_404(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.get(
+            reverse("record_contact", args=[friend.id]), {"cursor": "!invalid!"}
+        )
+
+        # Assert
+        assert response.status_code == 404
+        assert response.data["errors"][0]["detail"] == (
+            "Cursor inválido. Recarregue o histórico para começar pela primeira página."
+        )
+
+
+@pytest.mark.django_db
 class TestContactsAPI:
     def test_record_contact_updates_board_friend(self) -> None:
         # Arrange
@@ -922,6 +1068,31 @@ class TestContactsAPI:
         )
         assert response.data["last_note"] == "Conversa boa"
 
+    def test_recorded_contact_matches_first_history_item(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia", days_since_contact=1)
+        client = APIClient()
+        client.force_authenticate(owner)
+        url = reverse("record_contact", args=[friend.id])
+
+        # Act
+        recorded_response = client.post(
+            url, {"kind": Contact.Kind.CALL, "note": "Conversa boa"}
+        )
+        history_response = client.get(url)
+
+        # Assert
+        assert recorded_response.status_code == 201
+        assert history_response.status_code == 200
+        assert recorded_response.data["contact"] == {
+            "id": recorded_response.data["contact_id"],
+            "kind": Contact.Kind.CALL,
+            "date": timezone.localtime(timezone.now()).isoformat(),
+            "note": "Conversa boa",
+        }
+        assert history_response.data["results"][0] == recorded_response.data["contact"]
+
     def test_undo_contact_restores_previous_board_column(self) -> None:
         # Arrange
         owner = User.objects.create_user(username="ana")
@@ -940,6 +1111,7 @@ class TestContactsAPI:
             )
         )
         friend_response = client.get(reverse("get_friend", args=[friend.id]))
+        history_response = client.get(reverse("record_contact", args=[friend.id]))
 
         # Assert
         assert record_response.status_code == 201
@@ -948,6 +1120,10 @@ class TestContactsAPI:
             pk=record_response.data["contact_id"]
         ).exists()
         assert friend_response.data["column"] == "overdue"
+        assert history_response.status_code == 200
+        assert [contact["id"] for contact in history_response.data["results"]] == [
+            str(Contact.objects.get(friend=friend).id)
+        ]
 
     def test_record_contact_with_invalid_kind_returns_400(self) -> None:
         # Arrange

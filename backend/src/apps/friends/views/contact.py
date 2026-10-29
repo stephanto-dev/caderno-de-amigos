@@ -1,23 +1,57 @@
-"""Endpoints for recording and undoing contacts."""
+"""Endpoints for reading, recording and undoing contacts."""
 
 from typing import cast
+from urllib.parse import parse_qs, urlsplit
 from uuid import UUID
 
 from rest_framework import status
+from rest_framework.pagination import CursorPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from apps.friends.serializers.contact import ContactWriteSerializer
+from apps.friends.serializers.contact import (
+    ContactReadSerializer,
+    ContactWriteSerializer,
+)
 from apps.friends.serializers.friend import BoardFriendSerializer
 from apps.friends.services.contacts import ContactsService
 from apps.friends.views.base import BaseAPIView
 
 
+class ContactCursorPagination(CursorPagination):
+    """Page contact history with a cursor token rather than a next-page URL."""
+
+    page_size = 20
+    ordering = ("-date", "-id")
+    invalid_cursor_message = (
+        "Cursor inválido. Recarregue o histórico para começar pela primeira página."
+    )
+
+    def get_paginated_response(self, data: object) -> Response:
+        """Return only the continuation token and serialized contacts."""
+        next_link = self.get_next_link()
+        next_cursor = (
+            parse_qs(urlsplit(next_link).query)[self.cursor_query_param][0]
+            if next_link is not None
+            else None
+        )
+        return Response({"next": next_cursor, "results": data})
+
+
 class RecordContactView(BaseAPIView):
-    """Record a contact for an owned friend."""
+    """Read and record contacts for an owned friend."""
+
+    def get(self, request: Request, friend_id: UUID) -> Response:
+        """Return one page of contacts, newest first, for the authenticated owner."""
+        contacts = ContactsService(self.get_owner()).get_contacts_for_owner(friend_id)
+        pagination = ContactCursorPagination()
+        page = pagination.paginate_queryset(contacts, request, view=self)
+        return pagination.get_paginated_response(
+            ContactReadSerializer(page, many=True).data
+        )
 
     def post(self, request: Request, friend_id: UUID) -> Response:
-        """Validate the contact and return the updated board representation."""
+        """Return the saved contact alongside the updated board representation."""
         serializer = ContactWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         recorded_contact = ContactsService(self.get_owner()).record_contact(
@@ -28,7 +62,8 @@ class RecordContactView(BaseAPIView):
         return Response(
             {
                 **BoardFriendSerializer(recorded_contact.board_friend).data,
-                "contact_id": str(recorded_contact.contact_id),
+                "contact_id": str(recorded_contact.contact.id),
+                "contact": ContactReadSerializer(recorded_contact.contact).data,
             },
             status=status.HTTP_201_CREATED,
         )
