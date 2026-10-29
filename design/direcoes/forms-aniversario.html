@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Caderno de amigos — Aniversário no formulário (§3.14)</title>
+<!-- §3.14 ANIVERSÁRIO (feature separada do CRM-22, aprovada 29/10/2026). Cópia de forms-pauta.html (pack do CRM-22, intocado)
+     com UM campo a mais: "Aniversário (dia/mês, opcional)", entre "Falar a cada" e Grupos. API: birthday = "dd/mm" ou null (limpar = null; CRM-24).
+     Decisões do PM (29/10/2026): rótulo "(dia/mês, opcional)"; erro do aniversário SEM o sufixo; entrada incompleta ("1/", "12/3") recebe o mesmo erro, validado pela API.
+     Query extra: ?aniv=vazio|foco|preenchido|erro   (padrão: preenchido nas telas preenchidas, vazio nas outras)
+     Tudo o que segue abaixo vale igual ao pack do CRM-22.
+     PROTÓTIPO da direção A "Escrever na pauta" (aprovada em 29/10/2026), revisado em 29/10/2026 para bater 1:1 com
+     o FriendForm.vue / GroupPicker.vue do CRM-16 (origin/main e3d5642, PR #24). Spec: spec.md §3.13.
+     O DOM abaixo copia o template do CRM-16: MESMAS classes, ids, names, labels, legends, textos e atributos ARIA.
+     Nenhum campo novo. A diferença para o app é só CSS (os blocos "FriendForm.vue (scoped)" e "GroupPicker.vue (scoped)")
+     + 2 ajustes de template opcionais marcados [T1] inputmode e [T2] singular/plural.
+     Tokens com os nomes do app (frontend/src/tokens.css), mesmos valores aprovados.
+     Query: ?estado=normal|foco|preenchido|erro-nome|erro-numero|erro-unidade|erro-geral|erro|salvando (padrão: preenchido)
+              (erro = nome + número juntos, só p/ QA da altura; no app a API devolve UM campo por vez: error_field é uma string)
+            ?tela=novo|editar          (NewFriendView / FriendDetailView com o form aberto: "Cancelar edição")
+            ?grupos=normal|editar|form|novo|apagar   (modo editar do GroupPicker, editor de grupo, novo grupo, confirmação)
+            ?qa=1       (confere o ritmo de 32px: topo e altura de cada bloco)
+            ?fonte=200  (fonte do navegador em 200%; pauta e campos crescem juntos) -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ===== tokens.css do app (cópia; nenhuma cor nova) ===== */
+:root{--notebook-line:2rem;--ruling-offset:-0.3125rem;
+ --primary-50:#F8ECE6;--primary-100:#F1D6CC;--primary-600:#B04A32;--primary-700:#963D29;--primary-800:#7C3221;
+ --primary:var(--primary-600);--primary-hover:var(--primary-700);--primary-pressed:var(--primary-800);
+ --neutral-50:#FBF6EE;--neutral-200:#E8DCC8;--neutral-400:#B3A38C;--neutral-500:#7A6B59;--neutral-600:#6B5E50;--neutral-700:#4F443A;--neutral-900:#2B2420;
+ --sheet:var(--neutral-50);--paper:var(--neutral-200);--ink:var(--neutral-900);
+ --pen-ink:#1F3A6B;--highlight:#F6D98A;--highlight-50:#FBEDC4;--ruling:#C9D6E3;--margin-rule:#D9837A;--desk:#7A5A3E;--tab-green:#B9CBB0;
+ --error:#9B3B36;--focus:#2F6185;
+ --font-title:'Fraunces',Georgia,serif;--font-ui:'Inter',system-ui,sans-serif;--font-handwriting:'Caveat',cursive;
+ --radius-sm:6px;--radius-md:10px;--radius-pill:999px;
+ --shadow-page:0 18px 32px rgba(0,0,0,.35);--shadow-paper:2px 4px 8px rgba(43,36,32,.2);
+ --focus-ring:0 0 0 2px var(--sheet),0 0 0 4px var(--focus);--duration-fast:120ms}
+@media (prefers-reduced-motion:reduce){:root{--duration-fast:0ms}}
+/* ===== style.css do app (trechos usados; iguais ao CRM-16) ===== */
+*{box-sizing:border-box}
+body{font-family:var(--font-ui);color:var(--ink);margin:0}
+.desk{background:var(--desk);min-height:100dvh}
+.paper-lined{background-color:var(--sheet);background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--notebook-line) - 1px),var(--ruling) calc(var(--notebook-line) - 1px) var(--notebook-line));background-position:0 var(--ruling-offset);background-attachment:local;line-height:var(--notebook-line)}
+.margin-line{position:relative;--margin-line-x:36px}
+.margin-line::after{content:"";position:absolute;top:0;bottom:0;left:var(--margin-line-x);width:2px;background:var(--margin-rule);pointer-events:none;z-index:1}
+.spiral-h{height:24px;background:repeating-linear-gradient(to right,transparent 0 11px,#8a8a8a 11px 13px,#e2e2e2 13px 17px,#8a8a8a 17px 21px,transparent 21px 32px);filter:drop-shadow(1px 1px 1px rgba(0,0,0,.35))}
+.tab{font-family:var(--font-handwriting);font-weight:700;font-size:20px;color:var(--ink);box-shadow:3px 2px 4px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap}
+.tab[aria-current]{background:var(--primary)!important;color:#fff}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.field{height:48px;padding:0 16px;background:var(--sheet);border:1.5px solid var(--ink);border-radius:var(--radius-sm);font:400 16px/24px var(--font-ui);color:var(--ink);width:100%}
+.field:focus{outline:none;box-shadow:var(--focus-ring)}
+:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.group-family{--group-color:var(--primary-100)}.group-college{--group-color:var(--highlight)}.group-work{--group-color:var(--ruling)}.group-neighborhood{--group-color:var(--tab-green)}.group-neutral{--group-color:var(--paper)}
+.group-badge{display:inline-flex;align-items:center;gap:3px;box-sizing:border-box;height:18px;max-width:100%;padding:0 6px;border-radius:4px;background:var(--group-color);box-shadow:inset 0 0 0 1px rgb(43 36 32 / 32%);color:var(--neutral-700);font:500 .75rem/18px var(--font-ui);white-space:nowrap}
+.group-badge>span{overflow:hidden;text-overflow:ellipsis}
+
+/* ===== moldura do caderno (igual aos protótipos aprovados) ===== */
+.scene{height:100dvh;padding:28px 12px 72px}
+.book{position:relative;height:100%;max-width:640px;margin:0 auto}
+.page{position:absolute;inset:0;border-radius:10px;box-shadow:var(--shadow-page);overflow:hidden}
+.sheet{height:100%;overflow-y:auto;padding:2rem 16px 4rem 52px}
+.spiral-top{position:absolute;top:-12px;left:20px;right:20px;z-index:6}
+.tabs{position:fixed;left:12px;bottom:20px;display:flex;gap:4px;z-index:4}
+.tabs .tab{height:44px;padding:12px 8px 0;border-radius:0 0 8px 8px}
+.tabs .tab[aria-current]{height:48px}
+.tabs .desk-only{display:none}
+@media (min-width:1024px){
+ .scene{padding:48px 64px 48px 48px}
+ .page{--margin-line-x:56px}
+ .sheet{padding:2rem 40px 4rem 80px}
+ .tabs{position:absolute;left:auto;bottom:auto;right:-42px;top:64px;flex-direction:column;gap:8px;z-index:1}
+ .tabs .tab{width:42px;height:104px;padding:0;border-radius:0 8px 8px 0;writing-mode:vertical-rl}
+ .tabs .tab[aria-current]{width:48px;height:104px}
+ .tabs .desk-only{display:flex;height:56px}
+}
+/* 3.12 cabeçalho de folha (cópia) */
+.sheet-header{display:flex;align-items:center;justify-content:space-between;gap:12px;height:var(--notebook-line);pointer-events:none;user-select:none}
+.sh-days{display:flex;align-items:center;gap:4px;list-style:none;margin:0;padding:0}
+.sh-days li{width:22px;height:22px;border:1.5px solid var(--ink);border-radius:2px;display:grid;place-items:center;font:600 11px/1 var(--font-ui);color:var(--ink)}
+.sh-days li.today{background:var(--ink);color:#fff;border-width:2px;font-weight:700}
+.sh-date{font:700 21px/1 var(--font-handwriting);color:var(--ink);letter-spacing:.03em;border-bottom:1.5px dashed var(--neutral-400);padding:0 2px 2px;white-space:nowrap}
+/* topo das views (NewFriendView / FriendDetailView): link 44px que pega .75rem da linha de cima */
+.cancel-link,.back-link{display:flex;width:max-content;min-width:2.75rem;align-items:flex-end;height:2.75rem;margin-top:-.75rem;font:500 .875rem/var(--notebook-line) var(--font-ui);color:var(--neutral-700);text-decoration:underline;text-underline-offset:3px}
+.view-title{font:600 1.75rem/var(--notebook-line) var(--font-title);margin:0}
+.new-friend-help{margin:0;font-size:1rem;line-height:var(--notebook-line);color:var(--neutral-600)}
+
+/* =====================================================================
+   §3.13 FORMULÁRIOS NA PAUTA (CRM-22) — FriendForm.vue (scoped)
+   Regra de alvo: controle de 3rem que pega 1rem emprestado de uma linha SEM controle
+   (rótulo, linha em branco). Tudo em rem: em 200% a pauta e os campos crescem juntos.
+   ===================================================================== */
+.friend-form{margin-top:var(--notebook-line);padding:0;background:none;border:0;border-radius:0;box-shadow:none;
+ display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:1rem}
+.friend-fields,.cadence-units{min-width:0;margin:0;padding:0;border:0}
+.friend-fields{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:1.5rem}
+.friend-field{flex:1 1 100%;min-width:0;margin:0 0 var(--notebook-line)}
+/* rótulo: Caveat 22/700 caneta, na linha de cima do traço (é <label>/<legend> de verdade) */
+.friend-field>label,.group-heading,.group-editor>label,.group-colors>legend{display:block;padding:0;font:700 1.375rem/var(--notebook-line) var(--font-handwriting);color:var(--pen-ink)}
+/* campo = traço da pauta (neutral-500 1,5px; 4,79:1). Valor sempre Inter 16px */
+.friend-form .field{position:relative;z-index:1;display:block;width:100%;height:3rem;margin-top:-1rem;padding:1rem .25rem 0;border:0;border-radius:0;
+ font:400 1rem/var(--notebook-line) var(--font-ui);color:var(--ink);-webkit-appearance:none;appearance:none;
+ background:linear-gradient(var(--neutral-500),var(--neutral-500)) no-repeat 0 calc(100% - .3125rem)/100% 1.5px;transition:background-color var(--duration-fast)}
+/* foco: faixa highlight-50 na linha + traço 3px focus */
+.friend-form .field:focus{outline:none;box-shadow:none;
+ background:linear-gradient(var(--focus),var(--focus)) no-repeat 0 calc(100% - .25rem)/100% 3px,
+            linear-gradient(var(--highlight-50),var(--highlight-50)) no-repeat 0 calc(100% - .3125rem)/100% 1.6875rem}
+/* erro: traço error 2,5px (3px com foco) */
+.friend-form .field[aria-invalid="true"]{background:linear-gradient(var(--error),var(--error)) no-repeat 0 calc(100% - .25rem)/100% 2.5px}
+.friend-form .field[aria-invalid="true"]:focus{background:linear-gradient(var(--error),var(--error)) no-repeat 0 calc(100% - .25rem)/100% 3px,
+            linear-gradient(var(--highlight-50),var(--highlight-50)) no-repeat 0 calc(100% - .3125rem)/100% 1.6875rem}
+.field[type="number"]{-moz-appearance:textfield;appearance:textfield}
+.field[type="number"]::-webkit-inner-spin-button,.field[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+
+/* "Falar a cada" vira frase: [rótulo] [número] na mesma linha; as unidades seguem na mesma linha
+   se couber (desktop) ou na linha de baixo (celular). Sem mudar o DOM do CRM-16. */
+.friend-field:has(>[name="cadence_amount"]){flex:0 1 auto;display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:.75rem;margin-bottom:0}
+.friend-field>[name="cadence_amount"]{flex:none;width:4rem;text-align:center;font-variant-numeric:tabular-nums}
+.friend-field:has(>[name="cadence_amount"])>.field-error{flex:1 1 100%}
+.cadence-units{position:relative;flex:0 1 auto}
+.cadence-units>legend{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+/* unidades: radios nativos escondidos (focáveis, setas funcionam) + círculo à mão na marcada.
+   Alvo 3rem que desce 1rem para a linha em branco de baixo (o número já usou a de cima). */
+.cadence-choices{display:flex;flex-wrap:wrap;width:fit-content;max-width:100%;column-gap:.25rem;row-gap:1rem;margin:0 0 -1rem;padding:0;overflow:visible}
+.cadence-choice{position:relative;flex:none;display:flex;justify-content:center;min-width:2.75rem;height:3rem;padding:0 .5rem 1rem;cursor:pointer}
+.cadence-choice input{position:absolute;width:1px;height:1px;margin:0;opacity:0}
+.cadence-choice span{position:relative;display:flex;align-items:center;height:var(--notebook-line);min-height:0;padding:0;border:0;border-radius:0;background:none;
+ font:400 1rem/var(--notebook-line) var(--font-ui);color:var(--ink);text-transform:lowercase;white-space:nowrap}
+.cadence-choice input:checked+span{background:none;color:var(--ink);font-weight:600}
+.cadence-choice input:checked+span::before{content:"";position:absolute;inset:-.0625rem -.5rem 0;border:2px solid var(--pen-ink);border-radius:50% 46% 52% 44%/60% 50% 55% 45%;transform:rotate(-2deg)}
+.cadence-choice:hover span{color:var(--pen-ink)}
+.cadence-choice input:focus-visible+span{box-shadow:var(--focus-ring);border-radius:4px}
+.cadence-units[aria-invalid="true"] .cadence-choices{background:linear-gradient(var(--error),var(--error)) no-repeat 0 calc(100% - 1.25rem)/100% 2.5px}
+/* mensagens: Inter 14, uma linha da pauta por linha de texto; sinal "!" além da cor */
+.field-error,.group-error{display:flex;gap:.375rem;margin:0;font:400 .875rem/var(--notebook-line) var(--font-ui);color:var(--error);pointer-events:none}
+.field-error::before,.group-error::before{content:"!";flex:none;display:grid;place-items:center;width:1rem;height:1rem;margin-top:.5rem;border-radius:50%;background:var(--error);color:var(--sheet);font:700 .6875rem/1 var(--font-ui)}
+.friend-form>.field-error{flex:1 1 100%;margin-top:var(--notebook-line)}
+/* ações: "Salvar amigo" = carimbo (Caveat 26/700, exceção aprovada da regra 6); "Cancelar edição" = link */
+.save-friend{display:inline-flex;align-items:center;justify-content:center;text-align:center;width:auto;max-width:100%;min-height:3rem;
+ margin:calc(var(--notebook-line) + 1rem) 0 0;padding:.5rem 1.375rem;border:0;border-radius:var(--radius-sm);cursor:pointer;
+ background:var(--primary);color:var(--sheet);font:700 1.625rem/var(--notebook-line) var(--font-handwriting);letter-spacing:.01em;transform:rotate(-2deg);
+ box-shadow:inset 0 0 0 3px var(--primary),inset 0 0 0 4.5px rgba(251,246,238,.8);transition:background-color var(--duration-fast)}
+.save-friend:hover{background:var(--primary-hover);box-shadow:inset 0 0 0 3px var(--primary-hover),inset 0 0 0 4.5px rgba(251,246,238,.8)}
+.save-friend:active{background:var(--primary-pressed);box-shadow:inset 0 0 0 3px var(--primary-pressed),inset 0 0 0 4.5px rgba(251,246,238,.8);transform:rotate(-2deg) scale(.97)}
+.save-friend:focus-visible{box-shadow:inset 0 0 0 3px var(--primary),inset 0 0 0 4.5px rgba(251,246,238,.8),var(--focus-ring)}
+.cancel-edit{display:inline-flex;align-items:center;min-height:3rem;margin:calc(var(--notebook-line) + 1rem) 0 0;padding:.5rem 0;border:0;background:transparent;cursor:pointer;
+ font:500 .9375rem/var(--notebook-line) var(--font-ui);color:var(--neutral-700);text-decoration:underline;text-underline-offset:3px}
+/* salvando: fieldset disabled nativo (CRM-16) */
+.friend-fields:disabled{opacity:.45}
+.save-friend:disabled{opacity:.6;cursor:wait}
+.cancel-edit:disabled{opacity:.45;cursor:wait}
+
+/* =====================================================================
+   §3.13 — GroupPicker.vue (scoped; GroupBadge via :deep)
+   ===================================================================== */
+.friend-groups{flex:1 1 100%;min-width:0;margin-top:var(--notebook-line)}
+.group-picker>p{margin:0;line-height:var(--notebook-line)}
+.group-fields,.group-colors{min-width:0;margin:0;padding:0;border:0}
+.group-fields:disabled{opacity:.45}
+.group-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;width:100%}
+.edit-groups{flex:none;height:2.75rem;min-height:0;margin:-.75rem 0 0;padding:.75rem .25rem 0;border:0;background:none;cursor:pointer;
+ font:500 .875rem/var(--notebook-line) var(--font-ui);color:var(--neutral-700);text-decoration:underline;text-underline-offset:3px}
+.edit-groups[aria-pressed="true"]{font-weight:700;color:var(--ink)}
+/* adesivos: 44px; caixa = 10 + 44 + 10 (gap 20) = múltiplo de 32 */
+.group-chips{display:flex;flex-wrap:wrap;gap:1.25rem .5rem;padding:.625rem 0}
+.group-chip{position:relative;max-width:100%;padding:0;border:0;border-radius:4px;background:none;cursor:pointer;transform:rotate(var(--tilt,0deg))}
+.group-chip:nth-child(3n+1){--tilt:-1.5deg}.group-chip:nth-child(3n+2){--tilt:1deg}.group-chip:nth-child(3n){--tilt:-.5deg}
+.group-chip .group-badge{height:2.75rem;max-width:100%;padding:0 .875rem;border:1.5px dashed var(--neutral-500);border-radius:4px;background:var(--sheet);box-shadow:none;
+ font:500 .9375rem/1 var(--font-ui);color:var(--ink)}
+.group-chip[aria-pressed="true"] .group-badge{padding-left:2rem;border:2px solid var(--ink);background:var(--group-color);box-shadow:var(--shadow-paper)}
+.selected-check{position:absolute;z-index:1;left:.75rem;top:calc(50% - .4375rem);width:.875rem;height:.875rem;fill:none;stroke:var(--ink);stroke-width:2.5}
+.group-chip:hover .group-badge{border-color:var(--primary)}
+/* modo editar: o botão perde aria-pressed (CRM-16) → adesivo reto, cor do grupo, borda tracejada caneta, nome sublinhado */
+.group-chip:not([aria-pressed]){transform:none}
+.group-chip:not([aria-pressed]) .group-badge{border:2px dashed var(--pen-ink);background:var(--group-color);text-decoration:underline;text-underline-offset:3px}
+.group-chips>.group-action{height:2.75rem;min-height:0;padding:0 .875rem;border:1.5px dashed var(--neutral-500);border-radius:4px;background:none;cursor:pointer;
+ font:500 .9375rem/1 var(--font-ui);color:var(--neutral-700)}
+/* editor de grupo */
+.group-editor{margin:0}
+.group-editor>p:not(.group-error){margin:0;font:400 1rem/var(--notebook-line) var(--font-ui)}
+.group-editor .field{position:relative;z-index:1;display:block;width:100%;height:3rem;margin-top:-1rem;padding:1rem .25rem 0;border:0;border-radius:0;
+ font:400 1rem/var(--notebook-line) var(--font-ui);color:var(--ink);background:linear-gradient(var(--neutral-500),var(--neutral-500)) no-repeat 0 calc(100% - .3125rem)/100% 1.5px}
+.group-editor .field:focus{outline:none;box-shadow:none;background:linear-gradient(var(--focus),var(--focus)) no-repeat 0 calc(100% - .25rem)/100% 3px,linear-gradient(var(--highlight-50),var(--highlight-50)) no-repeat 0 calc(100% - .3125rem)/100% 1.6875rem}
+.group-editor .field[aria-invalid="true"]{background:linear-gradient(var(--error),var(--error)) no-repeat 0 calc(100% - .25rem)/100% 2.5px}
+.group-colors{display:flex;flex-wrap:wrap;gap:1.25rem .5rem;padding:0 0 .625rem}
+.group-colors>legend{width:100%;padding:0 0 .625rem}
+.group-color-choice{display:inline-flex;align-items:center;gap:.5rem;height:2.75rem;padding:0 .875rem 0 .625rem;border:1.5px solid var(--neutral-500);border-radius:var(--radius-pill);background:var(--sheet);cursor:pointer}
+.group-color-choice input{width:1.125rem;height:1.125rem;margin:0;accent-color:var(--primary)}
+.group-color-choice:has(input:checked){border:2px solid var(--primary);background:var(--primary-50)}
+.group-color-choice .group-badge{height:1.5rem;padding:0 .5rem;font:500 .875rem/1.5rem var(--font-ui);color:var(--ink)}
+.group-editor-actions{display:flex;flex-wrap:wrap;gap:1.25rem 1rem;padding:.625rem 0}
+.group-editor-actions>.group-action{height:2.75rem;min-height:0;padding:0 1rem;border:1.5px solid var(--neutral-500);border-radius:var(--radius-pill);background:var(--sheet);cursor:pointer;
+ font:500 .9375rem/1 var(--font-ui);color:var(--ink)}
+.group-editor-actions>[name="save-group"]{border:2px solid var(--primary);color:var(--primary-800);font-weight:600}
+.group-editor-actions>.delete-group{border-color:var(--error);color:var(--error)}
+/* =====================================================================
+   §3.14 ANIVERSÁRIO — campo opcional dd/mm (FriendForm.vue, scoped)
+   Mesmo campo-traço do Nome: rótulo Caveat numa linha, traço na linha de baixo (controle 3rem pega 1rem do rótulo).
+   ===================================================================== */
+.friend-field:has(>[name="birthday"]){display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:1rem;margin:var(--notebook-line) 0 0}
+.friend-field:has(>[name="birthday"])>label,.friend-field:has(>[name="birthday"])>.field-error{flex:1 1 100%}
+.friend-field>[name="birthday"]{flex:none;width:6rem;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+/* placeholder "dd/mm": neutral-600 (5,84:1 na folha, 5,39:1 na faixa de foco) */
+.friend-form .field::placeholder{color:var(--neutral-600);opacity:1}
+/* "apagar": link-botão na mesma linha do traço, só aparece com valor; alvo 3rem×2,75rem+ */
+.clear-birthday{flex:none;min-width:2.75rem;height:3rem;margin:-1rem 0 0;padding:1rem .25rem 0;border:0;background:none;cursor:pointer;
+ font:500 .875rem/var(--notebook-line) var(--font-ui);color:var(--neutral-700);text-decoration:underline;text-underline-offset:3px}
+.clear-birthday:hover{color:var(--ink)}
+.clear-birthday[hidden]{display:none}
+#qa{position:fixed;left:0;bottom:0;max-width:100%;background:#fff;font:12px monospace;z-index:99;white-space:pre-wrap}
+</style></head>
+<body class="desk">
+<div class="scene">
+ <div class="book">
+  <div class="spiral-top spiral-h" aria-hidden="true"></div>
+  <section class="page margin-line">
+   <div class="sheet paper-lined" id="sheet">
+    <div class="sheet-header" role="group" aria-label="Data de hoje, quinta-feira 29/10/2026">
+     <ol class="sh-days" aria-label="Dia da semana">
+      <li><span aria-hidden="true">D</span><span class="sr-only">Domingo</span></li>
+      <li><span aria-hidden="true">S</span><span class="sr-only">Segunda</span></li>
+      <li><span aria-hidden="true">T</span><span class="sr-only">Terça</span></li>
+      <li><span aria-hidden="true">Q</span><span class="sr-only">Quarta</span></li>
+      <li class="today" aria-current="date"><span aria-hidden="true">Q</span><span class="sr-only">Quinta, hoje</span></li>
+      <li><span aria-hidden="true">S</span><span class="sr-only">Sexta</span></li>
+      <li><span aria-hidden="true">S</span><span class="sr-only">Sábado</span></li>
+     </ol>
+     <time class="sh-date" datetime="2026-10-29">29/10/2026</time>
+    </div>
+    <!-- NewFriendView.vue (tela=novo) ou FriendDetailView.vue com is_editing (tela=editar) -->
+    <div id="view-top">
+     <a href="#" class="cancel-link">Cancelar</a>
+     <h1 class="view-title">Novo amigo</h1>
+     <p class="new-friend-help">Só o nome já basta. O resto pode vir depois.</p>
+    </div>
+
+    <!-- FriendForm.vue (template do CRM-16) -->
+    <form class="friend-form paper-surface" id="form" aria-busy="false" onsubmit="event.preventDefault()">
+     <fieldset class="friend-fields" id="fields">
+      <legend class="sr-only">Dados do amigo</legend>
+      <div class="friend-field">
+       <label for="friend-name">Nome</label>
+       <input id="friend-name" class="field" name="name" required maxlength="100" autocomplete="off">
+      </div>
+      <div class="friend-field">
+       <label for="friend-cadence-amount">Falar a cada</label>
+       <!-- [T1] inputmode="numeric" é o único atributo novo sugerido -->
+       <input id="friend-cadence-amount" class="field" name="cadence_amount" type="number" inputmode="numeric" min="1" step="1" required value="1">
+      </div>
+      <fieldset class="cadence-units" id="units">
+       <legend>Unidade do ritmo</legend>
+       <div class="cadence-choices">
+        <label class="cadence-choice"><input type="radio" name="cadence_unit" value="day"><span>Dias</span></label>
+        <label class="cadence-choice"><input type="radio" name="cadence_unit" value="week"><span>Semanas</span></label>
+        <label class="cadence-choice"><input type="radio" name="cadence_unit" value="month" checked><span>Meses</span></label>
+        <label class="cadence-choice"><input type="radio" name="cadence_unit" value="year"><span>Anos</span></label>
+       </div>
+      </fieldset>
+      <!-- §3.14 Aniversário (opcional): depois de "Falar a cada", antes de Grupos -->
+      <div class="friend-field">
+       <label for="friend-birthday">Aniversário (dia/mês, opcional)</label>
+       <input id="friend-birthday" class="field" name="birthday" type="text" inputmode="numeric" maxlength="5" placeholder="dd/mm" autocomplete="off">
+       <button type="button" name="clear-birthday" class="clear-birthday" id="clear-birthday" aria-label="Apagar aniversário" hidden>apagar</button>
+      </div>
+      <div class="friend-groups" id="friend-groups">
+       <!-- GroupPicker.vue (template do CRM-16) -->
+       <section class="group-picker" aria-label="Grupos">
+        <fieldset class="group-fields" id="group-fields" aria-busy="false">
+         <legend class="group-heading">
+          <span>Grupos (opcional)</span>
+          <button type="button" name="edit-groups" class="edit-groups" aria-pressed="false" id="edit-groups">editar</button>
+         </legend>
+         <div class="group-chips" id="chips"></div>
+         <div id="editor-slot"></div>
+        </fieldset>
+        <p class="sr-only" role="status"></p>
+       </section>
+      </div>
+     </fieldset>
+     <button class="save-friend" type="submit" id="save">Salvar amigo</button>
+    </form>
+   </div>
+  </section>
+  <nav class="tabs" aria-label="Seções">
+   <a href="#" class="tab" style="background:var(--primary-100)">bom falar</a>
+   <a href="#" class="tab" style="background:var(--paper)">quadro</a>
+   <a href="#" class="tab" id="tab-friends" style="background:var(--highlight)">amigos</a>
+   <a href="#" class="tab" id="tab-new" style="background:var(--tab-green)" aria-current="page">+ novo</a>
+   <a href="#" class="tab" style="background:var(--margin-rule)">config</a>
+   <a href="#" class="tab desk-only" style="background:var(--ruling)" aria-label="Atalhos de teclado">?</a>
+  </nav>
+ </div>
+</div>
+<script>
+const q=new URLSearchParams(location.search);
+if(q.get('fonte')) document.documentElement.style.fontSize=q.get('fonte')+'%';
+const state=q.get('estado')||'preenchido', screen=q.get('tela')||'novo', gmode=q.get('grupos')||'normal';
+const $=s=>document.querySelector(s);
+// Mensagens = as do CRM-16: detail da API (DRF pt-br) + " Revise os dados e tente novamente."
+const SUFFIX=' Revise os dados e tente novamente.';
+// §3.14: detail que a API devolve em field=birthday (drf-standardized-errors), SEM o SUFFIX (decisão do PM, 29/10/2026).
+// Vale também para entrada incompleta ("1/", "12/3"): a API valida e devolve a mesma mensagem. Os outros campos não mudam.
+const MSG={name:'Este campo não pode ser em branco.'+SUFFIX,
+ cadence_amount:'Certifique-se de que este valor seja maior ou igual a 1.'+SUFFIX,
+ cadence_unit:'"quinzena" não é um escolha válido.'+SUFFIX,
+ birthday:'Essa data não existe. Ex.: 12/03.',
+ general:'Não foi possível salvar o amigo. Seus dados continuam aqui. Tente novamente.'};
+// [T2] singular/plural: mesmos textos do FriendCadence.vue (CADENCE_LABELS); CSS deixa em minúsculas
+const LABELS={day:['Dia','Dias'],week:['Semana','Semanas'],month:['Mês','Meses'],year:['Ano','Anos']};
+const GROUPS=[{id:'g1',name:'Faculdade',color:'college',on:true},{id:'g2',name:'Família',color:'family',on:false},{id:'g3',name:'Trabalho',color:'work',on:false},{id:'g4',name:'Vizinhança',color:'neighborhood',on:true}];
+const COLORS=[['family','Pêssego'],['college','Amarelo'],['work','Azul'],['neighborhood','Verde'],['neutral','Creme']];
+const name=$('#friend-name'), amount=$('#friend-cadence-amount'), birthday=$('#friend-birthday'), clearB=$('#clear-birthday');
+const filled=['preenchido','foco','salvando'].includes(state)||screen==='editar';
+if(!filled) GROUPS.forEach(g=>g.on=false);
+if(screen==='editar'){
+ $('#view-top').innerHTML='<a href="#" class="back-link">Voltar</a><h1 class="view-title" tabindex="-1">Marina Costa</h1>';
+ const c=document.createElement('button');c.type='button';c.name='cancel-friend-edit';c.className='cancel-edit';c.textContent='Cancelar edição';$('#form').appendChild(c);
+ $('#tab-new').removeAttribute('aria-current');$('#tab-friends').setAttribute('aria-current','page');
+}
+const editing=gmode!=='normal';
+const check='<svg class="selected-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>';
+$('#chips').innerHTML=GROUPS.map(g=>editing
+ ?`<button type="button" class="group-chip" aria-label="Editar grupo ${g.name}"><span class="group-badge group-${g.color}" title="${g.name}"><span>${g.name}</span></span></button>`
+ :`<button type="button" class="group-chip" aria-pressed="${g.on}">${g.on?check:''}<span class="group-badge group-${g.color}" title="${g.name}"><span>${g.name}</span></span></button>`).join('')
+ +`<button type="button" name="new-group" class="group-action" aria-expanded="${gmode==='novo'}">+ novo grupo</button>`;
+const eg=$('#edit-groups');eg.textContent=editing&&gmode!=='novo'?'pronto':'editar';eg.setAttribute('aria-pressed',editing&&gmode!=='novo');
+const colorChoices=sel=>COLORS.map(([v,l])=>`<label class="group-color-choice"><input type="radio" name="group_color" value="${v}"${v===sel?' checked':''}><span class="group-badge group-${v}" title="${l}"><span>${l}</span></span></label>`).join('');
+if(gmode==='form'||gmode==='novo'){
+ const ed=gmode==='form';
+ $('#editor-slot').outerHTML=`<div class="group-editor"><label for="group-name">Nome do grupo</label>
+  <input id="group-name" class="field" name="group_name" required maxlength="100" value="${ed?'Faculdade':''}">
+  <fieldset class="group-colors"><legend>Cor do grupo</legend>${colorChoices(ed?'college':'neutral')}</fieldset>
+  <div class="group-editor-actions"><button type="button" name="save-group" class="group-action">${ed?'Salvar grupo':'Criar grupo'}</button>${ed?'<button type="button" name="delete-group" class="group-action delete-group">Apagar grupo</button>':''}<button type="button" class="group-action">Cancelar</button></div></div>`;
+}
+if(gmode==='apagar'){
+ $('#editor-slot').outerHTML=`<div class="group-editor"><p role="alert">Apagar 'Faculdade'? 3 amigos saem desse grupo, mas continuam no seu caderno.</p>
+  <div class="group-editor-actions"><button type="button" name="confirm-delete-group" class="group-action delete-group">Apagar grupo</button><button type="button" name="cancel-delete-group" class="group-action">Cancelar</button></div></div>`;
+}
+function setUnit(v){document.querySelector(`[name=cadence_unit][value=${v}]`).checked=true}
+function plural(){const one=+amount.value===1;document.querySelectorAll('.cadence-choice').forEach(l=>{l.querySelector('span').textContent=LABELS[l.querySelector('input').value][one?0:1]})}
+amount.addEventListener('input',plural);
+if(filled){name.value='Marina Costa';amount.value=2;setUnit('week')}
+if(state==='foco'){amount.value=2;setUnit('week')}
+// erro: aria-invalid + aria-describedby SÓ enquanto a mensagem existe (igual ao CRM-16)
+function showError(field){
+ const p=document.createElement('p');p.className='field-error';p.setAttribute('role','alert');p.textContent=MSG[field];
+ if(field==='general'){$('#form').insertBefore(p,$('#save'));return}
+ p.id=`friend-${field}-error`;
+ const host=field==='birthday'?birthday:field==='name'?name:field==='cadence_amount'?amount:field==='cadence_unit'?$('#units'):$('#friend-groups');
+ host.setAttribute('aria-invalid','true');host.setAttribute('aria-describedby',p.id);
+ if(field==='cadence_unit') $('#units').appendChild(p); else if(field==='groups') $('#friend-groups').appendChild(p); else host.parentElement.appendChild(p);
+}
+if(state==='erro-nome'||state==='erro'){name.value='';showError('name')}
+if(state==='erro-numero'||state==='erro'){name.value=state==='erro'?'':'Marina Costa';amount.value=0;showError('cadence_amount')}
+if(state==='erro-unidade'){name.value='Marina Costa';showError('cadence_unit')}
+if(state==='erro-geral'){name.value='Marina Costa';amount.value=2;setUnit('week');showError('general')}
+plural();
+/* §3.14 máscara dd/mm: só dígitos, no máximo 4; a barra entra sozinha depois do dia (ao digitar) e some ao apagar.
+   Não valida data no cliente: quem diz se a data existe é a API (field=birthday). */
+function maskBirthday(e){
+ const d=birthday.value.replace(/\D/g,'').slice(0,4);
+ const typing=!e||!e.inputType||e.inputType.startsWith('insert');
+ birthday.value=d.length>2?d.slice(0,2)+'/'+d.slice(2):(d.length===2&&typing?d+'/':d);
+ clearB.hidden=!birthday.value;
+}
+function clearBirthday(){birthday.value='';clearB.hidden=true;
+ birthday.removeAttribute('aria-invalid');birthday.removeAttribute('aria-describedby');document.getElementById('friend-birthday-error')?.remove();birthday.focus()}
+/* §3.14 payload (CRM-24): campo vazio = birthday:null (no Editar, apaga o aniversário salvo); senão o texto como está ('12/03', '1/'...). */
+const birthdayPayload=()=>({birthday:birthday.value.trim()||null});
+birthday.addEventListener('input',maskBirthday);clearB.addEventListener('click',clearBirthday);
+const aniv=q.get('aniv')||(filled?'preenchido':'vazio');
+if(aniv==='preenchido')birthday.value='12/03';
+if(aniv==='foco')birthday.value='12/';
+if(aniv==='erro'){name.value=name.value||'Marina Costa';birthday.value='31/04';showError('birthday')}
+clearB.hidden=!birthday.value;
+if(state==='salvando'){$('#form').setAttribute('aria-busy','true');$('#fields').disabled=true;const s=$('#save');s.disabled=true;s.textContent='Salvando…';const c=$('.cancel-edit');if(c)c.disabled=true}
+if(state==='foco'||state==='erro-numero'){amount.focus({preventScroll:true})}
+if(aniv==='foco'||aniv==='erro'){birthday.focus({preventScroll:true});birthday.setSelectionRange(9,9)}
+if((state==='normal'||state==='erro-nome'||state==='erro')&&aniv!=='foco'&&aniv!=='erro'){name.focus({preventScroll:true})} // normal = recém-montado: onMounted foca o Nome
+// QA: cada bloco de fluxo tem topo e altura múltiplos de --notebook-line (com o "empréstimo" de cada controle descontado)
+if(q.get('qa')){setTimeout(()=>{document.querySelectorAll('.save-friend').forEach(e=>e.style.transform='none');const f=$('#sheet'),R=parseFloat(getComputedStyle(document.documentElement).fontSize),L=R*2,fr=f.getBoundingClientRect(),top0=fr.top+L-f.scrollTop;const out=['--notebook-line='+L+'px  vw='+innerWidth];let bad=0;
+ const rules=[['.sheet-header,h1,.new-friend-help,.friend-form,.friend-field,.cadence-units,.friend-groups,.group-heading,.group-chips,.group-editor,.group-colors,.group-editor-actions,.field-error,.group-error,.group-editor>p',0,0],
+  ['.cancel-link,.back-link',.75,-.75],['.save-friend,.cancel-edit',-1,1],['.cadence-choices',0,1],['.friend-form .field,.group-editor .field,.clear-birthday',1,-1]];
+ const m=x=>Math.abs(x%L)<0.6||Math.abs(x%L-L)<0.6;
+ rules.forEach(([sel,dt,dh])=>document.querySelectorAll(sel).forEach(el=>{const r=el.getBoundingClientRect();if(!r.height)return;
+  const t=Math.round((r.top-top0+dt*R)*100)/100,h=Math.round((r.height+dh*R)*100)/100;const ok=m(t)&&m(h);if(!ok)bad++;
+  out.push((ok?'ok  ':'XX  ')+(el.className||el.tagName).toString().slice(0,32)+' top='+t+' h='+h)}));
+ // nenhum alvo < 44px
+ document.querySelectorAll('button,a,.cadence-choice,.group-color-choice,input:not([type=radio])').forEach(el=>{const r=el.getBoundingClientRect();if(!r.height)return;if(r.height<43.5||r.width<43.5){if(!el.closest('.tabs')&&!el.closest('.group-color-choice')){bad++;out.push('XX  alvo<44 '+(el.className||el.tagName)+' '+Math.round(r.width)+'x'+Math.round(r.height))}}});
+ out.unshift(bad?('FALHAS: '+bad):'TUDO OK');
+ const p=document.createElement('pre');p.id='qa';p.textContent=out.join('\n');document.body.appendChild(p)},1500)}
+</script>
+</body></html>

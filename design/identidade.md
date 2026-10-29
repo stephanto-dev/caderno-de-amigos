@@ -5,7 +5,7 @@ _CRM de amigos (nome provisório). Versão 2, 16/10/2026, Designer._
 > **Decisão:** a direção **"Caderno físico"** foi aprovada pelo Vinicius em **16/10/2026** e **substitui a direção A "Caderno"** (v1). A paleta, os papéis de cor e as regras de contraste da A continuam valendo; muda a linguagem (o app inteiro é um caderno sobre a mesa). Referência: `caderno-full.html` / `caderno-full-v2.png`.
 
 ## Conceito
-O app é um caderno espiral aberto sobre uma mesa de madeira. A folha é pautada, tem margem vermelha, e cada amigo ocupa algumas linhas: o nome em Fraunces, a última nota escrita "à mão" em azul caneta (Caveat), e um carimbo terracota **registrar**. As seções são abas de divisória coladas na borda do caderno. Post-it e polaroid aparecem só como enfeite, num canto fixo. Formulários, sheet e modais voltam ao Inter, em cartões de papel com borda de tinta, porque escrever num campo tem que ser claro e não "fofinho". O tom continua sem culpa: nada de "atrasado", nada de vermelho de alerta e nenhum placar.
+O app é um caderno espiral aberto sobre uma mesa de madeira. A folha é pautada, tem margem vermelha, e cada amigo ocupa algumas linhas: o nome em Fraunces, a última nota escrita "à mão" em azul caneta (Caveat), e um carimbo terracota **registrar**. As seções são abas de divisória coladas na borda do caderno. Post-it e polaroid aparecem só como enfeite, num canto fixo. Os formulários (novo amigo, editar amigo, grupos) são escritos direto na pauta: o rótulo vem "à mão" em Caveat, o campo é o traço da linha e o valor digitado fica em Inter, porque escrever num campo tem que ser claro e não "fofinho". O sheet, os modais e a capa de entrada continuam em Inter, em cartões de papel com borda de tinta (exceção aprovada em 29/10/2026; ver regra 6). O tom continua sem culpa: nada de "atrasado", nada de vermelho de alerta e nenhum placar.
 
 ## Regras de implementação (aprovadas)
 1. **Só CSS:** pauta (gradiente repetido), margem (pseudo-elemento), espiral (gradiente repetido) e mesa (cor sólida). Nenhuma imagem de textura. Os utilitários são `.paper-lined`, `.margin-line`, `.spiral-v`, `.spiral-h`, `.nota`, `.marca`, `.carimbo`, `.aba`, `.papel`, `.campo`, `.postit`, `.polaroid` e `.reserva-canto`, em `tokens.css` e no plugin do `tailwind.config.js`.
@@ -13,7 +13,7 @@ O app é um caderno espiral aberto sobre uma mesa de madeira. A folha é pautada
 3. **Decorativos em canto fixo e sem sobrepor texto:** o post-it (só quando há aniversário) e a polaroid (no perfil) ficam no canto superior direito do cabeçalho, e o cabeçalho reserva o espaço com `.reserva-canto` (112px; 96px abaixo de 1024px). Isso corrige a polaroid que encostava em "Lembrar" na referência. Os dois usam `aria-hidden`; a informação do aniversário também existe em texto para leitores de tela.
 4. **Abas = links comuns** (`router-link`): na borda direita a partir de 1024px e penduradas embaixo no celular. A aba ativa fica terracota com texto branco e `aria-current`.
 5. **Duas páginas só a partir de 1280px** (breakpoint `livro`). Abaixo disso, uma página só, e o perfil desliza por cima.
-6. **A Caveat entra só em notas, carimbos e rótulos de aba.** Campos, formulários, modais e o sheet usam Inter, sobre papel (`#E8DCC8`) com borda de tinta.
+6. **A Caveat entra só em notas, carimbos e rótulos de aba**, e, por exceção aprovada pelo Vinicius em 29/10/2026 (spec 3.13, "Formulários na pauta"), também **nos rótulos de campo e no carimbo "Salvar amigo"** dos formulários na pauta (os campos são só os do CRM-16: Nome, Falar a cada = número + unidade, Grupos). Os controles e o valor digitado continuam em Inter: valor digitado e número (≥16px), unidades do ritmo, chips/adesivos, links, "Cancelar edição" e mensagens de erro. O sheet, os modais e a capa `/entrar` usam Inter, sobre papel (`#E8DCC8`) com borda de tinta.
 7. **A mesa é sólida (`#7A5A3E`)**, com sombra na página. Sem textura.
 
 ## Paleta e papéis
@@ -90,14 +90,14 @@ A Caveat só é usada a partir de 20px (notas com 22px), e a caneta sobre a folh
 
 ## Tipografia
 - **Fraunces 600:** títulos de página (28px no celular / 30px), nomes (19px) e seções (19px).
-- **Inter 400/500/600:** metadados (12–14px), rótulos, campos (16px), botões, sheet e modais.
-- **Caveat 500/700:** notas (22px, `caneta`), carimbos (21px/700) e rótulos de aba (20px/700). Nada além disso.
-- Todo tamanho usa line-height de 32px na página. Dentro de papel (form, sheet, modal), vale o grid de 8px.
+- **Inter 400/500/600:** metadados (12–14px), valor digitado e placeholder (16px), opções, adesivos, links, mensagens de erro, botões, sheet, modais e os rótulos da capa `/entrar`.
+- **Caveat 500/700:** notas (22px, `caneta`), carimbos (21px/700), rótulos de aba (20px/700) e, nos formulários na pauta, rótulos de campo (22px/700, `caneta`; sem dica entre parênteses: o "(opcional)" de "Grupos (opcional)" é parte do rótulo) e o carimbo "Salvar amigo" (26px/700, `folha` sobre `primaria`, 5,04:1). Nada além disso.
+- Todo tamanho usa line-height de 32px na página. Dentro de papel (sheet, modal, capa), vale o grid de 8px.
 
 ## Espaço, raios e sombras
-- **Vertical na página:** só `--linha` (32) e múltiplos (`l1`…`l6` no Tailwind). Blocos de formulário ocupam 3 linhas (rótulo 32 + campo 48 + respiro 16 = 96).
+- **Vertical na página:** só `--linha` (32) e múltiplos (`l1`…`l6` no Tailwind). Blocos de formulário na pauta ocupam 2 linhas (rótulo 32 + campo 32 = 64; com erro, 3 linhas); o campo é o traço da linha e tem 48px de alvo, pegando 16px da linha de cima. Dentro de papel (capa, sheet), o bloco continua com 3 linhas (rótulo 32 + campo 48 + respiro 16 = 96).
 - **Horizontal:** grid de 8px. Margem vermelha a 36px (celular) ou 56px (≥1024); o texto começa 16–24px depois dela.
-- **Raios:** 6px (carimbo, campo), 10px (página, papel), pill (botões, chips), 8px na ponta da aba.
+- **Raios:** 6px (carimbo, campo), 10px (página, papel), pill (botões, chips), 8px na ponta da aba, 4px nos adesivos de grupo dos formulários na pauta.
 - **Sombras:** página `0 18px 32px rgba(0,0,0,.35)`; papel, post-it e polaroid `2px 4px 8px rgba(43,36,32,.2)`; dobra central `inset ±18px 0 24px -14px rgba(0,0,0,.18)`.
 
 ## Ícones
@@ -115,7 +115,7 @@ Lucide, traço 1,75, 18px na folha e 16px dentro do carimbo. Os ícones substitu
 
 ## O que não fazemos
 - Não usamos imagens de papel, madeira ou espiral, nem texturas e ruído.
-- Não usamos Caveat em campos, botões de formulário, modais ou metadados.
+- Não usamos Caveat no valor digitado, em placeholder, opções, adesivos, links, mensagens de erro, botões secundários, modais ou metadados. Nos formulários, a Caveat fica só nos rótulos e no carimbo "Salvar amigo".
 - Não deixamos decorativo sobre texto e não usamos decorativo clicável.
 - Não usamos "atrasado", contadores de dias, vermelho de alerta ou placar.
 - Não usamos alturas "quebradas" na página (ex.: 20px de margem entre itens).
