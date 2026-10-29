@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Caderno de amigos — Formulários com cara de caderno (proposta)</title>
+<!-- PROPOSTA (29/10/2026), não aprovada. Não substitui 3.5 até o Vinicius escolher.
+     Mesmo HTML para as 3 direções: só o CSS muda (restrição do Tech Lead, CRM-16).
+     Tudo é input/textarea/button/radio nativo com <label for> ou <legend>; nada de contenteditable.
+     Query: ?direcao=a|b|c  ·  ?estado=normal|foco|preenchido|erro|desabilitado (padrão: preenchido)
+            ?grupos=normal|editar|form  (modo editar dos chips, 3.5)  ·  ?qa=1 (confere ritmo de 32px)
+     Cabeçalho de folha (3.12): demo = quinta (Q) 29/10/2026; em produção vem de Intl/Date em America/Sao_Paulo. -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+/* ===== Tokens (cópia de tokens.css; nenhuma cor nova) ===== */
+:root{--linha:2rem;--pauta-offset:-0.3125rem;
+ --primaria:#B04A32;--primaria-50:#F8ECE6;--primaria-100:#F1D6CC;--primaria-700:#963D29;--primaria-800:#7C3221;
+ --folha:#FBF6EE;--papel:#E8DCC8;--tinta:#2B2420;--caneta:#1F3A6B;--marca-texto:#F6D98A;--marca-texto-50:#FBEDC4;
+ --n100:#F4ECDF;--n300:#D6C7AF;--n400:#B3A38C;--n500:#7A6B59;--n600:#6B5E50;--n700:#4F443A;
+ --pauta:#C9D6E3;--margem:#D9837A;--mesa:#7A5A3E;--aba-verde:#B9CBB0;--foco:#2F6185;--erro:#9B3B36;--erro-50:#F6E3DF;
+ --sombra-pagina:0 18px 32px rgba(0,0,0,.35);--sombra-papel:2px 4px 8px rgba(43,36,32,.2);
+ --anel-foco:0 0 0 2px var(--folha),0 0 0 4px var(--foco);
+ --dur-rapida:120ms}
+@media (prefers-reduced-motion:reduce){:root{--dur-rapida:0ms}}
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,sans-serif;color:var(--tinta);margin:0}
+.mesa{background:var(--mesa);min-height:100dvh}
+.paper-lined{background-color:var(--folha);background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--linha) - 1px),var(--pauta) calc(var(--linha) - 1px) var(--linha));background-position:0 var(--pauta-offset);background-attachment:local;line-height:var(--linha)}
+.margin-line{position:relative;--margem-x:36px}
+.margin-line::after{content:"";position:absolute;top:0;bottom:0;left:var(--margem-x);width:2px;background:var(--margem);pointer-events:none;z-index:1}
+.spiral-h{height:24px;background:repeating-linear-gradient(to right,transparent 0 11px,#8a8a8a 11px 13px,#e2e2e2 13px 17px,#8a8a8a 17px 21px,transparent 21px var(--linha));filter:drop-shadow(1px 1px 1px rgba(0,0,0,.35))}
+[data-lucide]{width:18px;height:18px;stroke-width:1.75;display:inline-block;vertical-align:-3px;flex:none}
+.aba{font-family:Caveat,cursive;font-weight:700;font-size:20px;color:var(--tinta);box-shadow:3px 2px 4px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap}
+.aba[aria-current]{background:var(--primaria)!important;color:#fff}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+:focus-visible{outline:none;box-shadow:var(--anel-foco)}
+
+/* ===== Layout do caderno (igual aos protótipos aprovados) ===== */
+.cena{height:100dvh;padding:28px 12px 72px}
+.livro{position:relative;height:100%;max-width:640px;margin:0 auto}
+.pagina{position:absolute;inset:0;border-radius:10px;box-shadow:var(--sombra-pagina);overflow:hidden}
+.folha{height:100%;overflow-y:auto;padding:2rem 16px 4rem 52px}
+.espiral-topo{position:absolute;top:-12px;left:20px;right:20px;z-index:6}
+.abas{position:fixed;left:12px;bottom:20px;display:flex;gap:4px;z-index:4}
+.abas .aba{height:44px;padding:12px 8px 0;border-radius:0 0 8px 8px}
+.abas .aba[aria-current]{height:48px}
+.abas .so-desk{display:none}
+@media (min-width:1024px){
+ .cena{padding:48px 64px 48px 48px}
+ .pagina{--margem-x:56px}
+ .folha{padding:2rem 40px 4rem 80px}
+ .abas{position:absolute;left:auto;bottom:auto;right:-42px;top:64px;flex-direction:column;gap:8px;z-index:1}
+ .abas .aba{width:42px;height:104px;padding:0;border-radius:0 8px 8px 0;writing-mode:vertical-rl}
+ .abas .aba[aria-current]{width:48px;height:104px}
+ .abas .so-desk{display:flex;height:56px}
+}
+/* 3.12 cabeçalho de folha (cópia) */
+.cabecalho-folha{display:flex;align-items:center;justify-content:space-between;gap:12px;height:var(--linha);pointer-events:none;user-select:none}
+.cab-dias{display:flex;align-items:center;gap:4px;list-style:none;margin:0;padding:0}
+.cab-dias li{width:22px;height:22px;border:1.5px solid var(--tinta);border-radius:2px;display:grid;place-items:center;font:600 11px/1 Inter,system-ui,sans-serif;color:var(--tinta)}
+.cab-dias li.hoje{background:var(--tinta);color:#fff;border-width:2px;font-weight:700}
+.cab-data{font:700 21px/1 Caveat,cursive;color:var(--tinta);letter-spacing:.03em;border-bottom:1.5px dashed var(--n400);padding:0 2px 2px;white-space:nowrap}
+
+/* topo da tela (3.5): Cancelar · título · subtítulo — tudo em linhas de 32 */
+.voltar{display:flex;width:max-content;align-items:center;gap:4px;height:32px;font:500 14px/32px Inter;color:var(--n700);text-decoration:none}
+h1{font:600 1.75rem/var(--linha) Fraunces,Georgia,serif;margin:0}
+.sub{font-size:1rem;line-height:var(--linha);color:var(--n600);margin:0}
+
+/* ===================================================================
+   BASE COMUM (as 3 direções partem daqui)
+   Regra de alvo: todo controle tem 48px e "pega emprestado" 16px da linha
+   em branco de cima (margin-top:-16px). Assim o texto senta na pauta e o
+   alvo passa de 44px sem quebrar o ritmo de 32.
+   =================================================================== */
+fieldset{border:0;margin:0;padding:0;min-width:0}
+.tudo{display:block}
+.ficha{margin-top:var(--linha)}
+.campo-bloco{position:relative;display:grid;grid-template-columns:1fr;grid-template-rows:var(--linha) var(--linha);grid-auto-rows:var(--linha)}
+.rotulo{grid-row:1;grid-column:1;margin:0;padding:0;white-space:nowrap}
+.entrada{grid-row:2;grid-column:-2;position:relative;z-index:1;display:block;width:100%;height:48px;margin-top:-16px;padding:16px 4px 0;border:0;border-radius:0;
+ font:400 16px/32px Inter,system-ui,sans-serif;color:var(--tinta);background:transparent;-webkit-appearance:none;appearance:none;
+ transition:background-color var(--dur-rapida),background-size var(--dur-rapida)}
+.entrada::placeholder{color:var(--n500);opacity:1}
+/* com foco a faixa marca-texto-50 derruba n500 para 4,42:1 → placeholder escurece para n600 */
+.entrada:focus::placeholder,.entrada.f::placeholder{color:var(--n600)}
+.entrada:focus{outline:none}
+.erro-msg{grid-row:3;grid-column:-2;display:flex;align-items:center;gap:6px;margin:0;font:400 14px/32px Inter;color:var(--erro)}
+.erro-msg [data-lucide]{width:16px;height:16px}
+.erro-msg[hidden]{display:none}
+/* "Falar a cada": radios nativos escondidos visualmente (continuam focáveis e no teclado) */
+.opcoes{grid-row:2;grid-column:-2;display:flex;gap:4px;height:48px;margin-top:-16px;overflow-x:auto;scrollbar-width:none}
+.opcao{position:relative;display:flex;align-items:center;gap:8px;height:48px;padding:16px 10px 0;flex:none;font:400 16px/32px Inter;color:var(--tinta);cursor:pointer;white-space:nowrap}
+.opcao input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.opcao .txt{position:relative;display:inline-flex;align-items:center;gap:4px;height:32px}
+.opcao input:checked ~ .txt{font-weight:600}
+/* o ritmo vira grid (legend não é item de grid confiável) */
+fieldset.campo-bloco{display:block;padding-top:var(--linha)}
+fieldset.campo-bloco>legend{position:absolute;top:0;left:0;width:100%;height:var(--linha);line-height:var(--linha);padding:0}
+.dica{font:400 14px Inter;color:var(--n600)}
+.detalhes{padding-top:16px}
+.detalhes>summary{display:flex;align-items:center;gap:6px;height:48px;margin-top:0;padding-top:16px;list-style:none;cursor:pointer;font:600 15px/32px Inter;color:var(--tinta)}
+.detalhes>summary::-webkit-details-marker{display:none}
+.detalhes>summary .opc{font-weight:400;color:var(--n600)}
+.detalhes>summary [data-lucide]{transition:transform var(--dur-rapida)}
+.detalhes[open]>summary [data-lucide]{transform:rotate(180deg)}
+/* nota: textarea nativo; as linhas escuras (n500, ≥3:1) marcam a área de escrita por cima da pauta */
+.campo-nota{grid-template-rows:var(--linha) calc(var(--linha)*3)}
+.campo-nota .entrada{height:calc(var(--linha)*3);margin-top:0;padding:0 4px;resize:none;overflow:auto;
+ background-image:repeating-linear-gradient(to bottom,transparent 0 26px,var(--n500) 26px 27px,transparent 27px var(--linha));background-attachment:local}
+/* grupos (3.5): cabeçalho com "editar" + chips toggle; container sempre múltiplo de 32 (44px + respiros 10/20) */
+.grupos-cab{display:flex;align-items:center;justify-content:space-between;height:var(--linha)}
+.link-editar{height:44px;margin:-12px 0 0;padding:12px 4px 0;background:none;border:0;cursor:pointer;font:500 14px/32px Inter;color:var(--n700);text-decoration:underline;text-underline-offset:3px}
+.chips{display:flex;flex-wrap:wrap;gap:20px 8px;padding:10px 0}
+.g-chip{display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 14px;font:500 15px/1 Inter;color:var(--tinta);background:var(--folha);border:1.5px solid var(--tinta);border-radius:999px;cursor:pointer;white-space:nowrap}
+.g-chip [data-lucide]{width:16px;height:16px}
+.g-chip .pen{width:14px;height:14px}
+.g-familia{--cor:#F1D6CC}.g-faculdade{--cor:#F6D98A}.g-trabalho{--cor:#C9D6E3}.g-vizinhanca{--cor:#B9CBB0}.g-neutro{--cor:#E8DCC8}
+.g-chip[aria-pressed="true"]{background:var(--cor);border-width:2px}
+.g-chip.g-novo{border-style:dashed;background:transparent;color:var(--n700)}
+.cores{display:flex;flex-wrap:wrap;gap:20px 8px;padding:10px 0}
+.cor-opt{display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 12px;border-radius:999px;border:1.5px solid var(--tinta);background:var(--folha);font:500 14px/1 Inter;color:var(--tinta);cursor:pointer}
+.cor-opt[aria-checked="true"]{border-width:2px;border-color:var(--primaria);background:var(--primaria-100);color:var(--primaria-800)}
+.swatch{width:14px;height:14px;border-radius:999px;border:1.5px solid rgba(43,36,32,.45);background:var(--cor);flex:none}
+.acoes{display:flex;align-items:center;gap:16px;height:calc(var(--linha)*2);padding-top:16px;margin-top:var(--linha)}
+.salvar{height:48px;padding:0 24px;border:0;cursor:pointer;background:var(--primaria);color:#fff;font:600 16px/1 Inter;border-radius:999px;display:inline-flex;align-items:center;gap:8px}
+.salvar:hover{background:var(--primaria-700)}.salvar:active{background:var(--primaria-800)}
+.cancelar{height:48px;padding:0 8px;display:inline-flex;align-items:center;background:none;border:0;cursor:pointer;font:500 15px Inter;color:var(--n700);text-decoration:underline;text-underline-offset:3px}
+/* desabilitado (fieldset disabled nativo) */
+.tudo:disabled .entrada,.tudo:disabled .opcao,.tudo:disabled .g-chip,.tudo:disabled .link-editar,.tudo:disabled summary,.tudo:disabled .cancelar{opacity:.45;cursor:not-allowed}
+.tudo:disabled .salvar{opacity:.6;cursor:progress}
+.spin{animation:gira 1s linear infinite}@keyframes gira{to{transform:rotate(360deg)}}
+.ficha-topo{display:none}
+.guia{display:none}
+.cx{display:none}
+.dir-c .cx{display:block}
+.opcao .txt [data-lucide]{display:none}
+.niver-wrap{grid-row:2;grid-column:-2;position:relative}
+
+/* ===================================================================
+   DIREÇÃO A — Escrever na pauta
+   Sem cartão. O campo é a própria linha da pauta, reforçada por um traço
+   n500 (UI ≥3:1). Rótulo em Caveat caneta acima (celular) ou à esquerda
+   na mesma linha (≥1024). Chips viram adesivos. Salvar é um carimbo.
+   =================================================================== */
+.dir-a .rotulo{font:700 1.375rem/var(--linha) Caveat,cursive;color:var(--caneta)}
+.dir-a .rotulo .dica{font:500 1.25rem Caveat;color:var(--n600)}
+.dir-a .entrada:not(textarea){background-image:linear-gradient(var(--n500),var(--n500));background-repeat:no-repeat;background-position:0 calc(100% - 5px);background-size:100% 1.5px}
+.dir-a .entrada:not(textarea):focus-visible,.dir-a .entrada.f{box-shadow:none;
+ background-image:linear-gradient(var(--foco),var(--foco)),linear-gradient(var(--marca-texto-50),var(--marca-texto-50));
+ background-position:0 calc(100% - 4px),0 calc(100% - 5px);background-size:100% 3px,100% 27px}
+.dir-a textarea.entrada:focus-visible,.dir-a textarea.entrada.f{box-shadow:inset 3px 0 0 var(--foco);background-color:var(--marca-texto-50)}
+.dir-a .entrada[aria-invalid="true"]{background-image:linear-gradient(var(--erro),var(--erro));background-size:100% 2.5px;background-position:0 calc(100% - 4px)}
+.dir-a .entrada[aria-invalid="true"]:focus-visible,.dir-a .entrada[aria-invalid="true"].f{background-image:linear-gradient(var(--erro),var(--erro)),linear-gradient(var(--marca-texto-50),var(--marca-texto-50))}
+.dir-a #f-niver{width:8.5rem}
+/* círculo "à mão" na opção marcada (caneta, 10,41:1) */
+.dir-a .opcao input:checked ~ .txt::before{content:"";position:absolute;inset:0 -10px 1px;border:2px solid var(--caneta);border-radius:50% 46% 52% 44%/60% 50% 55% 45%;transform:rotate(-3deg)}
+.dir-a .opcao input:focus-visible ~ .txt,.dir-a .opcao.f .txt{box-shadow:var(--anel-foco);border-radius:4px}
+.dir-a .detalhes>summary{font:700 1.375rem/32px Caveat;color:var(--caneta)}
+.dir-a .detalhes>summary .opc{font:500 1.25rem Caveat;color:var(--n600)}
+.dir-a .grupos-cab .rotulo{line-height:32px}
+/* adesivos */
+.dir-a .g-chip{border-radius:4px;transform:rotate(var(--r,0deg))}
+.dir-a .g-chip:nth-child(3n+1){--r:-1.5deg}.dir-a .g-chip:nth-child(3n+2){--r:1deg}.dir-a .g-chip:nth-child(3n){--r:-.5deg}
+.dir-a .g-chip[aria-pressed="false"]{border:1.5px dashed var(--n500);background:transparent}
+.dir-a .g-chip[aria-pressed="true"]{border:2px solid var(--tinta);box-shadow:var(--sombra-papel)}
+.dir-a .g-chip.g-novo{border:1.5px dashed var(--n500);transform:none}
+/* carimbo salvar (Caveat é exceção pedida: carimbo) */
+.dir-a .salvar{border-radius:6px;font:700 1.625rem/1 Caveat,cursive;padding:0 22px;transform:rotate(-2deg);letter-spacing:.01em;
+ box-shadow:inset 0 0 0 3px var(--primaria),inset 0 0 0 4.5px rgba(255,255,255,.8)}
+.dir-a .salvar:hover{box-shadow:inset 0 0 0 3px var(--primaria-700),inset 0 0 0 4.5px rgba(255,255,255,.8)}
+.dir-a .salvar:focus-visible,.dir-a .salvar.f{box-shadow:inset 0 0 0 3px var(--primaria),inset 0 0 0 4.5px rgba(255,255,255,.8),var(--anel-foco)}
+
+
+/* ===================================================================
+   DIREÇÃO B — Ficha pautada (index card)
+   Ficha branca reta (o conteúdo nunca gira: caret e seleção ficam
+   nítidos). A "pilha" girada atrás e a fita dão o objeto. Linha vermelha
+   sob o nome, pauta azul nas mesmas posições da folha.
+   =================================================================== */
+.dir-b .ficha-corpo{position:relative;padding:0 16px;background-color:#fff;
+ background-image:linear-gradient(var(--margem),var(--margem)),linear-gradient(var(--margem),var(--margem)),linear-gradient(#fff,#fff),
+  repeating-linear-gradient(to bottom,transparent 0 calc(var(--linha) - 1px),var(--pauta) calc(var(--linha) - 1px) var(--linha));
+ background-repeat:no-repeat,no-repeat,no-repeat,repeat;
+ background-size:100% 2px,100% 1px,100% 58px,auto;
+ background-position:0 57px,0 61px,0 0,0 var(--pauta-offset);
+ border-radius:3px;box-shadow:var(--sombra-papel)}
+.dir-b .ficha-corpo::before{content:"";position:absolute;inset:6px -4px -6px 6px;background:var(--n100);border-radius:3px;transform:rotate(1.6deg);box-shadow:var(--sombra-papel);z-index:-1}
+.dir-b .ficha-corpo::after{content:"";position:absolute;top:-12px;left:50%;width:96px;height:24px;margin-left:-48px;background:var(--marca-texto);opacity:.8;transform:rotate(-3deg);pointer-events:none}
+.dir-b .ficha{isolation:isolate}
+.dir-b .campo-bloco:not(.campo-nota):not(.grupos){grid-template-columns:6.25rem 1fr}
+.dir-b .campo-bloco:not(.campo-nota):not(.grupos)>.rotulo{grid-row:2}
+.dir-b fieldset.campo-bloco{padding-left:6.25rem}
+.dir-b fieldset.campo-bloco>legend{width:6.25rem;top:var(--linha);left:0}
+.dir-b [data-campo="conheceram"],.dir-b [data-campo="nome"]{grid-template-columns:1fr!important}
+.dir-b [data-campo="conheceram"]>.rotulo,.dir-b [data-campo="nome"]>.rotulo{grid-row:1!important}
+.dir-b .erro-msg{grid-column:1/-1}
+.dir-b .rotulo{font:700 1.25rem/var(--linha) Caveat,cursive;color:var(--caneta)}
+.dir-b .rotulo .dica{display:none}
+.dir-b .entrada:not(textarea){background-image:linear-gradient(var(--n500),var(--n500));background-repeat:no-repeat;background-position:0 calc(100% - 5px);background-size:100% 1.5px}
+.dir-b [data-campo="nome"] .entrada{font:600 1.25rem/32px Inter;background-image:none}
+.dir-b [data-campo="nome"] .entrada::placeholder{font-weight:400;font-size:16px}
+.dir-b .entrada:not(textarea):focus-visible,.dir-b .entrada.f{box-shadow:none;
+ background-image:linear-gradient(var(--foco),var(--foco)),linear-gradient(var(--marca-texto-50),var(--marca-texto-50));
+ background-position:0 calc(100% - 4px),0 calc(100% - 5px);background-size:100% 3px,100% 27px}
+.dir-b [data-campo="nome"] .entrada:focus-visible,.dir-b [data-campo="nome"] .entrada.f{background-position:0 calc(100% - 8px),0 calc(100% - 9px);background-size:100% 3px,100% 23px}
+.dir-b textarea.entrada:focus-visible,.dir-b textarea.entrada.f{box-shadow:inset 3px 0 0 var(--foco);background-color:var(--marca-texto-50)}
+.dir-b .entrada[aria-invalid="true"]{background-image:linear-gradient(var(--erro),var(--erro));background-size:100% 2.5px;background-position:0 calc(100% - 4px)}
+.dir-b [data-campo="nome"] .entrada[aria-invalid="true"]{background-position:0 calc(100% - 8px)}
+.dir-b .entrada[aria-invalid="true"].f{background-image:linear-gradient(var(--erro),var(--erro)),linear-gradient(var(--marca-texto-50),var(--marca-texto-50))}
+.dir-b #f-niver{width:7.5rem}
+/* opção marcada: grifo marca-texto + ✓ (não depende só de cor) */
+.dir-b .opcao .txt [data-lucide]{display:none;width:16px;height:16px}
+.dir-b .opcao input:checked ~ .txt{background:linear-gradient(transparent 30%,var(--marca-texto) 30% 85%,transparent 85%);padding:0 4px}
+.dir-b .opcao input:checked ~ .txt [data-lucide]{display:inline-block}
+.dir-b .opcao input:focus-visible ~ .txt,.dir-b .opcao.f .txt{box-shadow:var(--anel-foco);border-radius:4px}
+.dir-b .detalhes>summary{font:700 1.25rem/32px Caveat;color:var(--caneta)}
+.dir-b .detalhes>summary .opc{font:500 1.125rem Caveat;color:var(--n600)}
+/* etiquetas de arquivo */
+.dir-b .g-chip{border-radius:8px 8px 2px 2px}
+.dir-b .g-chip[aria-pressed="false"]{border-color:var(--n500);background:#fff}
+.dir-b .g-chip.g-novo{border-color:var(--n500);background:transparent}
+.dir-b .acoes{padding-left:0}
+@media (max-width:1023px){
+ .dir-b .ficha-corpo{padding:0 12px}
+ .dir-b fieldset.campo-bloco{padding-left:0}
+ .dir-b fieldset.campo-bloco>legend{top:0;width:100%}
+ .dir-b .opcoes{gap:2px;margin-left:-7px}
+ .dir-b .opcao{padding:16px 6px 0;font-size:15px}
+}
+
+/* ===================================================================
+   DIREÇÃO C — Formulário escolar preenchível (ficha de matrícula)
+   Folha impressa branca com tabela de células de borda fina (tinta 1px),
+   rótulos em versalete pequeno, caixinhas ☐ marcadas com ✓ "à mão".
+   Aniversário: UM input com caixinhas desenhadas no background
+   (dígitos tabulares do Inter + letter-spacing), nunca um input por letra.
+   =================================================================== */
+.dir-c .ficha-corpo{position:relative;background:#fff;outline:1.5px solid var(--tinta);outline-offset:-1.5px;box-shadow:var(--sombra-papel);display:grid;grid-template-columns:1fr}
+.dir-c .ficha-topo{display:flex;align-items:center;justify-content:space-between;height:var(--linha);padding:0 12px;box-shadow:inset 0 -1.5px 0 var(--tinta);
+ font:700 11px/32px Inter;letter-spacing:.14em;text-transform:uppercase;color:var(--tinta);background:var(--n100);border-radius:0}
+.dir-c .ficha-topo{white-space:nowrap}
+.so-desk-t{display:none}
+@media (min-width:1024px){.so-desk-t{display:inline}}
+.dir-c .ficha-topo .num{font:700 1.25rem/32px Caveat;letter-spacing:0;text-transform:none;color:var(--caneta)}
+.dir-c .campo-bloco,.dir-c .detalhes>summary,.dir-c .grupos,.dir-c .campo-nota{padding:0 10px;box-shadow:inset 0 -1px 0 var(--tinta)}
+.dir-c fieldset.campo-bloco{padding-top:var(--linha)}
+.dir-c fieldset.campo-bloco>legend{left:10px}
+.dir-c .detalhes{padding-top:0}
+.dir-c .rotulo,.dir-c fieldset.campo-bloco>legend,.dir-c .grupos-cab .rotulo{font:600 11px/32px Inter;letter-spacing:.1em;text-transform:uppercase;color:var(--n700)}
+.dir-c .rotulo .dica{font:600 11px Inter;letter-spacing:.08em;color:var(--n600)}
+.dir-c .entrada{padding-left:0}
+.dir-c [data-campo="nome"] .entrada{font:500 1.125rem/32px Inter}
+.dir-c .campo-bloco:focus-within,.dir-c .campo-bloco:has(.f){background:var(--marca-texto-50);box-shadow:inset 0 -1px 0 var(--tinta),inset 0 0 0 2.5px var(--foco)}
+.dir-c .entrada:focus-visible,.dir-c .entrada.f{box-shadow:none}
+.dir-c .campo-bloco:has([aria-invalid="true"]){box-shadow:inset 0 -1px 0 var(--tinta),inset 0 0 0 2.5px var(--erro);background:#fff}
+.dir-c .campo-bloco:has([aria-invalid="true"]):focus-within,.dir-c .campo-bloco:has([aria-invalid="true"].f){background:var(--marca-texto-50)}
+/* caixinhas ☐ com ✓ à mão (radio nativo por baixo) */
+.dir-c .opcao{gap:8px;padding:16px 6px 0 0;font-size:15px}
+.dir-c .opcao .cx{position:relative;width:22px;height:22px;border:1.5px solid var(--tinta);background:#fff;flex:none}
+.dir-c .opcao input:checked ~ .cx::after,.dir-c .g-chip[aria-pressed="true"] .cx::after{content:"✓";position:absolute;left:1px;top:-14px;font:700 32px/1 Caveat,cursive;color:var(--caneta);transform:rotate(-6deg)}
+.dir-c .opcao input:checked ~ .txt{font-weight:600}
+.dir-c .opcao input:focus-visible ~ .cx,.dir-c .opcao.f .cx{box-shadow:var(--anel-foco)}
+.dir-c .opcoes{gap:2px}
+/* aniversário em caixinhas: 1 input, font 20px, dígitos tabulares (0,6484em) + letter-spacing .75em → célula 1,3984em */
+.dir-c #f-niver{--c1:1.3984em;--c2:2.7968em;--c3:3.9073em;--c4:5.3057em;--c5:6.7041em;--l:1.5px;
+ width:7.2em;font:500 18px/32px Inter;font-variant-numeric:tabular-nums;letter-spacing:.75em;padding:16px 0 0 .375em;margin-top:-16px;
+ background-color:transparent;
+ background-image:
+  linear-gradient(var(--tinta),var(--tinta)),linear-gradient(var(--tinta),var(--tinta)),linear-gradient(var(--tinta),var(--tinta)),linear-gradient(var(--tinta),var(--tinta)),
+  linear-gradient(var(--tinta),var(--tinta)),linear-gradient(var(--tinta),var(--tinta)),linear-gradient(var(--tinta),var(--tinta)),linear-gradient(var(--tinta),var(--tinta)),linear-gradient(var(--tinta),var(--tinta)),linear-gradient(var(--tinta),var(--tinta)),linear-gradient(#fff,#fff),linear-gradient(#fff,#fff);
+ background-repeat:no-repeat;
+ background-size:var(--c2) var(--l),var(--c2) var(--l),calc(var(--c5) - var(--c3)) var(--l),calc(var(--c5) - var(--c3)) var(--l),
+  var(--l) 34px,var(--l) 34px,var(--l) 34px,var(--l) 34px,var(--l) 34px,var(--l) 34px,var(--c2) 34px,calc(var(--c5) - var(--c3)) 34px;
+ background-position:0 12px,0 calc(12px + 34px - var(--l)),var(--c3) 12px,var(--c3) calc(12px + 34px - var(--l)),
+  0 12px,var(--c1) 12px,calc(var(--c2) - var(--l)) 12px,var(--c3) 12px,var(--c4) 12px,calc(var(--c5) - var(--l)) 12px,0 12px,var(--c3) 12px}
+.dir-c .niver-wrap{grid-row:2;grid-column:-2;position:relative;width:7.2em;font-size:18px}
+.dir-c .niver-wrap .entrada{width:100%}
+.dir-c .guia{display:none;position:absolute;inset:0;pointer-events:none;z-index:2;font:600 8px/1 Inter;letter-spacing:.06em;color:var(--n600)}
+.dir-c .guia span{position:absolute;top:-3px;transform:translateY(0)}
+.dir-c .detalhes>summary{height:64px;margin-top:0;padding-top:16px;font:600 11px/48px Inter;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta);background:var(--n100)}
+.dir-c .detalhes>summary .opc{font:600 11px Inter;letter-spacing:.08em;color:var(--n600)}
+.dir-c .detalhes>summary [data-lucide]{width:16px;height:16px}
+.dir-c .g-chip{border:0;border-radius:0;background:transparent;padding:0 10px 0 0;gap:8px;font:500 15px Inter}
+.dir-c .g-chip .cx{position:relative;width:22px;height:22px;border:1.5px solid var(--tinta);background:#fff;flex:none}
+.dir-c .g-chip .swatch{width:12px;height:12px}
+.dir-c .g-chip .ico{display:none}
+.dir-c .g-chip[aria-pressed="true"]{background:transparent;font-weight:600}
+.dir-c .g-chip:focus-visible .cx{box-shadow:var(--anel-foco)}
+.dir-c .g-chip:focus-visible{box-shadow:none}
+.dir-c .g-chip.g-novo{border-bottom:1.5px dashed var(--n500);border-radius:0;height:44px;color:var(--n700)}
+.dir-c .campo-nota .entrada{padding:0;background-image:repeating-linear-gradient(to bottom,transparent 0 26px,var(--pauta) 26px 27px,transparent 27px var(--linha))}
+.dir-c .campo-nota:focus-within{box-shadow:inset 0 -1px 0 var(--tinta),inset 0 0 0 2.5px var(--foco)}
+.dir-c .salvar{border-radius:6px}
+@media (min-width:1024px){
+ .dir-c .ficha-corpo{grid-template-columns:1fr 10rem}
+ .dir-c .ficha-topo,.dir-c [data-campo="nome"],.dir-c .detalhes{grid-column:1/-1}
+ .dir-c [data-campo="ritmo"]{box-shadow:inset 0 -1px 0 var(--tinta),inset -1px 0 0 var(--tinta)}
+ .dir-c [data-campo="ritmo"]:focus-within{box-shadow:inset 0 -1px 0 var(--tinta),inset 0 0 0 2.5px var(--foco)}
+}
+@media (max-width:1023px){
+ /* celular: 4 caixinhas em 2×2 → bloco de 4 linhas (128px), cada opção com 48px de alvo */
+ .dir-c [data-campo="ritmo"]{grid-template-rows:var(--linha) calc(var(--linha)*3)}
+ .dir-c [data-campo="ritmo"] .opcoes{display:grid;grid-template-columns:1fr 1fr;height:96px;margin-top:0;padding-top:0}
+ .dir-c [data-campo="ritmo"] .opcao{padding-top:0;height:48px}
+}
+/* QA de ritmo */
+#qa{position:fixed;left:0;bottom:0;max-width:100%;background:#fff;font:12px monospace;z-index:99;white-space:pre-wrap}
+</style></head>
+<body class="mesa">
+<div class="cena">
+ <div class="livro">
+  <div class="espiral-topo spiral-h" aria-hidden="true"></div>
+  <section class="pagina margin-line">
+   <div class="folha paper-lined" id="folha">
+    <div class="cabecalho-folha" role="group" aria-label="Data de hoje, quinta-feira 29/10/2026">
+     <ol class="cab-dias" aria-label="Dia da semana">
+      <li><span aria-hidden="true">D</span><span class="sr-only">Domingo</span></li>
+      <li><span aria-hidden="true">S</span><span class="sr-only">Segunda</span></li>
+      <li><span aria-hidden="true">T</span><span class="sr-only">Terça</span></li>
+      <li><span aria-hidden="true">Q</span><span class="sr-only">Quarta</span></li>
+      <li class="hoje" aria-current="date"><span aria-hidden="true">Q</span><span class="sr-only">Quinta, hoje</span></li>
+      <li><span aria-hidden="true">S</span><span class="sr-only">Sexta</span></li>
+      <li><span aria-hidden="true">S</span><span class="sr-only">Sábado</span></li>
+     </ol>
+     <time class="cab-data" datetime="2026-10-29">29/10/2026</time>
+    </div>
+    <a href="#" class="voltar"><i data-lucide="x"></i>Cancelar</a>
+    <h1 id="titulo">Novo amigo</h1>
+    <p class="sub">Só o nome já basta. O resto pode vir depois.</p>
+
+    <form class="ficha" id="form" novalidate aria-labelledby="titulo" onsubmit="event.preventDefault()">
+     <fieldset class="tudo" id="tudo">
+      <div class="ficha-corpo">
+       <div class="ficha-topo" aria-hidden="true"><span>Ficha de amigo<span class="so-desk-t"> · preencha com calma</span></span><span class="num">nº 042</span></div>
+
+       <div class="campo-bloco" data-campo="nome">
+        <label class="rotulo" for="f-nome">Nome</label>
+        <input class="entrada" id="f-nome" name="nome" type="text" autocomplete="off" autocapitalize="words" required placeholder="Como você chama essa pessoa">
+        <p class="erro-msg" id="f-nome-erro" hidden><i data-lucide="alert-circle"></i><span>Escreva pelo menos o nome.</span></p>
+       </div>
+
+       <fieldset class="campo-bloco" data-campo="ritmo">
+        <legend class="rotulo">Falar a cada</legend>
+        <div class="opcoes">
+         <label class="opcao"><input type="radio" name="ritmo" value="7"><span class="cx" aria-hidden="true"></span><span class="txt"><i data-lucide="check"></i>1 sem.</span></label>
+         <label class="opcao"><input type="radio" name="ritmo" value="14"><span class="cx" aria-hidden="true"></span><span class="txt"><i data-lucide="check"></i>2 sem.</span></label>
+         <label class="opcao"><input type="radio" name="ritmo" value="30" checked><span class="cx" aria-hidden="true"></span><span class="txt"><i data-lucide="check"></i>1 mês</span></label>
+         <label class="opcao"><input type="radio" name="ritmo" value="90"><span class="cx" aria-hidden="true"></span><span class="txt"><i data-lucide="check"></i>3 meses</span></label>
+        </div>
+       </fieldset>
+
+       <div class="campo-bloco" data-campo="niver">
+        <label class="rotulo" for="f-niver">Aniversário <span class="dica">(dia/mês)</span></label>
+        <div class="niver-wrap">
+         <input class="entrada" id="f-niver" name="aniversario" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="dd/mm" aria-describedby="">
+         <span class="guia" aria-hidden="true"><span style="left:.2em">dia</span><span style="left:3.95em">mês</span></span>
+        </div>
+        <p class="erro-msg" id="f-niver-erro" hidden><i data-lucide="alert-circle"></i><span>Essa data não existe. Ex.: 12/03.</span></p>
+       </div>
+
+       <details class="detalhes" id="detalhes">
+        <summary>Mais detalhes <span class="opc">(opcional)</span><i data-lucide="chevron-down"></i></summary>
+        <div class="campo-bloco" data-campo="conheceram">
+         <label class="rotulo" for="f-conh">Como se conheceram</label>
+         <input class="entrada" id="f-conh" name="como_conheceram" type="text" autocomplete="off" placeholder="faculdade, trabalho, vizinhança…">
+        </div>
+        <div class="grupos campo-bloco" id="bloco-grupos" style="display:block">
+         <div class="grupos-cab"><p class="rotulo" id="rot-grupos">Grupos</p><button type="button" class="link-editar" id="btn-modo" aria-pressed="false">editar</button></div>
+         <div class="chips" id="chips" role="group" aria-labelledby="rot-grupos"></div>
+         <div id="painel-extra" hidden></div>
+        </div>
+        <div class="campo-bloco campo-nota" data-campo="nota">
+         <label class="rotulo" for="f-nota">Nota</label>
+         <textarea class="entrada" id="f-nota" name="nota" rows="3" placeholder="o que vale lembrar sobre essa pessoa"></textarea>
+        </div>
+       </details>
+      </div>
+
+      <div class="acoes">
+       <button type="submit" class="salvar" id="btn-salvar">Salvar amigo</button>
+       <button type="button" class="cancelar">Cancelar</button>
+      </div>
+     </fieldset>
+    </form>
+   </div>
+  </section>
+  <nav class="abas" aria-label="Seções">
+   <a href="#" class="aba" style="background:var(--primaria-100)">bom falar</a>
+   <a href="#" class="aba" style="background:var(--papel)">quadro</a>
+   <a href="#" class="aba" style="background:var(--marca-texto)">amigos</a>
+   <a href="#" class="aba" style="background:var(--aba-verde)" aria-current="page">+ novo</a>
+   <a href="#" class="aba" style="background:var(--margem)">config</a>
+   <a href="#" class="aba so-desk" style="background:var(--pauta)" aria-label="Atalhos de teclado">?</a>
+  </nav>
+ </div>
+</div>
+<script>
+const q=new URLSearchParams(location.search);
+const dir=(q.get('direcao')||'a').toLowerCase();
+const estado=q.get('estado')||'preenchido';
+const gmodo=q.get('grupos')||'normal';
+document.body.classList.add('dir-'+dir);
+const $=s=>document.querySelector(s);
+const ICO={familia:'house',faculdade:'graduation-cap',trabalho:'briefcase',vizinhanca:'map-pin',neutro:'circle-dashed'};
+const CORES=[{id:'familia',nome:'Pêssego'},{id:'faculdade',nome:'Amarelo'},{id:'trabalho',nome:'Azul'},{id:'vizinhanca',nome:'Verde'},{id:'neutro',nome:'Creme'}];
+const GRUPOS=[{id:1,nome:'Faculdade',cor:'faculdade',ligado:true},{id:2,nome:'Família',cor:'familia',ligado:false},{id:3,nome:'Trabalho',cor:'trabalho',ligado:false},{id:4,nome:'Vizinhança',cor:'vizinhanca',ligado:true}];
+const editando=gmodo!=='normal';
+const preenche=['preenchido','foco','desabilitado'].includes(estado);
+if(!preenche) GRUPOS.forEach(g=>g.ligado=false);
+function chips(){
+ $('#chips').innerHTML=GRUPOS.map(g=>{
+  const ico=(g.ligado&&!editando)?'check':ICO[g.cor];
+  return `<button type="button" class="g-chip g-${g.cor}" aria-pressed="${g.ligado}"><span class="cx" aria-hidden="true"></span><i data-lucide="${ico}" class="ico"></i>${dir==='c'?'<span class="swatch" aria-hidden="true"></span>':''}<span>${g.nome}</span>${editando?'<i data-lucide="pencil" class="pen"></i>':''}</button>`;
+ }).join('')+`<button type="button" class="g-chip g-novo">${dir==='c'?'+ outro grupo':'+ novo grupo'}</button>`;
+ const b=$('#btn-modo');b.textContent=editando?'pronto':'editar';b.setAttribute('aria-pressed',editando);
+ if(gmodo==='form'){const p=$('#painel-extra');p.hidden=false;
+  p.innerHTML=`<div class="campo-bloco" style="padding:0;box-shadow:none;background:none"><label class="rotulo" for="nome-g">Nome do grupo</label><input class="entrada" id="nome-g" value="Faculdade"></div>
+  <div class="cores" role="radiogroup" aria-label="Cor do grupo">${CORES.map(c=>`<button type="button" role="radio" class="cor-opt g-${c.id}" aria-checked="${c.id==='faculdade'}"><span class="swatch"></span>${c.nome}</button>`).join('')}</div>
+  <div class="acoes" style="margin-top:0"><button type="button" class="salvar" style="height:48px">salvar</button><button type="button" class="cancelar" style="color:var(--erro)">apagar grupo</button></div>`;}
+}
+chips();
+const nome=$('#f-nome'),niver=$('#f-niver'),nota=$('#f-nota'),conh=$('#f-conh');
+if(preenche){nome.value='Marina Costa';niver.value='12/03';conh.value='faculdade, turma de 2014';nota.value='Curte escalada. Mudou pra Floripa em março; perguntar do trabalho novo.';$('#detalhes').open=true}
+if(estado==='foco'){nome.value='Marina';$('#detalhes').open=false}
+if(editando) $('#detalhes').open=true;
+function erro(inp,id,on){inp.setAttribute('aria-invalid',on?'true':'false');const m=document.getElementById(id);m.hidden=!on;
+ if(on) inp.setAttribute('aria-describedby',id); else inp.removeAttribute('aria-describedby')}
+erro(nome,'f-nome-erro',false);erro(niver,'f-niver-erro',false);
+if(estado==='erro'){nome.value='';niver.value='31/02';erro(nome,'f-nome-erro',true);erro(niver,'f-niver-erro',true)}
+if(estado==='desabilitado'){$('#tudo').disabled=true;const s=$('#btn-salvar');s.setAttribute('aria-busy','true');s.innerHTML='<i data-lucide="loader-2" class="spin" style="width:16px;height:16px"></i>Salvando…'}
+// dd/mm: só dígitos e a barra entra sozinha (o teclado numérico do iOS não tem "/")
+niver.addEventListener('input',()=>{const d=niver.value.replace(/\D/g,'').slice(0,4);niver.value=d.length>2?d.slice(0,2)+'/'+d.slice(2):d});
+lucide.createIcons();
+if(estado==='foco'||estado==='erro'){nome.classList.add('f');nome.focus({preventScroll:true})}
+// QA: tudo que é bloco de fluxo dentro da folha tem topo e altura múltiplos de 32 (relativo ao conteúdo da folha)
+if(q.get('qa')){setTimeout(()=>{const f=$('#folha'),fr=f.getBoundingClientRect(),top0=fr.top+32-f.scrollTop;const out=[];
+ document.querySelectorAll('.cabecalho-folha,.voltar,h1,.sub,.ficha,.ficha-corpo,.ficha-topo,.campo-bloco,.detalhes,.detalhes>summary,.grupos-cab,.chips,.acoes').forEach(el=>{const r=el.getBoundingClientRect();if(!r.height)return;
+  const t=Math.round((r.top-top0)*100)/100,h=Math.round(r.height*100)/100;const ok=(Math.abs(t%32)<0.6||Math.abs(t%32-32)<0.6)&&(Math.abs(h%32)<0.6||Math.abs(h%32-32)<0.6);
+  out.push((ok?'ok  ':'XX  ')+(el.className||el.tagName).toString().slice(0,40)+' top='+t+' h='+h)});
+ const p=document.createElement('pre');p.id='qa';p.textContent=out.join('\n');document.body.appendChild(p)},1500)}
+</script>
+</body></html>

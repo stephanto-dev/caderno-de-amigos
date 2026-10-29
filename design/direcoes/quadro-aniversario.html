@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Caderno de amigos — Visão Quadro + selo "Aniversário hoje" (spec 3.14)</title>
+<!-- Protótipo da "Visão Quadro". Direção "Caderno físico" (aprovada 16/10/2026), sem alterações.
+     Simplificada em 20/10/2026: janela fixa de 7 dias em "Essa semana" e sem arrastar (a única ação é o botão "falei agora").
+     Grupos N:N em 20/10/2026: cor do post-it = cor do primeiro grupo em ordem alfabética; todos os grupos como etiquetas.
+     Estados: ?estado=normal|vazio|coluna-vazia|carregando|erro|registrando
+     Cabeçalho de folha (3.12, 27/10/2026): D S T Q Q S S + data carimbo; demo = terça T + 27/10/2026.
+     Aniversário (spec 3.14, 29/10/2026): cópia do quadro.html com o selo "Aniversário hoje". O front NÃO calcula datas:
+     só lê a flag de aniversário hoje vinda da API (aqui simulada no campo is_birthday_today). O bolo de "próximos 7 dias"
+     (3.2/7.3) saiu desta cópia: lista de próximos está fora do escopo.
+     Teste: ?niver=todos (todos aniversariantes, estresse de layout) · ?fonte=200 (fonte do navegador em 200%). -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config={theme:{extend:{
+ colors:{primaria:{50:'#F8ECE6',100:'#F1D6CC',DEFAULT:'#B04A32',600:'#B04A32',700:'#963D29',800:'#7C3221'},
+  neutro:{50:'#FBF6EE',100:'#F4ECDF',200:'#E8DCC8',300:'#D6C7AF',400:'#B3A38C',500:'#7A6B59',600:'#6B5E50',700:'#4F443A',800:'#3A312B',900:'#2B2420'},
+  folha:'#FBF6EE',papel:'#E8DCC8',tinta:'#2B2420',caneta:'#1F3A6B','marca-texto':{DEFAULT:'#F6D98A',50:'#FBEDC4'},pauta:'#C9D6E3',margem:'#D9837A',mesa:'#7A5A3E','aba-verde':'#B9CBB0',
+  sucesso:{50:'#EAF0E5',DEFAULT:'#5E7A55',700:'#4A6343'},erro:{50:'#F6E3DF',DEFAULT:'#9B3B36'},foco:'#2F6185'},
+ fontFamily:{titulo:['Fraunces','Georgia','serif'],ui:['Inter','system-ui','sans-serif'],mao:['Caveat','cursive']},
+ fontSize:{xs:['0.75rem','2rem'],sm:['0.875rem','2rem'],base:['1rem','2rem'],lg:['1.1875rem','2rem'],xl:['1.375rem','2rem'],'2xl':['1.75rem','2rem'],'3xl':['1.875rem','2rem']},
+ spacing:{l1:'2rem',l2:'4rem',l3:'6rem',l4:'8rem',l5:'10rem'},screens:{livro:'1280px'}}}}
+</script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+/* ===== Tokens (cópia de tokens.css, para o arquivo funcionar sozinho em direcoes/) ===== */
+:root{--linha:2rem;--pauta-offset:-0.3125rem;
+ --primaria:#B04A32;--primaria-50:#F8ECE6;--primaria-100:#F1D6CC;--primaria-700:#963D29;--primaria-800:#7C3221;
+ --folha:#FBF6EE;--papel:#E8DCC8;--tinta:#2B2420;--caneta:#1F3A6B;--marca-texto:#F6D98A;--marca-texto-50:#FBEDC4;
+ --pauta:#C9D6E3;--margem:#D9837A;--mesa:#7A5A3E;--aba-verde:#B9CBB0;--foco:#2F6185;
+ --sombra-pagina:0 18px 32px rgba(0,0,0,.35);--sombra-papel:2px 4px 8px rgba(43,36,32,.2);
+ --anel-foco:0 0 0 2px var(--folha),0 0 0 4px var(--foco);
+ --dur-rapida:120ms;--dur-media:200ms;--dur-lenta:280ms;--ease-saida:cubic-bezier(.2,.8,.2,1)}
+@media (prefers-reduced-motion:reduce){:root{--dur-rapida:0ms;--dur-media:0ms;--dur-lenta:0ms}}
+body{font-family:Inter,system-ui,sans-serif;color:var(--tinta);margin:0}
+.titulo{font-family:Fraunces,Georgia,serif}
+.mesa{background:var(--mesa)}
+.paper-lined{background-color:var(--folha);background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--linha) - 1px),var(--pauta) calc(var(--linha) - 1px) var(--linha));background-position:0 var(--pauta-offset);background-attachment:local;line-height:var(--linha)}
+.margin-line{position:relative;--margem-x:36px}
+.margin-line::after{content:"";position:absolute;top:0;bottom:0;left:var(--margem-x);width:2px;background:var(--margem);pointer-events:none;z-index:1}
+.spiral-v{width:28px;background:repeating-linear-gradient(to bottom,transparent 0 11px,#8a8a8a 11px 13px,#e2e2e2 13px 17px,#8a8a8a 17px 21px,transparent 21px var(--linha));filter:drop-shadow(0 2px 1px rgba(0,0,0,.35))}
+.spiral-h{height:24px;background:repeating-linear-gradient(to right,transparent 0 11px,#8a8a8a 11px 13px,#e2e2e2 13px 17px,#8a8a8a 17px 21px,transparent 21px var(--linha));filter:drop-shadow(1px 1px 1px rgba(0,0,0,.35))}
+.nota{font-family:Caveat,cursive;font-weight:500;font-size:1.375rem;line-height:var(--linha);color:var(--caneta)}
+.carimbo{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:2px solid var(--primaria);border-radius:6px;color:var(--primaria);font-family:Caveat,cursive;font-weight:700;font-size:21px;line-height:1;transform:rotate(-2deg);vertical-align:middle;background:transparent;cursor:pointer;text-decoration:none;transition:background-color var(--dur-rapida)}
+.carimbo:hover{background:var(--primaria-50);color:var(--primaria-700);border-color:var(--primaria-700)}
+.aba{font-family:Caveat,cursive;font-weight:700;font-size:20px;color:var(--tinta);box-shadow:3px 2px 4px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap}
+.aba[aria-current]{background:var(--primaria)!important;color:#fff}
+.papel{background:var(--papel);border:2px solid var(--tinta);border-radius:10px;box-shadow:var(--sombra-papel)}
+.campo{height:48px;padding:0 16px;background:var(--folha);border:1.5px solid var(--tinta);border-radius:6px;font:400 16px/24px Inter,sans-serif;color:var(--tinta);width:100%}
+:focus-visible{outline:none;box-shadow:var(--anel-foco)}
+[data-lucide]{width:18px;height:18px;stroke-width:1.75;display:inline-block;vertical-align:-3px}
+
+/* ===== Layout do caderno (igual ao protótipo aprovado) ===== */
+.cena{height:100dvh;padding:28px 12px 72px;box-sizing:border-box}
+.livro{position:relative;height:100%;max-width:640px;margin:0 auto}
+.pagina{position:absolute;inset:0;border-radius:10px;box-shadow:var(--sombra-pagina);overflow:hidden}
+.folha{height:100%;overflow-y:auto;box-sizing:border-box;padding:2rem 16px 4rem 52px}
+.espiral-topo{position:absolute;top:-12px;left:20px;right:20px;z-index:6}
+.espiral-meio,.dobra{display:none}
+.abas{position:fixed;left:16px;bottom:20px;display:flex;gap:6px;z-index:4}
+.abas .aba{height:44px;padding:12px 11px 0;border-radius:0 0 8px 8px;box-sizing:border-box}  /* proposta: 44px de alvo (hoje 42) */
+.abas .aba[aria-current]{height:48px}
+.abas .so-desk{display:none}
+
+/* ===== Quadro ===== */
+.cab-r{margin-top:var(--linha)}
+.legenda{display:flex;flex-wrap:wrap;column-gap:8px}
+.chip{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:6px;font:500 12px/1 Inter,sans-serif;color:#4F443A;margin:4px 0;box-shadow:inset 0 0 0 1px rgba(43,36,32,.18)}
+.chip [data-lucide]{width:14px;height:14px;vertical-align:0}
+.quadro{margin-top:var(--linha)}
+.coluna+.coluna{margin-top:var(--linha)}
+.col-cab h2{font:600 1.1875rem/var(--linha) Fraunces,Georgia,serif}
+.col-cab p{font-size:.75rem;line-height:var(--linha);color:#6B5E50}
+.lista{display:grid;grid-template-columns:1fr 1fr;column-gap:14px;row-gap:var(--linha);min-height:var(--linha);list-style:none;margin:0;padding:0}
+.lista.recolhida{display:none}
+.ver-mais{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;height:calc(var(--linha)*2);margin-top:calc(var(--linha)*-1);text-align:left;font-size:.875rem;color:#4F443A;background:none;border:0;padding:0;cursor:pointer}
+.ver-mais b{font-weight:600;color:var(--primaria-700);white-space:nowrap}
+.vazio-col{grid-column:1/-1}
+
+/* Post-it do amigo: papel (grid 8px dentro), altura = 5 linhas, passo = 6 linhas */
+.pi{--r:-1.5deg;position:relative;height:calc(var(--linha)*6);box-sizing:border-box;padding:10px 10px 6px;display:flex;flex-direction:column;background:var(--cor);box-shadow:var(--sombra-papel);transform:rotate(var(--r));transition:transform var(--dur-rapida) var(--ease-saida),box-shadow var(--dur-rapida);line-height:1.25;min-width:0}
+.pi:nth-child(4n+2){--r:1deg}.pi:nth-child(4n+3){--r:2deg}.pi:nth-child(4n+4){--r:-1deg}
+.pi:hover,.pi:focus-within{transform:rotate(0)}
+.pi::before{content:"";position:absolute;inset:0 0 auto 0;height:10px;background:rgba(43,36,32,.05)} /* faixa adesiva, só sombra */
+/* 5 tokens de cor de grupo (TextChoices Grupo.Cor). neutro = papel, o mesmo do antigo "sem grupo" */
+.g-familia{--cor:#F1D6CC}.g-faculdade{--cor:#F6D98A}.g-trabalho{--cor:#C9D6E3}.g-vizinhanca{--cor:#B9CBB0}.g-neutro{--cor:#E8DCC8}
+.pi-nome{font:600 1.1875rem/1.75rem Fraunces,Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+.pi-nome a{color:inherit;text-decoration:none;border-radius:3px}.pi-nome a:hover{text-decoration:underline}
+.pi-nome [data-lucide]{width:15px;height:15px;color:#7C3221;vertical-align:-1px}
+.pi-meta{font:500 .75rem/1.25rem Inter,sans-serif;color:#4F443A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+/* Etiquetas de grupo: quebram linha, no máximo 2 linhas; o resto vira "+N" (ver ajustaEtiquetas) */
+.pi-ets{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0;max-height:40px;overflow:hidden}
+.et{display:inline-flex;align-items:center;gap:3px;height:18px;max-width:100%;box-sizing:border-box;padding:0 6px;border-radius:4px;background:var(--cor);box-shadow:inset 0 0 0 1px rgba(43,36,32,.32);font:500 .75rem/18px Inter,sans-serif;color:#4F443A;white-space:nowrap}
+.et span{overflow:hidden;text-overflow:ellipsis}
+.et [data-lucide]{width:12px;height:12px;flex:none;vertical-align:0}
+.et[hidden]{display:none}
+.et-mais{background:#FBF6EE;font-weight:600;cursor:default}
+.ets-2 .pi-nota{-webkit-line-clamp:1}
+/* Na legenda, a etiqueta ocupa uma linha da pauta (24px + 4px acima e abaixo) */
+.legenda .et{height:24px;line-height:24px;padding:0 8px;margin:4px 0;border-radius:6px}
+.legenda .et [data-lucide]{width:14px;height:14px}
+.pi-nota{font:500 1.3125rem/1.5rem Caveat,cursive;color:var(--caneta);margin:4px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pi-sem{font:italic 400 .75rem/1.5rem Inter,sans-serif;color:#4F443A;margin:4px 0 0}
+/* Alvo de toque: botão de 44px de altura, carimbo de 28px dentro (contraste: primaria-800 ≥ 5,2:1 em todas as cores) */
+.pi-btn{margin-top:auto;align-self:flex-start;height:44px;display:flex;align-items:center;background:none;border:0;padding:0 2px;cursor:pointer;border-radius:6px}
+.pi-btn .carimbo{border-color:#7C3221;color:#7C3221;padding:0 8px}
+.pi-btn:hover .carimbo{background:var(--folha)}
+.btn-ico{display:none}
+/* Registrando: post-it cujo botão "falei agora" abriu o painel 3.6 */
+.registrando{opacity:.6;outline:2px dashed #963D29;outline-offset:2px}
+@media (max-width:1023px){.cab-r{margin-top:0}.cab-r>p{display:none}
+ /* celular: post-it de 6 linhas, grupo e tempo em linhas separadas (nada truncado) */
+ .q-vazio .coluna{display:none} /* celular sem amigos: só o convite */}
+.skel{height:calc(var(--linha)*6);background:#F4ECDF;border-radius:4px;animation:pulso 1.2s ease-in-out infinite}
+.skel-txt{display:inline-block;height:12px;width:60%;background:#F4ECDF;border-radius:4px;vertical-align:middle;animation:pulso 1.2s ease-in-out infinite}
+@keyframes pulso{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.skel,.skel-txt{animation:none}.pi{transition:none}}
+.placeholder{height:calc(var(--linha)*6);border:2px dashed #B3A38C;border-radius:4px}
+
+/* Sheet/painel de registro (componente 3.6, reaproveitado) */
+.sheet{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;border-radius:16px 16px 0 0;border-bottom:0;padding:12px 24px 32px;z-index:20}
+.veu{position:fixed;inset:0;background:rgba(43,36,32,.45);z-index:15}
+
+/* ===== ≥1024: uma página, 4 colunas lado a lado, abas à direita ===== */
+@media (min-width:1024px){
+ .cena{padding:48px 64px 48px 48px}
+ .margin-line{--margem-x:56px}
+ .folha{padding:2rem 40px 4rem 80px}
+ .abas{position:absolute;left:auto;bottom:auto;right:-42px;top:64px;flex-direction:column;gap:8px;z-index:1}
+ .abas .aba{width:42px;height:104px;padding:0;border-radius:0 8px 8px 0;writing-mode:vertical-rl}
+ .abas .aba[aria-current]{width:48px;height:104px}
+ .abas .so-desk{display:flex;height:56px}
+ .quadro-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:24px;align-items:start}
+ .cab-l{grid-column:1/3}.cab-r{grid-column:3/5;margin-top:0}
+ .quadro{display:contents}
+ .coluna{margin-top:var(--linha)}.coluna+.coluna{margin-top:var(--linha)}
+ .lista{grid-template-columns:1fr;min-height:calc(var(--linha)*6)}
+ .lista.recolhida{display:grid}.ver-mais{display:none}
+ .btn-ico{display:inline-block}
+ .sheet{position:absolute;left:auto;right:24px;top:24px;bottom:24px;width:420px;max-width:none;margin:0;border-radius:10px;border-bottom:2px solid var(--tinta)}
+ .veu{position:absolute;border-radius:10px;background:rgba(43,36,32,.25)}
+}
+/* ===== ≥1280: livro aberto. Colunas 1–2 na página esquerda, 3–4 na direita ===== */
+@media (min-width:1280px){
+ .cena{padding:48px 0;display:flex;justify-content:center}
+ .livro{width:1120px;max-width:none;margin:0}
+ .pagina{box-shadow:var(--sombra-pagina)}
+ .margin-line::before{content:"";position:absolute;top:0;bottom:0;left:calc(50% + 56px);width:2px;background:var(--margem);pointer-events:none;z-index:1}
+ .dobra{display:block;position:absolute;top:0;bottom:0;left:calc(50% - 36px);width:72px;background:linear-gradient(to right,transparent,rgba(0,0,0,.14) 50%,transparent);pointer-events:none;z-index:2}
+ .espiral-topo{display:none}
+ .espiral-meio{display:block;position:absolute;left:50%;top:16px;bottom:16px;transform:translateX(-50%);z-index:6}
+ .quadro-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 112px minmax(0,1fr) minmax(0,1fr)}
+ .cab-l{grid-column:1/3}.cab-r{grid-column:4/6}
+ .coluna[data-col=semana]{grid-column:2}.coluna[data-col=emdia]{grid-column:4}.coluna[data-col=agora]{grid-column:5}
+ .sheet{right:24px;top:24px;bottom:24px;width:calc(50% - 64px)}
+ .veu{left:50%;border-radius:0 10px 10px 0}
+}
+
+/* ===== 3.12 Cabeçalho de folha (carimbo escolar D…S + data) =====
+   Demo: terça (T) destacada + 27/10/2026. Em produção: Intl/Date em America/Sao_Paulo. */
+.cabecalho-folha{display:flex;align-items:center;justify-content:space-between;gap:12px;height:var(--linha);margin:0 0 0;pointer-events:none;user-select:none;-webkit-user-select:none}
+.cab-dias{display:flex;align-items:center;gap:4px;list-style:none;margin:0;padding:0}
+.cab-dias li{width:22px;height:22px;box-sizing:border-box;border:1.5px solid var(--tinta);border-radius:2px;display:grid;place-items:center;font:600 11px/1 Inter,system-ui,sans-serif;color:var(--tinta);background:transparent}
+.cab-dias li[aria-current="date"],.cab-dias li.hoje{background:var(--tinta);color:#fff;border-width:2px;font-weight:700}
+.cab-data{font:700 21px/1 Caveat,cursive;color:var(--tinta);letter-spacing:.03em;border-bottom:1.5px dashed #B3A38C;padding:0 2px 2px;white-space:nowrap}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* 3.14 Selo "Aniversário hoje": adesivo de papel com carimbo, pendurado no canto inferior direito do post-it.
+   Absoluto (altura zero no fluxo): não come o orçamento de 6 linhas do post-it e cai no vão de 1 linha abaixo dele. */
+.pi{container-type:inline-size} /* 3.14: o selo se adapta à largura do post-it */
+.pi-selo{position:absolute;right:-.25rem;top:calc(100% - .375rem);z-index:2;max-width:calc(100% + .5rem);box-sizing:border-box;margin:0;
+ display:flex;align-items:center;gap:3px;padding:2px 6px 2px 5px;background:var(--folha);color:#7C3221;border:1.5px solid #7C3221;border-radius:4px;
+ box-shadow:var(--sombra-papel);transform:rotate(-2.5deg);font:600 .75rem/1rem Inter,system-ui,sans-serif;white-space:normal;pointer-events:none}
+.pi-selo [data-lucide]{width:14px;height:14px;flex:none;stroke-width:2}
+.pi-selo::before{content:"";position:absolute;inset:-4px auto auto 50%;width:18px;height:7px;margin-left:-9px;background:rgba(43,36,32,.08);transform:rotate(4deg)} /* fita adesiva, só sombra */
+@container (max-width:8.25rem){.pi-selo{padding:2px 5px}.pi-selo [data-lucide]{display:none}} /* post-it estreito (4 colunas em 1024, 2 colunas em 360): só o texto, numa linha */
+@media (forced-colors:active){.pi-selo{border-color:CanvasText}}
+</style></head>
+<body class="mesa">
+<div class="cena">
+ <div class="livro" id="livro">
+  <div class="espiral-topo spiral-h" aria-hidden="true"></div>
+  <section class="pagina margin-line" aria-labelledby="titulo-quadro">
+   <div class="dobra" aria-hidden="true"></div>
+   <div class="folha paper-lined" id="folha">
+    <div class="quadro-grid" id="grid">
+     <header class="cab-l">
+      <!-- 3.12 Cabeçalho de folha — demo: terça (T) + 27/10/2026 (America/Sao_Paulo). Em produção: Intl/Date no fuso SP; sem editar/filtrar. -->
+      <div class="cabecalho-folha" role="group" aria-label="Data de hoje, terça-feira 27/10/2026">
+       <ol class="cab-dias" aria-label="Dia da semana">
+        <li><span aria-hidden="true">D</span><span class="sr-only">Domingo</span></li>
+        <li><span aria-hidden="true">S</span><span class="sr-only">Segunda</span></li>
+        <li class="hoje" aria-current="date"><span aria-hidden="true">T</span><span class="sr-only">Terça, hoje</span></li>
+        <li><span aria-hidden="true">Q</span><span class="sr-only">Quarta</span></li>
+        <li><span aria-hidden="true">Q</span><span class="sr-only">Quinta</span></li>
+        <li><span aria-hidden="true">S</span><span class="sr-only">Sexta</span></li>
+        <li><span aria-hidden="true">S</span><span class="sr-only">Sábado</span></li>
+       </ol>
+       <time class="cab-data" datetime="2026-10-27">27/10/2026</time>
+      </div>
+      <h1 id="titulo-quadro" class="titulo text-2xl lg:text-3xl font-semibold">Quadro</h1>
+      <p class="text-sm text-neutro-700">As colunas se arrumam sozinhas, pelo último contato e pelo ritmo de cada amigo. Use o botão <i>falei agora</i> do post-it para registrar um contato.</p>
+     </header>
+     <div class="cab-r">
+      <p class="text-sm text-neutro-600">Seus grupos. O post-it usa a cor do primeiro grupo em ordem alfabética, e todos vêm escritos nele:</p>
+      <div class="legenda" id="legenda" aria-hidden="true"></div>
+     </div>
+     <div class="quadro" id="quadro"></div>
+    </div>
+   </div>
+  </section>
+  <div class="espiral-meio spiral-v" aria-hidden="true"></div>
+
+  <nav class="abas" aria-label="Seções">
+   <a href="#" class="aba bg-primaria-100">bom falar</a>
+   <a href="#" class="aba bg-papel" aria-current="page">quadro</a>
+   <a href="#" class="aba bg-marca-texto">amigos</a>
+   <a href="#" class="aba bg-aba-verde">+ novo</a>
+   <a href="#" class="aba so-desk bg-pauta" aria-label="Atalhos de teclado">?</a>
+  </nav>
+
+  <!-- Registrar contato: o MESMO componente do spec 3.6 (sheet no celular, painel sobre a página direita no livro aberto) -->
+  <div id="veu" class="veu hidden" onclick="fechar(false)"></div>
+  <div id="sheet" class="sheet papel hidden" role="dialog" aria-modal="true" aria-labelledby="sheet-t">
+   <div class="mx-auto w-10 h-1 rounded-full bg-neutro-500 lg:hidden"></div>
+   <div class="mt-3 flex items-center justify-between gap-4">
+    <h2 id="sheet-t" class="text-xl font-semibold leading-8 truncate">Falei com <span id="sheet-nome"></span></h2>
+    <button onclick="fechar(false)" aria-label="Fechar" class="grid place-items-center w-11 h-11 -mr-2 rounded-full text-neutro-700 hover:bg-neutro-300/50"><i data-lucide="x"></i></button>
+   </div>
+   <div class="mt-4 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Tipo de contato">
+    <button role="radio" aria-checked="true" class="flex flex-col items-center justify-center gap-1 h-20 rounded-md border-2 border-primaria bg-primaria-50 text-primaria-800 text-sm font-medium leading-5"><i data-lucide="message-circle"></i>Mensagem</button>
+    <button role="radio" aria-checked="false" class="flex flex-col items-center justify-center gap-1 h-20 rounded-md border-[1.5px] border-tinta bg-folha text-neutro-800 text-sm font-medium leading-5"><i data-lucide="phone"></i>Ligação</button>
+    <button role="radio" aria-checked="false" class="flex flex-col items-center justify-center gap-1 h-20 rounded-md border-[1.5px] border-tinta bg-folha text-neutro-800 text-sm font-medium leading-5"><i data-lucide="coffee"></i>Encontro</button>
+   </div>
+   <label for="nota-rapida" class="block mt-4 text-sm font-medium leading-6">Nota rápida <span class="font-normal text-neutro-600">(opcional)</span></label>
+   <textarea id="nota-rapida" rows="3" class="campo !h-auto py-3 mt-2 resize-none" placeholder="O que ficou da conversa?"></textarea>
+   <p class="hidden lg:block mt-2 text-xs leading-5 text-neutro-600">Ctrl + Enter registra · Esc fecha</p>
+   <button onclick="fechar(true)" class="mt-4 w-full h-12 rounded-full bg-primaria text-white font-semibold leading-none hover:bg-primaria-700 active:bg-primaria-800">Registrar</button>
+  </div>
+ </div>
+</div>
+<div id="toast" role="status" class="hidden fixed left-1/2 -translate-x-1/2 bottom-24 lg:bottom-8 z-40 flex items-center gap-3 bg-tinta text-white text-sm px-5 h-12 rounded-full shadow-lg whitespace-nowrap"><i data-lucide="check" class="text-[#B9CDB1]"></i><span id="toast-t"></span><button class="font-semibold underline underline-offset-2 h-11">Desfazer</button></div>
+<p id="anuncio" class="sr-only" aria-live="polite"></p>
+
+<script>
+/* ---------- Dados de exemplo (no app: GET /api/amigos/ já traz ultimo_contato e frequencia_dias) ---------- */
+/* Grupos do usuário (model Grupo: nome livre + cor TextChoices). Grupos podem repetir cor. */
+const ICONE={familia:'house',faculdade:'graduation-cap',trabalho:'briefcase',vizinhanca:'map-pin',neutro:'circle-dashed'};
+const GRUPOS={fam:{nome:'Família',cor:'familia'},ufmg:{nome:'Turma da UFMG',cor:'faculdade'},trab:{nome:'Trabalho',cor:'trabalho'},
+ viz:{nome:'Vizinhos',cor:'vizinhanca'},esc:{nome:'Escalada',cor:'vizinhanca'},fut:{nome:'Futebol de quinta',cor:'faculdade'},livro:{nome:'Clube do livro',cor:'trabalho'}};
+const alfa=(x,y)=>x.nome.localeCompare(y.nome,'pt-BR',{sensitivity:'base'});
+const COLS=[
+ {id:'tempo', t:'Faz um tempinho', d:'o ritmo de cada um já chegou', vazio:'ninguém por aqui. aproveite o dia.'},
+ {id:'semana',t:'Essa semana', d:'o ritmo chega nos próximos dias', vazio:'nada chegando nos próximos dias.'},
+ {id:'emdia', t:'Em dia', d:'conversa recente, tudo certo', vazio:'ainda ninguém. um contato já muda isso.'},
+ {id:'agora', t:'Falei agora', d:'falou hoje ou ontem', vazio:'ninguém hoje ainda.'}];
+let AMIGOS=[
+ {id:12,n:'Maria Eduarda Albuquerque',gs:['fam','ufmg','esc','livro'],d:45,f:21,q:'6 semanas',nota:'mudou de emprego, perguntar como foi a 1ª semana',is_birthday_today:true},
+ {id:1,n:'João Pedro',gs:['ufmg'],d:21,f:14,q:'3 semanas',nota:'vai se mudar pra Fortaleza'},
+ {id:2,n:'Tio Carlos',gs:['fam'],d:60,f:30,q:'2 meses',nota:'recuperado do joelho'},
+ {id:3,n:'Camila R.',gs:['trab','livro'],d:35,f:30,q:'5 semanas',nota:'indicar a série que ela pediu'},
+ {id:4,n:'Marina A.',gs:['ufmg','esc','livro'],d:21,f:28,q:'3 semanas',nota:'começou aula de cerâmica'},
+ {id:5,n:'Dona Lúcia',gs:['viz'],d:12,f:14,q:'12 dias',nota:'perguntar das orquídeas'},
+ {id:6,n:'Gui',gs:[],d:10,f:14,q:'10 dias',nota:'show do dia 30?'},
+ {id:7,n:'Bruno Lima',gs:['ufmg','fut'],d:5,f:30,q:'5 dias',nota:'passou na entrevista!'},
+ {id:8,n:'Vó Teresa',gs:['fam','viz'],d:4,f:14,q:'4 dias',nota:'receita do bolo de fubá'},
+ {id:9,n:'Rafa',gs:['trab','fut','esc','livro'],d:7,f:21,q:'1 semana',nota:'livro: Torto Arado'},
+ {id:10,n:'Pedro H.',gs:['fam'],d:0,f:7,q:'hoje',nota:'almoço de domingo marcado'},
+ {id:11,n:'Ana Clara',gs:['trab'],d:1,f:14,q:'ontem',nota:''}];
+/* Colunas calculadas (spec 7.2), na ordem de avaliação. "Essa semana" usa janela FIXA de 7 dias (20/10/2026). */
+const JANELA=7;
+function coluna(a){
+ if(a.d!=null&&a.d<=1)return 'agora';
+ const falta=a.f-a.d;
+ if(a.d==null||falta<=0)return 'tempo';
+ if(falta<=JANELA)return 'semana';
+ return 'emdia'}
+const ORDEM={agora:(x,y)=>x.d-y.d,tempo:(x,y)=>y.d/y.f-x.d/x.f,semana:(x,y)=>(x.f-x.d)-(y.f-y.d),emdia:(x,y)=>(x.f-x.d)-(y.f-y.d)};
+/* a API já devolve os grupos em ordem alfabética pelo nome; aqui ordenamos para simular */
+AMIGOS.forEach(a=>{a.col=coluna(a);a.grupos=a.gs.map(k=>GRUPOS[k]).sort(alfa)});
+const QS=new URLSearchParams(location.search);const estado=QS.get('estado')||'normal';
+if(QS.get('niver')==='todos')AMIGOS.forEach(a=>a.is_birthday_today=true);
+if(QS.get('fonte')==='200')document.documentElement.style.fontSize='200%';
+const $=s=>document.querySelector(s);
+if(estado==='coluna-vazia')AMIGOS=AMIGOS.filter(a=>a.col!=='tempo'&&a.col!=='agora');
+
+function etiqueta(nome,cor){return `<span class="et g-${cor}" data-nome="${nome}"><i data-lucide="${ICONE[cor]}" aria-hidden="true"></i><span>${nome}</span></span>`}
+function postit(a){
+ const agora=a.col==='agora';const cor=a.grupos.length?a.grupos[0].cor:'neutro';
+ const ets=a.grupos.length?a.grupos.map(g=>etiqueta(g.nome,g.cor)).join(''):etiqueta('sem grupo','neutro');
+ return `<li class="pi g-${cor}" data-id="${a.id}" data-nome="${a.n}" aria-labelledby="pi-${a.id}${a.is_birthday_today?` selo-${a.id}`:''}">
+  <h3 class="pi-nome" id="pi-${a.id}"><a href="#/amigos/${a.id}">${a.n}</a></h3>
+  <p class="pi-ets"><span class="sr-only">Grupos: </span>${ets}</p>
+  <p class="pi-meta">${agora?'falei '+a.q:a.q}</p>
+  ${a.nota?`<p class="pi-nota">${a.nota}</p>`:`<p class="pi-sem">sem nota ainda</p>`}
+  ${`<button class="pi-btn" data-falei="${a.id}" aria-label="Falei agora com ${a.n}"><span class="carimbo"><i data-lucide="pen-line" class="btn-ico" style="width:16px;height:16px"></i>falei agora</span></button>`}
+ ${a.is_birthday_today?`<p class="pi-selo" id="selo-${a.id}"><i data-lucide="cake" aria-hidden="true"></i><span>Aniversário hoje</span></p>`:''}
+ </li>`}
+
+function render(){
+ const q=$('#quadro');
+ if(estado==='erro'){q.innerHTML=`<div class="papel !bg-erro-50 !border-erro mt-l1 px-6 py-4 lg:col-span-4 livro:col-span-5" role="alert" style="grid-column:1/-1">
+   <p class="text-base font-semibold text-erro">Não conseguimos abrir seu caderno agora.</p>
+   <p class="text-sm text-neutro-700">Seus amigos e notas estão salvos. Pode ser a conexão.</p>
+   <button class="mt-2 h-11 px-5 rounded-full border-[1.5px] border-tinta bg-folha text-sm font-semibold leading-none inline-flex items-center gap-2 hover:bg-white"><i data-lucide="rotate-cw"></i>Tentar de novo</button></div>`;return}
+ q.innerHTML=COLS.map(c=>{
+  const lista=AMIGOS.filter(a=>a.col===c.id).sort(ORDEM[c.id]);
+  let corpo;
+  if(estado==='carregando')corpo=`<li class="skel"></li><li class="skel"></li>`;
+  else if(estado==='vazio')corpo=`<li class="placeholder" aria-hidden="true"></li>`;
+  else corpo=lista.length?lista.map(postit).join(''):`<li class="vazio-col nota">${c.vazio}</li>`;
+  // celular: "Em dia" e "Falei agora" começam recolhidas (lista agrupada)
+  const recolhe=['emdia','agora'].includes(c.id)&&lista.length&&!['carregando','vazio'].includes(estado);
+  const nomes=lista.map(a=>a.n);const resumo=nomes.length>2?`${nomes.slice(0,2).join(', ')} e mais ${nomes.length-2}`:nomes.join(' e ');
+  return `<section class="coluna" data-col="${c.id}" aria-labelledby="col-${c.id}">
+   <header class="col-cab"><h2 id="col-${c.id}">${c.t}</h2>
+    <p class="col-desc">${estado==='carregando'?'<span class="skel-txt"></span>':c.d}</p></header>
+   ${recolhe?`<button class="ver-mais" aria-expanded="false" aria-controls="lista-${c.id}" onclick="abre(this)"><span class="truncate">${resumo}</span><b>mostrar <i data-lucide="chevron-down"></i></b></button>`:''}
+   <ul class="lista${recolhe?' recolhida':''}" id="lista-${c.id}" data-col="${c.id}">${corpo}</ul></section>`}).join('');
+ if(estado==='vazio')q.insertAdjacentHTML('afterbegin',`<div style="grid-column:1/-1" class="mt-l1 mb-l1"><p class="nota">Seu quadro está em branco.</p><p class="nota">Cada amigo vira um post-it aqui.</p><p class="mt-l1"><a href="#/amigos/novo" class="carimbo"><i data-lucide="user-plus" style="width:16px;height:16px"></i>adicionar primeiro amigo</a></p></div>`);
+}
+function legenda(){
+ const gs=Object.values(GRUPOS).sort(alfa).map(g=>etiqueta(g.nome,g.cor));
+ if(AMIGOS.some(a=>!a.grupos.length))gs.push(etiqueta('sem grupo','neutro'));
+ $('#legenda').innerHTML=gs.join('')}
+/* Até 2 linhas de etiquetas. Se passar, esconde do fim e mostra "+N" com aria-label listando os demais.
+   Com 2 linhas de etiquetas, a nota cai para 1 linha (o post-it tem altura fixa de 6 linhas). */
+function ajustaEtiquetas(){
+ document.querySelectorAll('.pi-ets').forEach(box=>{
+  box.querySelector('.et-mais')?.remove();
+  const ets=[...box.querySelectorAll('.et')];ets.forEach(e=>e.hidden=false);
+  const cabe=()=>box.scrollHeight<=40;
+  if(!cabe()){
+   const m=document.createElement('span');m.className='et et-mais';m.setAttribute('role','img');box.appendChild(m);
+   const fora=[];
+   for(let i=ets.length-1;i>0;i--){ets[i].hidden=true;fora.unshift(ets[i].dataset.nome);m.textContent='+'+fora.length;
+    const lista=fora.length>1?fora.slice(0,-1).join(', ')+' e '+fora.at(-1):fora[0];
+    m.setAttribute('aria-label',`e mais ${fora.length} ${fora.length>1?'grupos':'grupo'}: ${lista}`);m.title=fora.join(', ');
+    if(cabe())break}
+  }
+  box.closest('.pi').classList.toggle('ets-2',box.offsetHeight>22)})}
+function abre(b){const ul=document.getElementById(b.getAttribute('aria-controls'));ul.classList.remove('recolhida');b.remove();ajustaEtiquetas()}
+
+/* ---------- Única ação: botão "falei agora" → painel "Registrar contato" (3.6). Sem arrastar. ---------- */
+let pend=null;
+function abrir(li){pend=li;li.classList.add('registrando');$('#sheet-nome').textContent=li.dataset.nome.split(' ')[0];$('#veu').classList.remove('hidden');$('#sheet').classList.remove('hidden')}
+function fechar(ok){
+ $('#veu').classList.add('hidden');$('#sheet').classList.add('hidden');
+ if(pend)pend.classList.remove('registrando');   // fechar sem registrar: nada muda
+ if(ok){$('#toast-t').textContent='Contato registrado. Boa conversa!';$('#toast').classList.remove('hidden');$('#anuncio').textContent='Contato registrado.';setTimeout(()=>$('#toast').classList.add('hidden'),2400);
+  if(pend){const a=AMIGOS.find(x=>x.id==pend.dataset.id);a.d=0;a.q='hoje';a.col=coluna(a);const id=a.id;pend=null;render();lucide.createIcons();ajustaEtiquetas();const b=document.querySelector(`[data-falei="${id}"]`);if(b)b.focus();return}}
+ pend=null}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-falei]');if(b)abrir(b.closest('.pi'))});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')fechar(false)});
+
+if(estado==='vazio')document.body.classList.add('q-vazio');
+legenda();render();lucide.createIcons();ajustaEtiquetas();
+document.fonts.ready.then(ajustaEtiquetas);addEventListener('resize',ajustaEtiquetas);
+
+/* ---------- Estado estático para os prints ---------- */
+if(estado==='registrando')abrir(document.querySelector('[data-id="3"]'));
+</script>
+</body></html>
