@@ -37,6 +37,7 @@ const RECORDED_CONTACT = {
   last_contact_at: '2026-10-27T15:00:00Z',
   last_note: 'Falamos da viagem',
   contact_id: '00000000-0000-4000-8000-000000000004',
+  contact: { id: '00000000-0000-4000-8000-000000000004', kind: 'call', date: '2026-10-27T15:00:00Z', note: 'Falamos da viagem' },
 }
 
 function set_fetch_for_board_test(friend_fetch: (path: string, options?: RequestInit) => unknown, groups: unknown[] = []): void {
@@ -175,6 +176,7 @@ describe('Board', () => {
       ...FRIEND_WITH_GROUPS, column: 'just_talked', last_note: 'Falamos da viagem',
       last_contact_at: '2026-10-27T15:00:00Z',
       contact_id: '00000000-0000-4000-8000-000000000004',
+      contact: { id: '00000000-0000-4000-8000-000000000004', kind: 'call', date: '2026-10-27T15:00:00Z', note: 'Falamos da viagem' },
     }
     const fetch = vi.fn()
       .mockResolvedValueOnce(Response.json([FRIEND_WITH_GROUPS]))

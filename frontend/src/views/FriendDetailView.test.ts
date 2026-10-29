@@ -21,6 +21,10 @@ async function get_profile_for_test() {
     { path: '/amigos/:id', component: FriendDetailView },
   ] })
   await router.push(`/amigos/${FRIEND.id}`)
+  const profile_fetch = globalThis.fetch
+  vi.stubGlobal('fetch', (path: string, options?: RequestInit) => path.endsWith('/contacts/') && !options?.method
+    ? Promise.resolve(Response.json({ next: null, results: [] }))
+    : profile_fetch(path, options))
   const wrapper = mount({ template: '<RouterView />' }, { global: { plugins: [router] } })
   return { wrapper, router }
 }
@@ -86,7 +90,7 @@ describe('Friend profile', () => {
     expect(wrapper.text()).toContain('a cada 3 semanas')
     expect(wrapper.text()).toContain('Faculdade')
     expect(wrapper.text()).toContain('25/10/2026')
-    expect(wrapper.text()).toContain(FRIEND.last_note)
+    expect(wrapper.get('dl').text()).not.toContain('Última nota')
     expect(wrapper.text()).toContain('Em dia')
     expect(fetch).toHaveBeenCalledWith(`/api/friends/${FRIEND.id}/`, expect.any(Object))
   })
@@ -285,7 +289,8 @@ describe('Friend profile', () => {
     expect(wrapper.text()).toContain('a cada 1 mês')
     expect(wrapper.text()).toContain('sem grupo')
     expect(wrapper.text()).toContain('Nenhum contato registrado ainda.')
-    expect(wrapper.text()).toContain('Nenhuma nota registrada ainda.')
+    expect(wrapper.text()).toContain('nenhum contato ainda. que tal registrar o primeiro?')
+    expect(wrapper.get('dl').text()).not.toContain('Última nota')
   })
 
   it('shows the same not-found state for unavailable friends', async () => {
@@ -339,7 +344,7 @@ describe('Friend profile', () => {
   })
 
   it('opens the existing contact form and applies the friend returned after saving', async () => {
-    const recorded_contact = { ...FRIEND, column: 'just_talked', last_contact_at: '2026-10-28T15:00:00Z', last_note: 'Conversamos sobre a viagem', contact_id: OTHER_FRIEND.id }
+    const recorded_contact = { ...FRIEND, column: 'just_talked', last_contact_at: '2026-10-28T15:00:00Z', last_note: 'Conversamos sobre a viagem', contact_id: OTHER_FRIEND.id, contact: { id: OTHER_FRIEND.id, kind: 'message', date: '2026-10-28T15:00:00Z', note: 'Conversamos sobre a viagem' } }
     const fetch = vi.fn().mockResolvedValueOnce(Response.json(FRIEND))
       .mockResolvedValueOnce(Response.json(recorded_contact, { status: 201 }))
     vi.stubGlobal('fetch', fetch)
@@ -353,7 +358,7 @@ describe('Friend profile', () => {
     await flushPromises()
 
     expect(wrapper.find('dialog').exists()).toBe(false)
-    expect(wrapper.get('dl').text()).toContain(recorded_contact.last_note)
+    expect(wrapper.get('.history-note').text()).toBe(recorded_contact.contact.note)
     expect(wrapper.get('dl').text()).toContain('28/10/2026')
     expect(wrapper.get('dl').text()).toContain('Falei agora')
     expect(wrapper.get('[role="status"]').text()).toContain('Contato registrado')
@@ -375,9 +380,9 @@ describe('Friend profile', () => {
   })
 
   it('updates the last contact on the list beside the saved profile', async () => {
-    const recorded_contact = { ...FRIEND, column: 'just_talked', last_contact_at: '2026-10-28T15:00:00Z', contact_id: OTHER_FRIEND.id }
+    const recorded_contact = { ...FRIEND, column: 'just_talked', last_contact_at: '2026-10-28T15:00:00Z', contact_id: OTHER_FRIEND.id, contact: { id: OTHER_FRIEND.id, kind: 'message', date: '2026-10-28T15:00:00Z', note: 'Conversamos sobre a viagem' } }
     vi.stubGlobal('fetch', vi.fn((path: string, options?: RequestInit) => Promise.resolve(Response.json(
-      options?.method === 'POST' ? recorded_contact : path === '/api/friends/' ? [FRIEND] : FRIEND,
+      options?.method === 'POST' ? recorded_contact : path.endsWith('/contacts/') ? { next: null, results: [] } : path === '/api/friends/' ? [FRIEND] : FRIEND,
     ))))
     const router = createRouter({ history: createMemoryHistory(), routes: [
       { path: '/amigos', component: FriendsView },

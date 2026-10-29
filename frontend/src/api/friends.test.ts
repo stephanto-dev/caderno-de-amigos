@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { get_friend_for_board, get_groups_for_form, send_contact_deletion_for_friend, send_contact_for_friend, send_friend_creation_for_owner, send_friend_update_for_owner, send_group_creation_for_owner, send_group_update_for_owner } from './friends'
+import { get_contacts_for_friend, get_friend_for_board, get_groups_for_form, send_contact_deletion_for_friend, send_contact_for_friend, send_friend_creation_for_owner, send_friend_update_for_owner, send_group_creation_for_owner, send_group_update_for_owner } from './friends'
 
 const RECORDED_CONTACT = {
   id: '00000000-0000-4000-8000-000000000001',
@@ -13,6 +13,7 @@ const RECORDED_CONTACT = {
   last_note: 'Conversamos sobre a viagem',
   groups: [],
   contact_id: '00000000-0000-4000-8000-000000000002',
+  contact: { id: '00000000-0000-4000-8000-000000000002', kind: 'call', date: '2026-10-27T15:00:00Z', note: 'Conversamos sobre a viagem' },
 }
 
 describe('Contact registration API', () => {
@@ -79,6 +80,65 @@ describe('Contact registration API', () => {
     expect(await get_friend_for_board(RECORDED_CONTACT.id)).toEqual(RECORDED_CONTACT)
     expect(fetch).toHaveBeenCalledWith(`/api/friends/${RECORDED_CONTACT.id}/`, expect.objectContaining({ credentials: 'include' }))
     await expect(get_friend_for_board(RECORDED_CONTACT.id)).rejects.toThrow('Invalid board friend response')
+  })
+})
+
+describe('Contact history API', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('returns the first page in server order with complete notes and a continuation cursor', async () => {
+    const page = { next: 'opaque-cursor', results: [
+      RECORDED_CONTACT.contact,
+      { ...RECORDED_CONTACT.contact, id: 'older-contact', note: 'Uma nota longa\ncom outra linha inteira.' },
+    ] }
+    const fetch = vi.fn().mockResolvedValue(Response.json(page))
+    vi.stubGlobal('fetch', fetch)
+
+    expect(await get_contacts_for_friend(RECORDED_CONTACT.id)).toEqual(page)
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(`/api/friends/${RECORDED_CONTACT.id}/contacts/`,
+      expect.objectContaining({ credentials: 'include' }))
+  })
+
+  it('encodes the supplied cursor as a token and accepts an empty final page', async () => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ next: null, results: [] }))
+    vi.stubGlobal('fetch', fetch)
+
+    expect(await get_contacts_for_friend(RECORDED_CONTACT.id, 'offset=20+next/'))
+      .toEqual({ next: null, results: [] })
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(
+      `/api/friends/${RECORDED_CONTACT.id}/contacts/?cursor=offset%3D20%2Bnext%2F`, expect.any(Object))
+  })
+
+  it.each([
+    null,
+    { results: [] },
+    { next: 20, results: [] },
+    { next: null, results: null },
+    { next: null, results: [{ ...RECORDED_CONTACT.contact, kind: 'email' }] },
+    { next: null, results: [{ ...RECORDED_CONTACT.contact, date: 'invalid' }] },
+    { next: null, results: [{ ...RECORDED_CONTACT.contact, note: null }] },
+  ])('rejects malformed history before exposing it to the profile: %j', async (body) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(body)))
+
+    await expect(get_contacts_for_friend(RECORDED_CONTACT.id)).rejects.toThrow('Invalid contact history response')
+  })
+
+  it('preserves errors from Django when history is unavailable', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({
+      errors: [{ detail: 'Não encontrado.', attr: null }],
+    }, { status: 404 })))
+
+    await expect(get_contacts_for_friend(RECORDED_CONTACT.id))
+      .rejects.toMatchObject({ status: 404, message: 'Não encontrado.' })
+  })
+
+  it('rejects a registration without the complete saved contact', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({
+      ...RECORDED_CONTACT, contact: undefined,
+    }, { status: 201 })))
+
+    await expect(send_contact_for_friend(RECORDED_CONTACT.id, { kind: 'call', note: '' }))
+      .rejects.toThrow('Invalid recorded contact response')
   })
 })
 
