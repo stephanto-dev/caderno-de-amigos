@@ -16,7 +16,8 @@ class EnvironmentSettings(BaseSettings):
         extra="ignore",
     )
 
-    django_debug: bool = True
+    django_debug: bool = False
+    django_trust_x_forwarded_proto: bool = False
     django_secret_key: SecretStr | None = None
     django_allowed_hosts: str = "localhost,127.0.0.1"
     django_trusted_proxy_count: int = Field(default=0, ge=0)

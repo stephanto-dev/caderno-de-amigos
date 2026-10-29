@@ -19,9 +19,44 @@ O backend usa Python 3.11+ e `uv`. Em `backend/`, rode `uv sync` para instalar a
 dependências, `uv run pytest src` para os testes e `uv run python src/manage.py check`
 para verificar a configuração. O teste do backend requer o PostgreSQL do Compose.
 
-Em produção, configure `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, `POSTGRES_DB`,
-`POSTGRES_USER`, `POSTGRES_PASSWORD` e `POSTGRES_HOST`. A imagem Docker serve o
-frontend compilado junto com o Django; o PostgreSQL continua separado.
+## Produção
+
+Use a imagem Docker com Gunicorn. O Compose é exclusivo de desenvolvimento:
+ele liga o modo de depuração e usa `runserver`. A imagem serve o frontend
+compilado junto com o Django; o PostgreSQL continua separado.
+
+Configure `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`,
+`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` e `POSTGRES_HOST`.
+O modo de depuração fica desligado por padrão; só o ambiente local deve usar
+`DJANGO_DEBUG=1`. Não reutilize o `.env.example` como configuração de produção.
+
+O servidor recusa chaves com menos de 50 caracteres, menos de 5 caracteres
+diferentes ou com prefixo `django-insecure-`. Também recusa a senha de banco
+`caderno` e a ausência de domínios explícitos. `DJANGO_ALLOWED_HOSTS` não aceita `*` em
+produção. Esses critérios para a chave são uma verificação mínima; gere uma
+chave aleatória exclusiva com `python -c 'import secrets; print(secrets.token_urlsafe(64))'`
+e guarde-a somente no ambiente da hospedagem. Defina uma senha exclusiva também
+no PostgreSQL antes de iniciar o app.
+
+Fora do modo local, o Django redireciona HTTP para HTTPS e marca os cookies de
+sessão e CSRF como `Secure`. O cookie de sessão continua `HttpOnly`, e ambos
+continuam com `SameSite=Lax`. O Vue precisa ler o cookie CSRF para montar o
+cabeçalho das requisições; esse cookie permanece acessível ao JavaScript.
+
+Configure o certificado e o acesso HTTPS na hospedagem antes de abrir o app.
+Se um proxy termina o HTTPS e encaminha HTTP para o Django, ative
+`DJANGO_TRUST_X_FORWARDED_PROTO=1` somente depois de verificar que esse proxy
+sobrescreve `X-Forwarded-Proto` e que ninguém pode acessar o backend diretamente.
+O default `0` ignora esse cabeçalho. Sem o ajuste em um proxy que encaminha
+HTTP, haverá redirecionamentos repetidos; não desative as proteções para contornar isso.
+
+Respostas HTTPS incluem HSTS por uma hora, apenas para o domínio acessado,
+sem `includeSubDomains` nem `preload`. Não publique o app nesse domínio sem
+HTTPS funcional, pois o navegador vai exigir HTTPS durante esse período.
+Com as variáveis reais de produção, execute
+`python src/manage.py check --deploy` em `backend/` antes do deploy. Os avisos
+sobre `includeSubDomains` e `preload` ficam pendentes até confirmar HTTPS para
+os demais subdomínios; não habilite essas opções só para remover os avisos.
 
 ## Limites de requisições
 
