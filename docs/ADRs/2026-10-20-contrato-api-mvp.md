@@ -47,6 +47,22 @@ Sem contrato claro, frontend e backend evoluem de forma descoordenada, gerando r
 - `PATCH /api/friends/{id}/` — edita amigo **(planejado em CRM-6)**
 - `DELETE /api/friends/{id}/` — remove amigo, retorna `204` **(planejado em CRM-6)**
 
+Aniversário (CRM-23):
+
+- `birthday` é opcional na criação e na edição: uma string estrita `dd/mm`
+  (ex.: `"01/09"`) ou `null`. Não recebe nem armazena ano de nascimento.
+- Omitir `birthday` no PATCH preserva o aniversário; enviar `null` limpa dia e mês.
+  Na criação, omitir o campo ou enviar `null` cria o amigo sem aniversário.
+- Datas impossíveis e formatos diferentes retornam `400`, no padrão
+  `drf-standardized-errors`, com o erro associado a `birthday`. `29/02` é válido.
+- As respostas de criação, edição, detalhe e lista (usada pelo Quadro) incluem
+  `birthday` como `dd/mm` ou `null`. A resposta de registro de contato usa a mesma
+  representação do amigo.
+- `is_birthday_today` é um booleano somente de leitura, calculado na consulta
+  usando `America/Sao_Paulo`, presente nas mesmas respostas. Sem aniversário,
+  retorna `false`. Para quem nasceu em `29/02`, retorna `true` em `28/02` nos
+  anos não bissextos; nos bissextos, somente em `29/02`.
+
 ### Contatos (nested routes)
 
 - `POST /api/friends/{id}/contacts/` — registra contato, retorna `201` com amigo atualizado
