@@ -44,7 +44,7 @@ Estados comuns: **foco** `box-shadow: var(--anel-foco)` (2px folha + 2px `#2F618
 
 ### 3.1 Item "Bom falar com" (`li.card`, 3 linhas + 1 de respiro)
 - L1: nome Fraunces 19/600 (link para o perfil; hover `primaria-700`) + `· tipo, tempo` em Inter 12 `neutro-600`, com truncamento na linha.
-- L2: `.nota` com "→" e a última nota; grifo `.marca` opcional em uma palavra-chave. Limite de 1 linha no celular e 2 no livro (`line-clamp`); se cortar, a nota inteira fica no perfil.
+- L2: `.nota` com "→" e a última nota; grifo `.marca` opcional em uma palavra-chave. Limite de 1 linha no celular e 2 no livro (`line-clamp`); se cortar, a nota inteira fica no histórico do perfil (3.15).
 - L3: `.carimbo` "✎ registrar" (Caveat 21/700, borda 2px primária, rotação −2°). Hover: fundo `primaria-50`, cor 700. Active: fundo `primaria-100`, `scale(.97)`. Foco: anel. Desabilitado: .45. Carregando: o ícone vira spinner. Alvo: 28px de altura dentro de 32, com 44px de largura mínima. Para o toque, estender a área com `::after` de `inset: -8px`.
 - `mb-l1` entre itens.
 - **Selecionado** (livro aberto, perfil exibido): faixa `marca-texto-50` via `::before` deslocada por `--pauta-offset`, para alinhar exatamente às linhas, mais `aria-current`.
@@ -63,7 +63,8 @@ Estados comuns: **foco** `box-shadow: var(--anel-foco)` (2px folha + 2px `#2F618
 
 ### 3.4 Perfil
 - Cabeçalho com `.reserva-canto` + `.polaroid.fita` (96px; 76px abaixo de 1024): nome Fraunces 28/30, "da faculdade · a cada 3 semanas" Inter 14, "🎂(cake) 12/mar · curte <marca>escalada</marca>…" Inter 14 e carimbo "registrar contato" (+ `kbd R` no desktop). São 4 linhas; a polaroid cabe nelas e **termina antes de "Histórico"** (`mt-l1`).
-- Histórico: `li` flex, com data em Inter 14/600 `primaria-700` (72px fixos, com ícone do tipo) + `.nota` (pode ter várias linhas, sempre de 32). Sem nota: Inter 14 itálico.
+- Histórico: `li` flex, com data em Inter 14/600 `primaria-700` (72px fixos, com ícone do tipo) + `.nota` (pode ter várias linhas, sempre de 32). Sem nota: Inter 14 itálico. **Detalhes, estados e paginação do histórico em §3.15** (CRM-25/CRM-26).
+- Detalhes (`dl.profile-details`): Grupos, No Quadro e Último contato. **Sem "Última nota"** (decisão do PM, 29/10/2026, CRM-26): a nota mais recente já é o 1º item do Histórico. No Quadro e no "bom falar com", a última nota continua como está.
 - "Lembrar": `.nota` livre, editável inline.
 - Campos vazios aparecem como convite em Inter ("+ adicionar aniversário"), nunca como "—".
 
@@ -473,7 +474,7 @@ Nas views, `.cancel-link` e `.back-link` passam a ter `height:2.75rem; margin-to
 
 > **Fora do CRM-22:** o aniversário entrou como feature própria em **3.14** (29/10/2026), com a mesma anatomia e a máscara dd/mm local.
 
-### 3.14 Aniversário (feature própria, aprovada 29/10/2026; card CRM-23, separado do CRM-22)
+### 3.14 Aniversário (feature própria, aprovada 29/10/2026; cards CRM-23 back e CRM-24 front, separados do CRM-22)
 _Escopo fechado pelo PM: campo opcional "Aniversário (dia/mês)" no Novo e no Editar amigo, sem ano, e o selo "Aniversário hoje" no post-it do Quadro no dia do aniversário (America/Sao_Paulo). **Fora do escopo:** ano, idade, notificação, lista de próximos aniversários, ordenar ou filtrar por aniversário. O post-it decorativo de 3.2 e o `cake` de "próximos 7 dias" de 7.3 continuam fora (ver as notas lá)._
 
 _Protótipos: `direcoes/forms-aniversario.html` (cópia de `forms-pauta.html` com o campo; `?aniv=vazio|foco|preenchido|erro`, `?tela=editar`, `?fonte=200`, `?qa=1`) e `direcoes/quadro-aniversario.html` (cópia de `quadro.html` com uma aniversariante, "Maria Eduarda Albuquerque", 4 grupos e "+2"; `?niver=todos` liga o selo em todos os post-its para testar o layout; `?fonte=200`). `forms-pauta.html` e `quadro.html` não mudam._
@@ -481,9 +482,9 @@ _Protótipos: `direcoes/forms-aniversario.html` (cópia de `forms-pauta.html` co
 _Prints: `prints/aniversario-form-mobile.png`, `prints/aniversario-form-desktop.png`, `prints/aniversario-form-estados.png` (vazio, foco, preenchido, erro 31/04), `prints/aniversario-selo-quadro.png` (desktop 1280 e celular 390)._
 
 **Contrato (Tech Lead, 29/10/2026)**
-- A API recebe e devolve `birthday` como `"dd/mm"` ou `null` em `POST`/`PATCH`/`GET` de amigos (para limpar, o front manda `birthday: null`; CRM-24). No banco, dia e mês vão juntos ou ficam os dois vazios.
+- A API recebe e devolve `birthday` como `"dd/mm"` ou `null` em `POST`/`PATCH`/`GET` de amigos (para limpar, o front manda `birthday: null`; CRM-23). No banco, dia e mês vão juntos ou ficam os dois vazios.
 - A API valida a data. Data que não existe (31/04, 00/05, 13/13) volta 400 no formato drf-standardized-errors, com `field` = `birthday` e o `detail` "Essa data não existe. Ex.: 12/03.". 29/02 é válido.
-- **O selo é calculado no backend**, na data de hoje em America/Sao_Paulo; num ano não bissexto, quem faz 29/02 recebe o selo em 28/02. O serializer devolve um booleano somente leitura, a **flag de aniversário hoje vinda da API**, e o front só lê essa flag. **O front não calcula datas** e não valida dia/mês no cliente. O campo se chama **`is_birthday_today`** (Tech Lead, CRM-24).
+- **O selo é calculado no backend**, na data de hoje em America/Sao_Paulo; num ano não bissexto, quem faz 29/02 recebe o selo em 28/02. O serializer devolve um booleano somente leitura, a **flag de aniversário hoje vinda da API**, e o front só lê essa flag. **O front não calcula datas** e não valida dia/mês no cliente. O campo se chama **`is_birthday_today`** (Tech Lead, CRM-23).
 
 **Campo no formulário (anatomia)**
 - Posição: depois de "Falar a cada" e antes de Grupos, em `.friend-field`, igual ao Nome (3.13): rótulo Caveat numa linha, traço na linha de baixo, controle de `3rem` com `margin-top:-1rem`, 1 linha de pauta (`--notebook-line`) acima do campo.
@@ -561,7 +562,96 @@ _Prints: `prints/aniversario-form-mobile.png`, `prints/aniversario-form-desktop.
 
 **Conferido nos protótipos:** `?qa=1` imprime "TUDO OK", sem rolagem horizontal, em 360, 390 e 1280, com e sem `?fonte=200`, nos 4 estados e no Editar. No quadro, com `?niver=todos`, o selo cabe numa linha em 360, 390, 1024 e 1280, não cobre o carimbo "falei agora" nem o post-it de baixo, e com 200% fica em 2 linhas dentro do vão.
 
-**Em aberto (TL/PM):** nada. O nome da flag (`is_birthday_today`) e o `null` para limpar foram fechados pelo Tech Lead no CRM-24.
+**Em aberto (TL/PM):** nada. O nome da flag (`is_birthday_today`) e o `null` para limpar foram fechados pelo Tech Lead (contrato no CRM-23, uso no CRM-24).
+
+### 3.15 Histórico do perfil (v1) (aprovado 29/10/2026; cards CRM-25 back e CRM-26 front)
+_Escopo fechado pelo PM (`produto.md`, "Histórico de contatos no perfil"): só no perfil, do contato mais recente para o mais antigo, com data, tipo (mensagem, ligação ou encontro) e a nota inteira; 20 por vez, com "ver mais antigos"; estado vazio quando o amigo não tem contatos. **Fora do escopo:** agrupar por mês, editar ou apagar contato pelo histórico, misturar outros eventos (cadastro, mudança de grupo, aniversário). O Quadro e o "bom falar com" não mudam. **"Desfazer" no perfil fica fora da v1** (PM, 29/10/2026); o "Desfazer" que já existe no Quadro continua lá e só precisa tirar o item do histórico (ver abaixo)._
+
+_Protótipo: `historico-perfil.html` (`?estado=lista|carregando-mais|fim|vazio|carregando|erro|erro-mais|novo`, `?quadro=estados`, `&print=1` tira a rolagem interna). No protótipo, "ver mais antigos" simula a próxima página e "registrar contato" insere um item no topo. Prints: `prints/historico-desktop.png` (1280), `prints/historico-mobile.png` (390) e `prints/historico-estados.png` (todos os estados)._
+
+**Contrato (CRM-25)**
+- `GET /friends/{id}/contacts` (no app, `/api/friends/{id}/contacts/`) devolve os contatos do amigo, do mais recente para o mais antigo, 20 por vez. **A paginação é por cursor, conforme o CRM-25.** O front guarda o cursor que vem na resposta e o manda de volta para pedir a página seguinte. Os nomes dos campos (itens, cursor, fim da lista) ficam como estiverem no card de back. Esta spec não define campos.
+- A UI **não mostra número de página** nem total: só "ver mais antigos" no fim da lista. O botão aparece enquanto o back disser que há uma próxima página.
+- O que cada item precisa mostrar: data e hora do contato, tipo (`message`/`call`/`meeting`, os mesmos do `ContactSheet`) e nota (pode vir vazia). Para deduplicar, o item precisa de um id.
+- **O `POST` que registra o contato devolve o `contact` criado** (id, tipo, data e nota), no mesmo formato do item da lista (Tech Lead, CRM-25, 29/10/2026). A data é a do servidor.
+- O "Desfazer" que já existe (`DELETE` pelo `contact_id`, no Quadro) não muda de contrato.
+
+**Anatomia (no `FriendDetailView`, como último bloco do perfil, depois de "Editar amigo / Apagar amigo")**
+- O bloco "Última nota" sai dos detalhes do perfil no CRM-26 (ver 3.4). Os detalhes ficam com Grupos, No Quadro e Último contato.
+- `section.friend-history[aria-labelledby]` com `margin-top: var(--linha)` (uma linha em branco antes).
+- Título `h2` "Histórico", Fraunces 19/600 numa linha de 32.
+- `ol.history-list[aria-label="Contatos com {nome}, do mais recente ao mais antigo"]`, sem marcador.
+- Item: `li.history-item[tabindex=-1]` em grid `7rem | 1fr` com 16px de vão (8px × 2). Sem margem entre itens: cada um ocupa linhas inteiras.
+  - Coluna 1, `p.history-meta`, numa linha: ícone do tipo de 16px (mesmos paths do `ContactSheet`; vale extrair para uma constante compartilhada) + `time[datetime]` em Inter 14/600 `primaria-700` (6,51:1 na folha). `title` com a data por extenso. A coluna passa de **72px para 7rem** (112px) porque "20/dez/2025" com ícone não cabe em 72; isso substitui o "72px fixos" do 3.4 só nesta lista.
+  - Coluna 2: `p.history-note.nota` (Caveat 22/500 `caneta`), com a nota inteira. `white-space: pre-wrap` (respeita a quebra de linha que a pessoa digitou) e `overflow-wrap: anywhere`. **Nota longa quebra em quantas linhas precisar, sempre de 32**, sem corte nem "ler mais".
+  - Sem nota: `p.history-no-note` "sem nota", Inter 14 itálico `neutro-600` (5,84:1).
+- Rodapé `p.history-footer` numa linha: carimbo secundário "ver mais antigos" **ou** a linha de fim **ou** o erro ao carregar mais.
+- Carimbo secundário: o mesmo `.carimbo` (Caveat 21/700, 28px de altura, -2°), com borda e texto `neutro-700` (8,79:1). Hover: fundo `neutro-100`, borda e texto `tinta`. Área de toque estendida com `::after` (inset -8px), ≥ 44px. Não usa cor nova.
+- Região viva: `p.sr-only[role=status]` dentro da seção, vazia até a primeira carga de "mais antigos".
+
+**Data**
+- Formato `dd/mmm`, com o mês abreviado em minúsculas e sem ponto (jan fev mar abr mai jun jul ago set out nov dez): "25/set".
+- Fora do ano corrente, entra o ano: "12/mar/2025". O "ano corrente" é o de hoje em America/Sao_Paulo, e a data do contato também é lida nesse fuso.
+- No código: `Intl.DateTimeFormat` com `timeZone: 'America/Sao_Paulo'` e `formatToParts`, montando a string com a tabela de meses acima. O `month: 'short'` do pt-BR devolve "set." com ponto, então não serve direto.
+
+**Estados (ver `prints/historico-estados.png`)**
+
+| Estado | Como fica |
+|---|---|
+| Carregando (1ª carga) | Título "Histórico" e 4 itens de esqueleto na pauta: barras `neutro-200` de 12px centradas na linha (data de ~5rem; nota de 64–92% da largura, um dos itens com 2 linhas), com pulso de opacidade de 1,2s, que fica parado com `prefers-reduced-motion`. **Sem spinner.** O bloco tem `aria-busy="true"` e um `sr-only` "Carregando o histórico…". O resto do perfil já aparece e funciona. |
+| Lista | Até 20 itens + "ver mais antigos" no rodapé (só se houver próxima página). |
+| Carregando mais | O carimbo vira "carregando…", com `aria-busy="true"`, `aria-disabled="true"`, opacidade .6 e cursor `wait`. Clique repetido é ignorado e só sai um pedido por vez. A lista continua como está, sem esqueleto. |
+| Fim da lista | Quando o back diz que não há próxima página **depois de um "ver mais antigos"**, o carimbo some e entra a linha "é isso, esse foi o primeiro contato." em Inter 14 `neutro-600`. Lista que cabe toda na 1ª página termina sem rodapé. |
+| Vazio | Abaixo do título, `.nota` "nenhum contato ainda. que tal registrar o primeiro?" e, na linha de baixo, Inter 14 `neutro-600` "É só usar o carimbo “registrar contato”, aqui em cima." A dica aponta para o carimbo que já existe no topo do perfil, que não é duplicado. |
+| Erro na 1ª carga | Título + `.field-error` (Inter 14 `erro`, com o "!" de 3.13) "Não deu pra abrir o histórico agora." dentro de `role=alert` + carimbo secundário "Tentar novamente", que repete a 1ª página. Não troca o perfil todo pelo erro: nome, carimbo "registrar contato" e detalhes continuam usáveis. |
+| Erro ao carregar mais | Os itens já carregados ficam. No rodapé, "Não deu pra trazer os mais antigos." (`role=alert`) + "Tentar novamente", que repete o **mesmo cursor**. O foco fica no "Tentar novamente". |
+| Contato novo | Ver "Contato registrado com a lista aberta". |
+
+**Contato registrado com a lista aberta**
+- Quando o `ContactSheet` emite `recorded`, o front **insere o contato no topo da lista localmente**, sem refazer o GET. **O cursor não muda**: ele só anda com "ver mais antigos" e sempre vem do back. Por isso o item novo não aparece de novo nem empurra nenhum contato para fora da próxima página.
+- O item do topo é o **`contact` que volta na resposta do `POST`** (CRM-25), no mesmo formato do item do GET: id, tipo, data e nota vêm de lá. **Não** se monta o item com o que o front enviou; a data exibida é a do servidor.
+- Ao juntar uma página nova, o front descarta itens cujo id já está na lista, como rede de segurança.
+- O item novo ganha uma faixa `marca-texto-50` atrás dele (mesma geometria do selecionado: alinhada à pauta com `--pauta-offset`, 8px para cada lado e a pauta continua visível por cima), que some em **1,2s**: fica 70% do tempo e depois esmaece com `ease-saida`. Com `prefers-reduced-motion`, não há faixa nem animação: o item só aparece. O aviso já existente "Contato registrado. Boa conversa!" (`role=status`) cobre o leitor de tela, sem aviso novo.
+- Se o histórico ainda estiver carregando, deu erro ou estava vazio, o item novo entra quando a lista existir. Do vazio, o novo contato vira a lista com 1 item.
+
+**Contato desfeito ("Desfazer" do Quadro)**
+- "Desfazer" no perfil fica **fora da v1** (PM). O perfil não ganha botão nem toast com "Desfazer".
+- O "Desfazer" que já existe no Quadro (`DELETE` pelo `contact_id`) **tira o item com esse id do histórico** quando a lista desse amigo estiver em memória (store ou cache do front). Sai sem animação, o cursor não muda e o resto da lista fica na mesma ordem. Se era o único item, a seção volta ao estado vazio. Se o histórico ainda não foi carregado, não há nada a fazer: o próximo GET já vem sem ele.
+- O Tech Lead deixou um teste para isso no CRM-26.
+
+**Foco e leitores de tela**
+- Depois de "ver mais antigos", o foco vai para o **primeiro item recém-carregado** (`li[tabindex=-1]`, `focus()`), que mostra o anel de foco (`--anel-foco`) na faixa do item. O carimbo some ou volta a "ver mais antigos" abaixo dos itens novos.
+- A região viva anuncia "Mais {N} contatos carregados." (1: "Mais 1 contato carregado."). Na última página, acrescenta " Esse é o primeiro contato.".
+- O ícone do tipo é `aria-hidden` e o tipo existe como texto (`span.history-kind`): `sr-only` no desktop, visível no celular. O item é lido como "25/set encontro, vai se mudar…".
+- Na 1ª carga o foco não muda: continua no `h1` do perfil, como hoje.
+- Respostas antigas são descartadas ao trocar de amigo (o mesmo `request_version` do perfil), para não misturar históricos.
+
+**Celular e coluna estreita**
+- A troca é por largura da seção (`container-type: inline-size`; `@container (max-width: 24rem)`), não por viewport. Assim ela também vale com fonte a 200%.
+- Na coluna estreita o item empilha: a linha de cima tem ícone + data + "· encontro" (o tipo visível em Inter 14/400 `neutro-600`) e as linhas de baixo têm a nota, na largura toda. A 390px a nota tem ~298px.
+- O carimbo "ver mais antigos" continua no rodapé, com a área de toque ≥ 44.
+- A lista rola junto com a folha. A seção não tem rolagem interna.
+
+**Microcopy:** "Histórico" · `aria-label` "Contatos com {nome}, do mais recente ao mais antigo" · "sem nota" · "ver mais antigos" · "carregando…" · "é isso, esse foi o primeiro contato." · "Mais {N} contatos carregados." / "Mais 1 contato carregado." (+ " Esse é o primeiro contato.") · "Carregando o histórico…" · "nenhum contato ainda. que tal registrar o primeiro?" · "É só usar o carimbo “registrar contato”, aqui em cima." · "Não deu pra abrir o histórico agora." · "Não deu pra trazer os mais antigos." · "Tentar novamente" · tipos "mensagem / ligação / encontro".
+
+**Critérios de aceite (do PM, com o detalhe de UI)**
+1. Um contato registrado aparece no topo na hora, com a faixa de 1,2s (ou sem faixa com movimento reduzido), sem recarregar.
+2. A ordem é sempre do mais recente para o mais antigo, inclusive depois de inserir no topo e de carregar mais.
+3. "ver mais antigos" nunca repete nem pula contato: cursor do back (CRM-25), inserção local sem mexer no cursor e dedupe por id.
+4. Amigo sem contatos mostra o estado vazio.
+5. Quadro e "bom falar com" não mudam.
+6. Depois de "ver mais antigos", o foco está no primeiro item novo e a contagem é anunciada.
+7. Nota longa quebra em linhas de 32 e nenhum texto cruza a pauta, em 390 e 1280 e com fonte a 200%.
+8. O item novo do topo usa o `contact` devolvido pelo `POST` (id, tipo, data do servidor e nota), não o que o front enviou.
+9. Depois do "Desfazer" do Quadro (`DELETE` pelo `contact_id`), o item com esse id não está mais no histórico, sem mexer no cursor (teste do TL no CRM-26).
+10. O perfil não mostra mais o bloco "Última nota". No Quadro e no "bom falar com", a última nota continua aparecendo.
+11. Os dois erros do histórico usam "Tentar novamente", igual ao resto do app.
+
+**Conferido no protótipo:** desktop 1280 e celular 390. Os textos ficam sentados na pauta e nenhum item tem altura fora do múltiplo de 32. "20/dez/2025" cabe na coluna de 7rem. Depois de registrar 1 contato e carregar mais, a lista tem 28 itens com 28 ids distintos, o foco fica no 1º item novo e a região viva diz "Mais 7 contatos carregados. Esse é o primeiro contato.". Contraste: `primaria-700` 6,51, `neutro-600` 5,84, `neutro-700` 8,79, `erro` 6,35, `caneta` 10,41 na folha; na faixa `marca-texto-50`, o par mais fraco é `neutro-600` com 5,39. O carimbo "Tentar novamente" (~154 × 33px com o giro, área de toque ≥ 44) cabe numa linha e não estoura em 360, 390 e 1280, nem com a fonte a 200%. Sem "Última nota" nos detalhes do perfil.
+
+**Em aberto (TL/PM):** nada.
+
+**Fechado em 29/10/2026:** o `POST` devolve o `contact` criado (TL, CRM-25); "Desfazer" no perfil fica fora da v1 e o "Desfazer" do Quadro tira o item do histórico (PM/TL, CRM-26); "Última nota" sai do perfil (PM, CRM-26); o texto de repetir é "Tentar novamente" (PM); a linha "é isso, esse foi o primeiro contato." só aparece depois de um "ver mais antigos", e uma lista de até 20 termina sem rodapé (PM).
 
 ## 4. Motion
 | Elemento | Duração | Curva |
@@ -582,7 +672,7 @@ _Prints: `prints/aniversario-form-mobile.png`, `prints/aniversario-form-desktop.
 - Alvos: carimbo com área de toque estendida (≥ 44); abas de **44px** de altura no celular; demais ≥ 44.
 
 ## 6. Textos (pt-BR)
-bom falar · quadro · amigos · + novo · config · Configurações · Sair · Entrar · Criar conta · Já tenho conta · E-mail · Senha · Repetir senha · Entrando… · Criando… · E-mail ou senha incorretos. · Este e-mail já tem conta. · As senhas não são iguais. · A senha precisa ter pelo menos 8 caracteres. · Caderno de amigos · seu ritmo com as pessoas que importam · Grupos · editar · pronto · + novo grupo · salvar · apagar grupo · cancelar · Você já tem um grupo com esse nome. · Apagar '{nome}'? {N} amigos saem desse grupo, mas continuam no seu caderno. · Apagar '{nome}'? Nenhum amigo está nesse grupo. · registrar · registrar contato · Falei com {nome} · Mensagem / Ligação / Encontro · Nota rápida (opcional) · Registrar · Novo amigo · Só o nome já basta. O resto pode vir depois. · Falar a cada · Salvar amigo · Os outros estão em dia. · Seu caderno está em branco.
+bom falar · quadro · amigos · + novo · config · Configurações · Sair · Entrar · Criar conta · Já tenho conta · E-mail · Senha · Repetir senha · Entrando… · Criando… · E-mail ou senha incorretos. · Este e-mail já tem conta. · As senhas não são iguais. · A senha precisa ter pelo menos 8 caracteres. · Caderno de amigos · seu ritmo com as pessoas que importam · Grupos · editar · pronto · + novo grupo · salvar · apagar grupo · cancelar · Você já tem um grupo com esse nome. · Apagar '{nome}'? {N} amigos saem desse grupo, mas continuam no seu caderno. · Apagar '{nome}'? Nenhum amigo está nesse grupo. · registrar · registrar contato · Falei com {nome} · Mensagem / Ligação / Encontro · Nota rápida (opcional) · Registrar · Novo amigo · Só o nome já basta. O resto pode vir depois. · Falar a cada · Salvar amigo · Os outros estão em dia. · Seu caderno está em branco. · Histórico · Contatos com {nome}, do mais recente ao mais antigo · sem nota · ver mais antigos · carregando… · é isso, esse foi o primeiro contato. · Mais {N} contatos carregados. / Mais 1 contato carregado. · Esse é o primeiro contato. · Carregando o histórico… · nenhum contato ainda. que tal registrar o primeiro? · É só usar o carimbo “registrar contato”, aqui em cima. · Não deu pra abrir o histórico agora. · Não deu pra trazer os mais antigos. · Tentar novamente · mensagem / ligação / encontro
 **Proibido:** atrasado, pendente, vencido, "há N dias sem falar".
 
 
@@ -708,7 +798,7 @@ Sem biblioteca de arrastar: decisão de 20/10/2026, lógica simples. O quadro n�
 8. Aba **"config"** (cor `margem`, `/config`) depois de "+ novo" e antes do "?" (26/10/2026): MVP = e-mail logado + Sair.
 9. **Cabeçalho de folha** (3.12, 27/10/2026): D S T Q Q S S + data carimbo de hoje (SP) em todas as folhas autenticadas; não na capa `/entrar`; sem editar/filtrar.
 10. **Formulários na pauta** (3.13, CRM-22, 29/10/2026): direção A "Escrever na pauta", escolhida pelo Vinicius para novo amigo, editar amigo, grupos e config (se ganhar campos); a capa `/entrar` fica fora. **Só visual, 1:1 com os campos do `FriendForm.vue` do CRM-16** (Nome, Falar a cada = número + unidade, Grupos; nenhum campo novo). Exceção à regra 6 da identidade aprovada: rótulos de campo e o carimbo "Salvar amigo" em Caveat; valor digitado e controles em Inter. Card CRM-22 em cima do CRM-16, que continua como está.
-11. **Aniversário** (3.14, CRM-23, 29/10/2026): campo opcional "Aniversário (dia/mês)" no Novo/Editar (`birthday` = "dd/mm" ou `null`, limpar = `null`; dia e mês juntos ou nenhum) e selo "Aniversário hoje" no post-it só no dia. O selo é calculado no **backend** (America/Sao_Paulo; 29/02 vira 28/02 em ano não bissexto) e o front só lê a flag de aniversário hoje vinda da API (`is_birthday_today`), sem calcular datas. Decisões do PM: rótulo "(dia/mês, opcional)", erro sem sufixo e entrada incompleta com o mesmo erro, validada pela API. O selo é um adesivo carimbado em Inter 12/600 `primaria-800`, pendurado fora do fluxo no canto inferior direito, para não mudar a altura de 6 linhas do post-it. Sem ano, idade, notificação, lista de próximos, ordenar ou filtrar.
+11. **Aniversário** (3.14, CRM-23 back / CRM-24 front, 29/10/2026): campo opcional "Aniversário (dia/mês)" no Novo/Editar (`birthday` = "dd/mm" ou `null`, limpar = `null`; dia e mês juntos ou nenhum) e selo "Aniversário hoje" no post-it só no dia. O selo é calculado no **backend** (America/Sao_Paulo; 29/02 vira 28/02 em ano não bissexto) e o front só lê a flag de aniversário hoje vinda da API (`is_birthday_today`), sem calcular datas. Decisões do PM: rótulo "(dia/mês, opcional)", erro sem sufixo e entrada incompleta com o mesmo erro, validada pela API. O selo é um adesivo carimbado em Inter 12/600 `primaria-800`, pendurado fora do fluxo no canto inferior direito, para não mudar a altura de 6 linhas do post-it. Sem ano, idade, notificação, lista de próximos, ordenar ou filtrar.
 
 ### 7.10 Contraste dos post-its (WCAG AA, calculado por script)
 Todos os pares **em uso** passam. Os que falharam foram trocados no desenho.

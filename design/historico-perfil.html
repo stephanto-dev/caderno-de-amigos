@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Histórico do perfil (v1) · Caderno de amigos · protótipo</title>
+<!--
+  Protótipo do §3.15 "Histórico do perfil (v1)" — CRM-25 (back) / CRM-26 (front).
+  Autocontido: tokens e utilitários copiados de frontend/src/tokens.css e style.css (nomes do app).
+  Estados: ?estado=lista | carregando-mais | fim | vazio | carregando | erro | erro-mais | novo
+  Quadro de estados: ?quadro=estados    Modo print (sem rolagem interna): &print=1
+  Interativo: "ver mais antigos" simula a próxima página (cursor); "registrar contato" insere no topo.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ===== tokens.css (cópia de frontend/src/tokens.css) ===== */
+/* Adapted from design/tokens.css: keep the approved values, use English names in app code. */
+:root{
+  /* One vertical rhythm token keeps text aligned with the ruled paper. */
+  --notebook-line:2rem;
+  --ruling-offset:-0.3125rem;
+  /* Primary terracotta */
+  --primary-50:#F8ECE6; --primary-100:#F1D6CC; --primary-600:#B04A32; --primary-700:#963D29; --primary-800:#7C3221;
+  --primary:var(--primary-600); --primary-hover:var(--primary-700); --primary-pressed:var(--primary-800);
+  /* Warm neutrals */
+  --neutral-50:#FBF6EE; --neutral-100:#F4ECDF; --neutral-200:#E8DCC8; --neutral-300:#D6C7AF; --neutral-400:#B3A38C;
+  --neutral-500:#7A6B59; --neutral-600:#6B5E50; --neutral-700:#4F443A; --neutral-800:#3A312B; --neutral-900:#2B2420;
+  --sheet:var(--neutral-50); --paper:var(--neutral-200); --ink:var(--neutral-900);
+  --text:var(--neutral-900); --text-2:var(--neutral-600); --text-3:var(--neutral-500);
+  /* Notebook materials */
+  --pen-ink:#1F3A6B;
+  --highlight:#F6D98A;
+  --highlight-50:#FBEDC4;
+  --ruling:#C9D6E3;
+  --margin-rule:#D9837A;
+  --desk:#7A5A3E;
+  --tab-green:#B9CBB0;
+  /* States */
+  --success:#5E7A55; --success-700:#4A6343; --success-50:#EAF0E5;
+  --warning:#8A5A12; --warning-50:#F7EBD3;
+  --error:#9B3B36; --error-50:#F6E3DF;
+  --focus:#2F6185;
+  /* Typography */
+  --font-title:'Fraunces',Georgia,serif; --font-ui:'Inter',system-ui,sans-serif; --font-handwriting:'Caveat',cursive;
+  /* Horizontal spacing uses an 8px grid; vertical page spacing follows --notebook-line. */
+  --space-1:8px; --space-2:16px; --space-3:24px; --space-4:32px; --space-6:48px;
+  --radius-sm:6px; --radius-md:10px; --radius-pill:999px;
+  --shadow-page:0 18px 32px rgba(0,0,0,.35);
+  --shadow-paper:2px 4px 8px rgba(43,36,32,.2);
+  --focus-ring:0 0 0 2px var(--sheet),0 0 0 4px var(--focus);
+  --duration-fast:120ms; --duration-medium:200ms; --duration-slow:280ms;
+  --ease-out:cubic-bezier(.2,.8,.2,1); --ease-in:cubic-bezier(.4,0,1,1);
+}
+@media (prefers-reduced-motion:reduce){:root{--duration-fast:0ms;--duration-medium:0ms;--duration-slow:0ms}}
+
+/* Notebook utilities use CSS only. */
+.desk{background:var(--desk)}
+/* The ruled lines scroll with the page content. */
+.paper-lined{
+  background-color:var(--sheet);
+  background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--notebook-line) - 1px),var(--ruling) calc(var(--notebook-line) - 1px) var(--notebook-line));
+  background-position:0 var(--ruling-offset);
+  background-attachment:local;
+  line-height:var(--notebook-line);
+}
+/* The margin rule stays on the page container while its content scrolls. */
+.margin-line{position:relative;--margin-line-x:48px}
+.margin-line::after{content:"";position:absolute;top:0;bottom:0;left:var(--margin-line-x);width:2px;background:var(--margin-rule);pointer-events:none;z-index:1}
+/* Spiral rings repeat at the ruling interval. */
+.spiral-v{width:28px;background:repeating-linear-gradient(to bottom,transparent 0 11px,#8a8a8a 11px 13px,#e2e2e2 13px 17px,#8a8a8a 17px 21px,transparent 21px var(--notebook-line));filter:drop-shadow(0 2px 1px rgba(0,0,0,.35))}
+.spiral-h{height:24px;background:repeating-linear-gradient(to right,transparent 0 11px,#8a8a8a 11px 13px,#e2e2e2 13px 17px,#8a8a8a 17px 21px,transparent 21px var(--notebook-line));filter:drop-shadow(1px 1px 1px rgba(0,0,0,.35))}
+/* Handwriting is limited to notes, stamps, and tab labels. */
+.handwritten-note{font-family:var(--font-handwriting);font-weight:500;font-size:1.375rem;line-height:var(--notebook-line);color:var(--pen-ink)}
+.highlight{background:linear-gradient(transparent 55%,var(--highlight) 55%)}
+.stamp{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:2px solid var(--primary);border-radius:var(--radius-sm);color:var(--primary);font-family:var(--font-handwriting);font-weight:700;font-size:21px;line-height:1;transform:rotate(-2deg);vertical-align:middle;background:transparent;cursor:pointer;transition:background-color var(--duration-fast),color var(--duration-fast)}
+.stamp:hover{background:var(--primary-50);color:var(--primary-700);border-color:var(--primary-700)}
+.stamp:active{background:var(--primary-100);color:var(--primary-800);transform:rotate(-2deg) scale(.97)}
+.stamp:disabled{opacity:.45;cursor:not-allowed}
+.tab{font-family:var(--font-handwriting);font-weight:700;font-size:20px;color:var(--ink);box-shadow:3px 2px 4px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;text-decoration:none}
+.tab[aria-current]{background:var(--primary)!important;color:#fff}
+/* Paper surfaces for forms, sheets, and dialogs. */
+.paper-surface{background:var(--paper);border:2px solid var(--ink);border-radius:var(--radius-md);box-shadow:var(--shadow-paper)}
+.field{height:48px;padding:0 16px;background:var(--sheet);border:1.5px solid var(--ink);border-radius:var(--radius-sm);font:400 16px/24px var(--font-ui);color:var(--ink);width:100%}
+.field::placeholder{color:var(--neutral-500)}
+.field:focus{outline:none;box-shadow:var(--focus-ring)}
+.field[aria-invalid="true"]{border-color:var(--error)}
+/* Decorative corners must reserve space instead of covering text. */
+.sticky-note{position:absolute;top:calc(var(--notebook-line) + 4px);right:16px;width:96px;padding:8px;background:var(--highlight);font:500 18px/22px var(--font-handwriting);color:var(--ink);transform:rotate(3deg);box-shadow:var(--shadow-paper);pointer-events:none}
+.polaroid{position:absolute;top:calc(var(--notebook-line) + 8px);right:24px;width:96px;padding:6px 6px 22px;background:#fff;transform:rotate(4deg);box-shadow:var(--shadow-paper);pointer-events:none}
+.tape::before{content:"";position:absolute;top:-9px;left:24px;width:48px;height:16px;background:rgba(255,255,255,.7);transform:rotate(-6deg)}
+.corner-reserve{padding-right:112px}
+:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+
+
+/* ===== style.css (recorte do app) ===== */
+body{margin:0;font-family:var(--font-ui);color:var(--ink)}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+.view-title{margin:0;font-family:var(--font-title);font-size:1.75rem;font-weight:600;line-height:var(--notebook-line)}
+.group-badge{display:inline-flex;align-items:center;box-sizing:border-box;height:18px;padding:0 6px;border-radius:4px;background:var(--highlight);box-shadow:inset 0 0 0 1px rgb(43 36 32 / 32%);color:var(--neutral-700);font:500 .75rem/18px var(--font-ui);white-space:nowrap}
+.scene{box-sizing:border-box;height:100dvh;overflow:hidden;padding:28px 12px 64px}
+.book{position:relative;height:100%;max-width:640px;margin:0 auto}
+.page{position:absolute;inset:0;overflow:hidden;border-radius:var(--radius-md);box-shadow:var(--shadow-page);--margin-line-x:36px}
+.page-content{box-sizing:border-box;height:100%;overflow-y:auto;padding:var(--notebook-line) 16px calc(var(--notebook-line)*2) 52px}
+.page-right{z-index:5}
+.profile-open .page-left{visibility:hidden}
+.spiral-top{position:absolute;z-index:6;top:-12px;right:20px;left:20px}
+.spiral-center{display:none}
+.tabs{position:fixed;z-index:4;bottom:22px;left:12px;display:flex;gap:4px}
+.tabs .tab{box-sizing:border-box;height:44px;padding:12px 8px 0;border-radius:0 0 8px 8px}
+.tab-board{background:var(--primary-100)}.tab-friends{background:var(--highlight)}.tab-new{background:var(--tab-green)}.tab-config{background:var(--margin-rule)}
+.tabs .tab[aria-current="page"]{height:48px}
+.back-link{display:flex;width:fit-content;align-items:flex-end;height:2.75rem;margin-top:-.75rem;font:500 .875rem/var(--notebook-line) var(--font-ui);color:var(--neutral-700);text-decoration:underline;text-underline-offset:3px}
+@media (min-width:1024px){
+  .view-title{font-size:1.875rem}
+  .scene{padding:48px 64px 48px 48px}
+  .page{--margin-line-x:56px}
+  .page-content{padding:var(--notebook-line) 40px calc(var(--notebook-line)*2) 80px}
+  .tabs{position:absolute;top:64px;right:-42px;bottom:auto;left:auto;flex-direction:column}
+  .tabs .tab{width:42px;height:104px;padding:0;border-radius:0 8px 8px 0;writing-mode:vertical-rl}
+  .tabs .tab[aria-current="page"]{width:48px;height:104px}
+}
+@media (min-width:1280px){
+  .back-link{display:none}
+  .scene{display:flex;justify-content:center;padding:48px 0}
+  .book{display:flex;width:1120px;max-width:none;margin:0}
+  .page{position:relative;inset:auto;flex:1;min-width:0}
+  .page-left{visibility:visible;border-radius:10px 0 0 10px;box-shadow:var(--shadow-page),inset -18px 0 24px -14px rgba(0,0,0,.18)}
+  .profile-open .page-left{visibility:visible}
+  .page-right{z-index:auto;border-radius:0 10px 10px 0;box-shadow:var(--shadow-page),inset 18px 0 24px -14px rgba(0,0,0,.18)}
+  .spiral-top{display:none}
+  .spiral-center{position:absolute;z-index:6;top:16px;bottom:16px;left:50%;display:block;transform:translateX(-50%)}
+}
+
+/* cabeçalho da folha (SheetHeader.vue) */
+.cabecalho-folha{display:flex;align-items:center;justify-content:space-between;gap:12px;height:var(--notebook-line)}
+.sheet-weekdays{display:flex;align-items:center;gap:4px;list-style:none;margin:0;padding:0}
+.sheet-weekdays li{display:grid;place-items:center;box-sizing:border-box;width:22px;height:22px;border:1.5px solid var(--ink);border-radius:2px;color:var(--ink);font:600 11px/1 var(--font-ui)}
+.sheet-weekdays li[aria-current="date"]{background:var(--ink);color:#fff;border-width:2px;font-weight:700}
+.sheet-date{flex:none;padding:0 2px 2px;border-bottom:1.5px dashed var(--neutral-400);color:var(--ink);font:700 21px/1 var(--font-handwriting);letter-spacing:.03em;white-space:nowrap}
+@media (max-width:360px){.cabecalho-folha{flex-wrap:wrap;row-gap:0;height:calc(var(--notebook-line)*2)}.sheet-weekdays{flex:none}}
+
+/* lista de amigos (FriendsView.vue, recorte) */
+.friends-header{display:flex;align-items:center;justify-content:space-between;gap:8px 16px}
+.friends-search{display:flex;align-items:center;height:calc(var(--notebook-line)*2)}
+.friends-search input{box-sizing:border-box;width:100%;height:48px;padding:0 12px;border:1.5px solid var(--ink);border-radius:var(--radius-sm);background:var(--sheet);color:var(--ink);font:1rem var(--font-ui)}
+.friends-search input::placeholder{color:var(--neutral-700)}
+.friends-list{margin:0;padding:0;list-style:none}
+.friend-row{display:flex;align-items:center;min-height:calc(var(--notebook-line)*2);padding:0 8px;border-radius:var(--radius-sm);color:var(--ink);text-decoration:none}
+.selected-friend{background:var(--highlight-50)}
+.friend-name,.friend-last-contact{display:block;line-height:var(--notebook-line)}
+.friend-name{font-family:var(--font-title);font-size:1.1875rem;font-weight:600}
+.friend-last-contact{color:var(--neutral-600);font-size:.875rem}
+
+/* perfil (FriendDetailView.vue, recorte) */
+.profile-cadence{margin:0;color:var(--neutral-600)}
+.profile-contact-line{margin:0;height:var(--notebook-line);display:flex;align-items:center}
+.profile-feedback{margin:0;color:var(--success-700);min-height:var(--notebook-line)}
+.profile-details{margin:var(--notebook-line) 0 0}
+.profile-details>div{margin-bottom:var(--notebook-line)}
+.profile-details dt{font-weight:600}
+.profile-details dd{margin:0}
+.profile-groups{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:var(--notebook-line)}
+.profile-actions{display:flex;gap:8px 16px}
+.profile-actions button{min-height:var(--notebook-line);padding:0;border:0;background:transparent;color:var(--neutral-700);font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.field-error{display:flex;gap:.375rem;margin:0;font:400 .875rem/var(--notebook-line) var(--font-ui);color:var(--error)}
+
+/* ===================================================================
+   NOVO — §3.15 Histórico do perfil (FriendHistory.vue)
+   Só tokens e utilitários existentes. Tudo em múltiplos de --notebook-line.
+   =================================================================== */
+.friend-history{margin-top:var(--notebook-line);container-type:inline-size}
+.history-title{margin:0;font:600 1.1875rem/var(--notebook-line) var(--font-title)}
+.history-list{margin:0;padding:0;list-style:none}
+.history-item{position:relative;isolation:isolate;display:grid;align-items:start;grid-template-columns:7rem minmax(0,1fr);column-gap:16px;outline:none}
+.history-item::before{content:"";position:absolute;z-index:-1;top:var(--ruling-offset);bottom:calc(var(--ruling-offset)*-1);left:-8px;right:-8px;border-radius:4px;background:transparent;pointer-events:none}
+.history-item:focus::before{box-shadow:var(--focus-ring)}
+.history-meta{display:flex;flex-wrap:wrap;align-items:center;align-content:flex-start;column-gap:4px;margin:0;min-height:var(--notebook-line);font:600 .875rem/var(--notebook-line) var(--font-ui);color:var(--primary-700)}
+.history-meta>*{white-space:nowrap}
+.history-meta svg{flex:none;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.history-kind{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.history-note{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.history-no-note{margin:0;font:italic 400 .875rem/var(--notebook-line) var(--font-ui);color:var(--neutral-600)}
+.history-footer{margin:0;min-height:var(--notebook-line);display:flex;align-items:center;flex-wrap:wrap;gap:0 16px}
+.history-end{margin:0;font:400 .875rem/var(--notebook-line) var(--font-ui);color:var(--neutral-600)}
+.history-empty{margin:0}
+.history-empty-hint{margin:0;font:400 .875rem/var(--notebook-line) var(--font-ui);color:var(--neutral-600)}
+/* carimbo secundário: mesmo .stamp, tinta neutra */
+.stamp-quiet{position:relative;border-color:var(--neutral-700);color:var(--neutral-700)}
+.stamp-quiet:hover{background:var(--neutral-100);border-color:var(--ink);color:var(--ink)}
+.stamp-quiet::after{content:"";position:absolute;inset:-8px -4px}  /* alvo ≥ 44px */
+.stamp-quiet[aria-busy="true"]{opacity:.6;cursor:wait}
+/* esqueleto: barras de 12px centradas nas linhas, sem spinner */
+.history-skeleton{margin:0;padding:0;list-style:none}
+.history-skeleton li{display:grid;grid-template-columns:7rem minmax(0,1fr);column-gap:16px}
+.skeleton-bar{display:block;height:var(--notebook-line);background:linear-gradient(var(--paper),var(--paper)) no-repeat 0 10px/100% 12px;border-radius:6px;animation:history-pulse 1.2s ease-in-out infinite alternate}
+@keyframes history-pulse{from{opacity:1}to{opacity:.5}}
+/* contato recém-registrado: faixa marca-texto que some em 1,2s */
+.history-item--new::before{background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--notebook-line) - 1px),var(--ruling) calc(var(--notebook-line) - 1px) var(--notebook-line));animation:history-fresh 1.2s var(--ease-out) forwards}  /* a pauta continua visível sob a faixa */
+.history-item--new.is-frozen::before{animation:none;background-color:var(--highlight-50)}
+@keyframes history-fresh{from{background-color:var(--highlight-50)}70%{background-color:var(--highlight-50)}to{background-color:transparent}}
+@media (prefers-reduced-motion:reduce){
+  .history-item--new:not(.is-frozen)::before{animation:none;background-color:transparent}
+  .skeleton-bar{animation:none}
+}
+/* coluna estreita (celular, zoom alto): data em cima, nota embaixo; tipo visível */
+@container (max-width:24rem){
+  .history-item,.history-skeleton li{grid-template-columns:minmax(0,1fr)}
+  .history-kind{position:static;width:auto;height:auto;overflow:visible;clip-path:none;font-weight:400;color:var(--neutral-600)}
+  .history-kind::before{content:"· "}
+}
+
+/* ===== modo print / quadro de estados (só para o protótipo) ===== */
+.print .scene{height:auto;overflow:visible}
+.print .book{height:auto}
+.print .page-content{height:auto;min-height:100%;overflow:visible}
+@media (max-width:1279px){.print .page{position:relative}.print .page-left{display:none}}
+.board{background:var(--desk);padding:48px;display:grid;grid-template-columns:repeat(4,400px);gap:40px 32px;width:max-content;font-family:var(--font-ui)}
+.board-title{grid-column:1/-1;margin:0;color:#fff;font:600 1.75rem/var(--notebook-line) var(--font-title)}
+.board-title span{display:block;font:400 .875rem/var(--notebook-line) var(--font-ui);color:var(--neutral-100)}
+.board-cell figcaption{margin:0 0 8px;min-height:48px;color:#fff;font:600 .875rem/24px var(--font-ui)}
+.board-cell figcaption span{font-weight:400;color:var(--neutral-100)}
+.board-cell figure{margin:0}
+.board-sheet{position:relative;box-sizing:border-box;border-radius:var(--radius-md);box-shadow:var(--shadow-page);padding:var(--notebook-line) 16px var(--notebook-line) 52px;--margin-line-x:36px;overflow:hidden}
+.board-sheet .friend-history{margin-top:0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ---------- ícones: mesmos paths de ContactSheet.vue (CONTACT_OPTIONS) ---------- */
+const KINDS = {
+  message:{label:'Mensagem', icon:'M21 11a9 9 0 0 1-9 9 10 10 0 0 1-4-1l-5 2 2-5a10 10 0 0 1-1-4 9 9 0 0 1 17-1Z'},
+  call:{label:'Ligação', icon:'m7 3 3 5-3 3a15 15 0 0 0 6 6l3-3 5 3v3a2 2 0 0 1-2 2A19 19 0 0 1 2 5a2 2 0 0 1 2-2Z'},
+  meeting:{label:'Encontro', icon:'M4 8h12v7a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5ZM16 8h2a3 3 0 0 1 0 6h-2M7 2v3M12 2v3M2 22h18'},
+};
+
+/* ---------- data: dd/mmm, +/aaaa fora do ano corrente (fuso America/Sao_Paulo) ---------- */
+const TZ = 'America/Sao_Paulo';
+const MONTHS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const NOW = new Date('2026-10-29T15:00:00-03:00');  // "hoje" fixo para o protótipo
+const parts = d => Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d).map(p=>[p.type,p.value]));
+function format_contact_date(iso){
+  const p = parts(new Date(iso)), today = parts(NOW);
+  const label = `${p.day}/${MONTHS[+p.month-1]}`;
+  return p.year === today.year ? label : `${label}/${p.year}`;
+}
+const full_date = iso => new Intl.DateTimeFormat('pt-BR',{timeZone:TZ,dateStyle:'long'}).format(new Date(iso));
+
+/* ---------- dados de exemplo: 20 na 1ª página + 7 na última ---------- */
+const SEED = [
+ ['2026-10-27T19:40','meeting','almoço no Tia Zélia. tá animado com a mudança, já fechou o apê em Fortaleza.'],
+ ['2026-10-20T21:10','message','mandou foto do Bento de chapéu de aniversário'],
+ ['2026-10-12T18:05','call',''],
+ ['2026-10-03T20:30','message','pediu indicação de dentista.\nmandei o contato da Dra. Lúcia.'],
+ ['2026-09-25T13:00','meeting','vai se mudar pra Fortaleza em dezembro. quer fazer uma despedida com a turma da faculdade antes, talvez no sítio do Caio, e perguntou se eu ajudo a organizar a lista e a vaquinha do churrasco.'],
+ ['2026-09-14T22:15','message','cobrei o livro emprestado (de novo)'],
+ ['2026-09-02T19:00','call','entrevista na empresa nova correu bem'],
+ ['2026-08-21T12:30','meeting','café rápido perto do trabalho dele'],
+ ['2026-08-09T10:45','message',''],
+ ['2026-07-28T20:00','call','mãe dele saiu do hospital, tá tudo bem'],
+ ['2026-07-11T21:30','meeting','show do Lenine. levar casaco da próxima vez'],
+ ['2026-06-30T09:15','message','parabéns pelo aniversário do Bento'],
+ ['2026-06-12T19:50','call','combinamos a viagem de julho'],
+ ['2026-05-24T13:20','meeting','feijoada na casa da Ana'],
+ ['2026-05-02T18:40','message','indicou a série Pedaço de Mim'],
+ ['2026-04-15T20:10','call',''],
+ ['2026-03-21T16:00','meeting','jogo do Sport, perdemos'],
+ ['2026-02-10T11:30','message','foto do carnaval em Olinda'],
+ ['2026-01-04T19:00','call','feliz ano novo atrasado'],
+ ['2025-12-20T21:00','meeting','amigo secreto da turma, tirou a Bia'],
+ // página 2 (última)
+ ['2025-11-08T19:30','message','perguntou do meu trabalho novo'],
+ ['2025-09-17T20:00','call','longa conversa sobre o término com a Carol'],
+ ['2025-07-05T14:00','meeting','churrasco de formatura do irmão dele'],
+ ['2025-05-12T10:10','message',''],
+ ['2025-03-12T19:45','meeting','reencontro depois de anos. continua igualzinho'],
+ ['2025-02-01T12:00','message','me achou no Instagram'],
+ ['2024-12-18T22:30','call','primeira ligação depois da faculdade'],
+].map(([at,kind,note],i)=>({id:900-i, occurred_at:at+':00-03:00', kind, note}));
+const PAGE_1 = SEED.slice(0,20), PAGE_2 = SEED.slice(20);
+
+/* ---------- render ---------- */
+const esc = s => s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function item_html(c, extra=''){
+  const k = KINDS[c.kind];
+  return `<li class="history-item ${extra}" tabindex="-1" data-id="${c.id}">
+    <p class="history-meta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${k.icon}"/></svg>
+      <time datetime="${c.occurred_at}" title="${full_date(c.occurred_at)}">${format_contact_date(c.occurred_at)}</time>
+      <span class="history-kind">${k.label.toLowerCase()}</span></p>
+    ${c.note ? `<p class="history-note handwritten-note">${esc(c.note)}</p>` : `<p class="history-no-note">sem nota</p>`}
+  </li>`;
+}
+function skeleton_html(){
+  const rows = [[50,85],[45,70],[50,92,48],[45,64]];
+  return `<ul class="history-skeleton" aria-hidden="true">${rows.map(([d,...n])=>`<li><span class="skeleton-bar" style="width:${d/10}rem"></span><span>${n.map(w=>`<span class="skeleton-bar" style="width:${w}%"></span>`).join('')}</span></li>`).join('')}</ul>`;
+}
+/* estado → html da seção */
+function history_html(state, {items, limit, name='João Pedro'}={}){
+  const list = items ?? (['fim','erro-mais'].includes(state) || state==='fim' ? SEED : PAGE_1);
+  const shown = limit ? list.slice(0,limit) : list;
+  const shown_items = state==='fim' && limit ? list.slice(-limit) : shown;
+  const ol = (extra_first) => `<ol class="history-list" aria-label="Contatos com ${name}, do mais recente ao mais antigo">${shown_items.map((c,i)=>item_html(c, i===0&&extra_first?extra_first:'')).join('')}</ol>`;
+  const head = `<h2 class="history-title" id="history-title">Histórico</h2>`;
+  const live = msg => `<p class="sr-only" role="status" data-live>${msg||''}</p>`;
+  const more = (busy) => `<p class="history-footer"><button type="button" class="stamp stamp-quiet" data-more ${busy?'aria-busy="true" aria-disabled="true"':''}>${busy?'carregando…':'ver mais antigos'}</button></p>`;
+  switch(state){
+    case 'carregando': return `${head}<div aria-busy="true">${skeleton_html()}<p class="sr-only" role="status">Carregando o histórico…</p></div>`;
+    case 'vazio': return `${head}<p class="history-empty handwritten-note">nenhum contato ainda. que tal registrar o primeiro?</p><p class="history-empty-hint">É só usar o carimbo “registrar contato”, aqui em cima.</p>`;
+    case 'erro': return `${head}<div role="alert"><p class="field-error"><span aria-hidden="true">!</span>Não deu pra abrir o histórico agora.</p></div><p class="history-footer"><button type="button" class="stamp stamp-quiet" data-retry>Tentar novamente</button></p>`;
+    case 'erro-mais': {
+      const its = items ?? PAGE_1; const s = limit ? its.slice(-limit) : its;
+      return `${head}<ol class="history-list" aria-label="Contatos com ${name}, do mais recente ao mais antigo">${s.map(c=>item_html(c)).join('')}</ol><div role="alert"><p class="field-error"><span aria-hidden="true">!</span>Não deu pra trazer os mais antigos.</p></div><p class="history-footer"><button type="button" class="stamp stamp-quiet" data-more>Tentar novamente</button></p>`;
+    }
+    case 'carregando-mais': {
+      const s = limit ? PAGE_1.slice(-limit) : PAGE_1;
+      return `${head}<ol class="history-list" aria-label="Contatos com ${name}, do mais recente ao mais antigo">${s.map(c=>item_html(c)).join('')}</ol>${more(true)}${live()}`;
+    }
+    case 'fim': {
+      const s = limit ? SEED.slice(-limit) : SEED;
+      return `${head}<ol class="history-list" aria-label="Contatos com ${name}, do mais recente ao mais antigo">${s.map(c=>item_html(c)).join('')}</ol><p class="history-footer"><span class="history-end">é isso, esse foi o primeiro contato.</span></p>${live('Mais 7 contatos carregados. Esse é o primeiro contato.')}`;
+    }
+    case 'novo': {
+      const fresh = {id:1000, occurred_at:'2026-10-29T14:58:00-03:00', kind:'call', note:'ligou pra contar que a mudança foi adiantada pra novembro'};
+      const s = [fresh, ...(limit ? PAGE_1.slice(0,limit-1) : PAGE_1)];
+      return `${head}<ol class="history-list" aria-label="Contatos com ${name}, do mais recente ao mais antigo">${s.map((c,i)=>item_html(c, i===0?'history-item--new is-frozen':'')).join('')}</ol>${more(false)}${live()}`;
+    }
+    default: { // lista
+      const s = limit ? PAGE_1.slice(0,limit) : PAGE_1;
+      return `${head}<ol class="history-list" aria-label="Contatos com ${name}, do mais recente ao mais antigo">${s.map(c=>item_html(c)).join('')}</ol>${more(false)}${live()}`;
+    }
+  }
+}
+
+const WEEK = [['domingo','D'],['segunda-feira','S'],['terça-feira','T'],['quarta-feira','Q'],['quinta-feira','Q'],['sexta-feira','S'],['sábado','S']];
+const sheet_header = () => `<div class="cabecalho-folha" role="group" aria-label="Data de hoje"><ol class="sheet-weekdays" aria-label="Dia da semana">${WEEK.map(([l,i])=>`<li aria-label="${l}" ${l==='quinta-feira'?'aria-current="date"':''}>${i}</li>`).join('')}</ol><time class="sheet-date" datetime="2026-10-29">29/10/2026</time></div>`;
+
+function app_html(state){
+  const friends = [['Ana Beatriz','há 4 dias'],['Caio Mendes','há 2 semanas'],['João Pedro','há 2 dias'],['Lúcia Ramos','há 1 mês'],['Marina Couto','ontem']];
+  const last = state==='vazio' ? 'nunca' : '27/10/2026';
+  return `<main class="desk scene"><div class="book profile-open">
+  <div class="spiral-top spiral-h" aria-hidden="true"></div>
+  <section class="page page-left margin-line"><div class="page-content paper-lined">${sheet_header()}
+    <div class="friends-header"><h1 class="view-title">Amigos</h1><a class="stamp" href="#">novo amigo</a></div>
+    <label class="friends-search"><span class="sr-only">Buscar amigos por nome</span><input type="search" placeholder="buscar por nome"></label>
+    <ul class="friends-list" aria-label="Amigos">${friends.map(([n,l])=>`<li><a class="friend-row ${n==='João Pedro'?'selected-friend':''}" href="#"><span><span class="friend-name">${n}</span><span class="friend-last-contact">último contato: ${n==='João Pedro'&&state==='vazio'?'nunca':l}</span></span></a></li>`).join('')}</ul>
+  </div></section>
+  <div class="spiral-center spiral-v" aria-hidden="true"></div>
+  <section class="page page-right margin-line" aria-label="Perfil"><div class="page-content paper-lined">${sheet_header()}
+    <article class="friend-profile">
+      <a class="back-link" href="#">Voltar</a>
+      <h1 class="view-title" tabindex="-1">João Pedro</h1>
+      <p class="profile-cadence">a cada 3 semanas</p>
+      <p class="profile-contact-line"><button type="button" class="stamp" data-record>registrar contato</button></p>
+      <p class="profile-feedback" role="status" data-feedback></p>
+      <dl class="profile-details" style="margin-top:0">
+        <div><dt>Grupos</dt><dd class="profile-groups"><span class="group-badge">faculdade</span></dd></div>
+        <div><dt>No Quadro</dt><dd>${state==='vazio'?'Faz um tempinho':'Em dia'}</dd></div>
+        <div><dt>Último contato</dt><dd>${last}</dd></div>
+        <!-- "Última nota" sai do perfil no CRM-26: a nota mais recente já é o 1º item do Histórico -->
+      </dl>
+      <div class="profile-actions"><button type="button">Editar amigo</button><button type="button">Apagar amigo</button></div>
+      <section class="friend-history" aria-labelledby="history-title" data-history>${history_html(state)}</section>
+    </article>
+  </div></section>
+  <nav class="tabs" aria-label="Seções"><a class="tab tab-board" href="#">Quadro</a><a class="tab tab-friends" href="#" aria-current="page">Amigos</a><a class="tab tab-new" href="#">+ novo</a><a class="tab tab-config" href="#">config</a></nav>
+</div></main>`;
+}
+
+function board_html(){
+  const cells = [
+    ['carregando','Carregando (1ª carga)','esqueleto na pauta, sem spinner'],
+    ['lista','Lista + “ver mais antigos”','recorte: 4 de 20'],
+    ['carregando-mais','Carregando mais','botão desabilitado, aria-busy; recorte: 4 últimos'],
+    ['fim','Fim da lista','sem botão; recorte: 4 mais antigos'],
+    ['novo','Contato novo no topo','faixa marca-texto (congelada para o print)'],
+    ['vazio','Vazio','amigo sem nenhum contato'],
+    ['erro','Erro na 1ª carga','resto do perfil continua usável'],
+    ['erro-mais','Erro ao carregar mais','lista carregada fica; recorte: 4 últimos'],
+  ];
+  return `<div class="board"><h1 class="board-title">Histórico do perfil (v1) · estados<span>§3.15 · CRM-25 / CRM-26 · coluna de ~400px (mobile); no desktop a data fica em coluna à esquerda</span></h1>
+  ${cells.map(([s,t,d])=>`<div class="board-cell"><figure><figcaption>${t} <span>· ${d}</span></figcaption><div class="board-sheet paper-lined margin-line"><section class="friend-history" style="margin-top:0">${history_html(s,{limit:4}).replaceAll('id="history-title"','')}</section></div></figure></div>`).join('')}</div>`;
+}
+
+/* ---------- interações (simuladas) ---------- */
+let next_cursor = 'c2';   // opaco, vem do back (CRM-25)
+function wire(){
+  const root = document.querySelector('[data-history]'); if(!root) return;
+  root.addEventListener('click', e=>{
+    const btn = e.target.closest('[data-more]'); if(!btn || btn.getAttribute('aria-busy')==='true') return;
+    btn.setAttribute('aria-busy','true'); btn.setAttribute('aria-disabled','true'); btn.textContent='carregando…';
+    setTimeout(()=>{
+      const ol = root.querySelector('.history-list');
+      const seen = new Set([...ol.children].map(li=>+li.dataset.id));
+      const fresh = PAGE_2.filter(c=>!seen.has(c.id));          // dedupe por id
+      ol.insertAdjacentHTML('beforeend', fresh.map(c=>item_html(c)).join(''));
+      next_cursor = null;
+      btn.closest('.history-footer').outerHTML = `<p class="history-footer"><span class="history-end">é isso, esse foi o primeiro contato.</span></p>`;
+      root.querySelector('[data-live]').textContent = `Mais ${fresh.length} contatos carregados. Esse é o primeiro contato.`;
+      ol.querySelector(`[data-id="${fresh[0].id}"]`).focus();
+    }, 900);
+  });
+  document.querySelector('[data-record]')?.addEventListener('click', ()=>{
+    const ol = root.querySelector('.history-list'); if(!ol) return;
+    // simula a resposta do POST (CRM-25): o item vem do `contact` devolvido, com a data do servidor
+    const c = {id:Date.now(), occurred_at:new Date().toISOString(), kind:'message', note:'contato registrado agora (simulação)'};
+    ol.insertAdjacentHTML('afterbegin', item_html(c,'history-item--new'));  // cursor não muda
+    document.querySelector('[data-feedback]').textContent = 'Contato registrado. Boa conversa!';
+  });
+}
+
+const q = new URLSearchParams(location.search);
+if(q.get('print')) document.documentElement.classList.add('print');
+document.getElementById('app').innerHTML = q.get('quadro')==='estados' ? board_html() : app_html(q.get('estado')||'lista');
+wire();
+</script>
+</body>
+</html>
