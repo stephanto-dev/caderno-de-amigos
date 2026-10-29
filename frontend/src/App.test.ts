@@ -61,14 +61,14 @@ describe('App navigation', () => {
     await router.push('/amigos/novo')
     await flushPromises()
     expect(wrapper.get('h1').text()).toBe('Novo amigo')
-    expect(wrapper.get('a[aria-current="page"]').text()).toBe('Amigos')
+    expect(wrapper.get('a[aria-current="page"]').text()).toBe('amigos')
 
     await router.push('/amigos/123')
     await flushPromises()
     expect(wrapper.get('.page-left h1').text()).toBe('Amigos')
     expect(wrapper.get('.page-right h1').text()).toBe('Perfil do amigo')
     expect(wrapper.get('.page-right a').attributes('href')).toBe('/amigos')
-    expect(wrapper.get('a[aria-current="page"]').text()).toBe('Amigos')
+    expect(wrapper.get('a[aria-current="page"]').text()).toBe('amigos')
 
     await router.push('/entrar')
     await flushPromises()
@@ -83,18 +83,18 @@ describe('App navigation', () => {
 
     expect(wrapper.find('.desk .book .page-left .paper-lined').exists()).toBe(true)
     expect(wrapper.find('.page-right').exists()).toBe(false)
-    expect(wrapper.get('nav[aria-label="Seções"]').text()).toContain('Quadro')
-    expect(wrapper.get('nav[aria-label="Seções"]').text()).toContain('Amigos')
+    expect(wrapper.get('nav[aria-label="Seções"]').text()).toContain('quadro')
+    expect(wrapper.get('nav[aria-label="Seções"]').text()).toContain('amigos')
     expect(Array.from(wrapper.findAll('nav[aria-label="Seções"] a')).map((tab) => tab.text())).toEqual([
-      'Quadro', 'Amigos', 'config',
+      'quadro', 'amigos', 'config',
     ])
-    expect(wrapper.get('a[aria-current="page"]').text()).toBe('Quadro')
+    expect(wrapper.get('a[aria-current="page"]').text()).toBe('quadro')
 
     await wrapper.get('a[href="/amigos"]').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/amigos')
     expect(wrapper.find('.page-right .paper-lined').exists()).toBe(true)
-    expect(wrapper.get('a[aria-current="page"]').text()).toBe('Amigos')
+    expect(wrapper.get('a[aria-current="page"]').text()).toBe('amigos')
   })
 
   it('keeps the notebook design tokens available', () => {
@@ -115,6 +115,8 @@ describe('App navigation', () => {
     const wrapper = mount(App, { global: { plugins: [router] } })
 
     expect(wrapper.get('h1').text()).toBe('Configurações')
+    expect(wrapper.get('h1').classes()).toContain('view-title')
+    expect(wrapper.get('h1').classes()).not.toContain('sr-only')
     expect(wrapper.text()).toContain('ana@example.com')
     await wrapper.get('button[name="logout"]').trigger('click')
     await flushPromises()
@@ -133,6 +135,8 @@ describe('App navigation', () => {
     const wrapper = mount(App, { global: { plugins: [router] } })
 
     expect(wrapper.get('h1').text()).toBe('Configurações')
+    expect(wrapper.get('h1').classes()).toContain('view-title')
+    expect(wrapper.get('h1').classes()).not.toContain('sr-only')
     expect(wrapper.text()).not.toContain('E-mail')
   })
 

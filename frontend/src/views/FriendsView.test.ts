@@ -19,6 +19,8 @@ describe('Friends list', () => {
     const wrapper = mount(FriendsView, MOUNT_OPTIONS)
     await flushPromises()
 
+    expect(wrapper.get('h1').classes()).toContain('view-title')
+    expect(wrapper.get('h1').classes()).not.toContain('sr-only')
     expect(wrapper.findAll('li')).toHaveLength(2)
     expect(wrapper.text()).toContain('último contato: 25/10/2026')
     expect(wrapper.text()).toContain('ainda não registrado')

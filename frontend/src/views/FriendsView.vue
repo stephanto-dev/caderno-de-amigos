@@ -40,7 +40,7 @@ onMounted(get_friends_for_view)
 <template>
   <div class="friends-view">
     <header class="friends-header">
-      <h1 class="sr-only">Amigos</h1>
+      <h1 class="view-title">Amigos</h1>
       <RouterLink to="/amigos/novo" class="stamp">novo amigo</RouterLink>
     </header>
     <label class="friends-search">
@@ -74,7 +74,7 @@ onMounted(get_friends_for_view)
 </template>
 
 <style scoped>
-.friends-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 16px; }
+.friends-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
 .friends-header .stamp { display: inline-flex; align-items: center; min-height: 44px; }
 .friends-search { display: flex; align-items: center; gap: 12px; height: calc(var(--notebook-line) * 2); }
 svg { flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
