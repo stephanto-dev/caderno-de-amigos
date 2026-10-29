@@ -38,8 +38,7 @@ async function send_account_for_browser(): Promise<void> {
           <h1>Caderno de amigos</h1>
           <p>seu ritmo com as pessoas que importam</p>
         </header>
-        <form class="cover-label paper-lined" :aria-busy="auth_state.is_loading" @submit.prevent="send_account_for_browser">
-          <span class="cover-tape" aria-hidden="true"></span>
+        <form class="cover-form" :aria-busy="auth_state.is_loading" @submit.prevent="send_account_for_browser">
           <nav class="mode-links" aria-label="Modo da conta">
             <RouterLink to="/entrar?modo=entrar" :aria-current="!is_register ? 'page' : undefined">Entrar</RouterLink>
             <RouterLink to="/entrar?modo=criar" :aria-current="is_register ? 'page' : undefined">Criar conta</RouterLink>
@@ -132,7 +131,7 @@ async function send_account_for_browser(): Promise<void> {
   padding: 2rem 1rem 2rem 2.125rem;
   border: 1px solid rgba(43, 36, 32, .4);
   border-radius: 6px 10px 10px 6px;
-  background: linear-gradient(155deg, var(--neutral-300), var(--neutral-400) 62%);
+  background: var(--tab-green);
   box-shadow: inset -10px 0 18px -12px rgba(43, 36, 32, .2), 0 12px 20px rgba(0, 0, 0, .24);
 }
 .cover::before {
@@ -189,26 +188,14 @@ async function send_account_for_browser(): Promise<void> {
   color: var(--pen-ink);
   font: 500 clamp(1rem, 3.2vw, 1.2rem)/1.2 var(--font-handwriting);
 }
-.cover-label {
+.cover-form {
   box-sizing: border-box;
   position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: var(--notebook-line) .75rem;
-  border: 0;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-paper);
-}
-.cover-tape {
-  position: absolute;
-  top: -9px;
-  left: calc(50% - 32px);
-  width: 64px;
-  height: 16px;
-  background: linear-gradient(90deg, var(--highlight-50), var(--highlight), var(--highlight-50));
-  pointer-events: none;
+  padding: 0 .75rem;
 }
 .mode-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 1rem; }
 .mode-links a {
@@ -216,7 +203,7 @@ async function send_account_for_browser(): Promise<void> {
   display: inline-flex;
   align-items: center;
   color: var(--neutral-700);
-  font: 500 1rem/var(--notebook-line) var(--font-ui);
+  font: 700 1.375rem/var(--notebook-line) var(--font-handwriting);
   text-decoration: none;
   border-bottom: 2px solid transparent;
 }
@@ -253,15 +240,14 @@ async function send_account_for_browser(): Promise<void> {
 }
 .field-error, .form-error { margin: 0; color: var(--error); font: 400 .875rem/var(--notebook-line) var(--font-ui); overflow-wrap: anywhere; }
 .form-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1rem; }
-.form-actions button { min-height: 3rem; max-width: 100%; height: auto; padding: .5rem 1.375rem; background: var(--primary); color: var(--sheet); font-size: 1.625rem; line-height: var(--notebook-line); }
-.form-actions button:active:not(:disabled) { background: var(--primary-pressed); }
+.form-actions button { min-height: 3rem; max-width: 100%; height: auto; padding: .5rem 1.375rem; font-size: 1.625rem; line-height: var(--notebook-line); }
 .form-actions button:disabled { opacity: .6; cursor: wait; }
 .switch-link {
   min-height: 2.75rem;
   display: inline-flex;
   align-items: center;
   color: var(--neutral-700);
-  font: 500 .9375rem/var(--notebook-line) var(--font-ui);
+  font: 700 1.375rem/var(--notebook-line) var(--font-handwriting);
   text-underline-offset: 3px;
 }
 @media (min-width: 768px) {
