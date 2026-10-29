@@ -43,6 +43,31 @@ describe('New friend form', () => {
     wrapper.unmount()
   })
 
+  it('disables the form and announces saving until the request finishes', async () => {
+    let finish_creation!: (response: Response) => void
+    const pending_creation = new Promise<Response>((complete) => { finish_creation = complete })
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json([])).mockReturnValueOnce(pending_creation)
+    vi.stubGlobal('fetch', fetch)
+    const { wrapper } = await get_new_friend_view()
+
+    await wrapper.get('input[name="name"]').setValue('Ana')
+    await wrapper.get('form').trigger('submit')
+
+    expect(wrapper.get('.friend-fields').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('button[type="submit"]').attributes()).toMatchObject({ 'aria-busy': 'true', disabled: '' })
+    expect(wrapper.get('button[type="submit"]').text()).toBe('Salvando…')
+
+    finish_creation(Response.json({
+      type: 'validation_error', errors: [{ code: 'invalid', attr: 'name', detail: 'Revise o nome.' }],
+    }, { status: 400 }))
+    await flushPromises()
+
+    expect(wrapper.get('.friend-fields').attributes('disabled')).toBeUndefined()
+    expect(wrapper.get('button[type="submit"]').attributes('aria-busy')).toBe('false')
+    expect(wrapper.get('button[type="submit"]').text()).toBe('Salvar amigo')
+    wrapper.unmount()
+  })
+
   it('submits the cadence chosen in the form', async () => {
     const fetch = vi.fn().mockResolvedValueOnce(Response.json([])).mockResolvedValue(Response.json({ ...SAVED_FRIEND, cadence_amount: 2, cadence_unit: 'week' }, { status: 201 }))
     vi.stubGlobal('fetch', fetch)

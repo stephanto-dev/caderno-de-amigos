@@ -104,13 +104,15 @@ Estados comuns: **foco** `box-shadow: var(--anel-foco)` (2px folha + 2px `#2F618
 - **Ativa** (`.router-link-exact-active` / `aria-current="page"`): fundo `primaria`, texto branco, 6px mais "para fora". Hover: `filter: brightness(.97)`. Foco: anel. No perfil, a ativa é a aba da lista de origem.
 
 ### 3.7.1 Configurações (`/config`, MVP mínimo — 26/10/2026)
-Página simples na folha, sem tema nem notificações: título Fraunces "Configurações", o **e-mail da conta logada** em Inter 16 `neutro-700`, e o carimbo/botão **"Sair"** (logout; Caveat como os outros carimbos, ou botão secundário de 44px com texto "Sair" — o carimbo basta). Sem outros campos no MVP. Escopo: só identificar a conta e sair.
+Página simples diretamente na folha, sem cartão ao redor da conta e sem tema nem notificações: título Fraunces "Configurações", o **e-mail da conta logada** em Inter 16 `neutro-700`, com rótulo E-mail em Caveat e quebra de linha para endereços longos, e o carimbo/botão **"Sair"** (logout; Caveat como os outros carimbos, ou botão secundário de 44px com texto "Sair" — o carimbo basta). Sem outros campos no MVP. Escopo: só identificar a conta e sair.
 
 ### 3.8 Auth — capa (`/entrar`, decisão 26/10/2026)
 _Conta própria no MVP (produto.md, 26/10): self-signup na **capa do caderno**. UI de login/cadastro = caderno **fechado** (capa frontal), não a folha aberta das telas autenticadas. Ideia do Vinicius. Protótipo: `direcoes/auth-capa.html`. Prints: `prints/desktop-auth-entrar.png`, `prints/desktop-auth-criar.png`, `prints/mobile-auth-entrar.png`, `prints/mobile-auth-criar.png`, `prints/auth-capa-estados.png`._
 
+**Atualização de escopo solicitada em 29/10/2026:** Entrar, Criar conta e Configurações passam a acompanhar os formulários na pauta. A capa kraft permanece; apenas a etiqueta recebe pauta, rótulos Caveat, campos sublinhados com valores Inter ≥16px e botão em carimbo. Esta extensão está fora da CRM-22 original. Os prints anteriores de auth continuam como histórico.
+
 **Conceito capa vs folha**
-- **Não autenticado:** mesa + um **caderno fechado** (objeto físico, uma peça). Capa de cartolina na frente; **bloco de folhas** visível na borda direita (espessura); espiral metálica à esquerda passando por furos. **Sem** duas páginas abertas, **sem** dobra central, **sem** abas de divisória, **sem** pauta na capa.
+- **Não autenticado:** mesa + um **caderno fechado** (objeto físico, uma peça). Capa de cartolina na frente; **bloco de folhas** visível na borda direita (espessura); espiral metálica à esquerda passando por furos. **Sem** duas páginas abertas, **sem** dobra central, **sem** abas de divisória, **sem** pauta na cartolina; a etiqueta do formulário é pautada.
 - **Autenticado:** folha aberta (`.paper-lined` + margem + abas) como no resto do app. Sucesso de Entrar ou Criar conta navega para **`/quadro`** (não para uma home genérica; sem onboarding no MVP).
 
 **Mesma tela, dois modos** (toggle por links/abas em Caveat, ou query `?modo=entrar|criar`):
@@ -125,14 +127,14 @@ _Conta própria no MVP (produto.md, 26/10): self-signup na **capa do caderno**. 
 **Visual — caderno fechado de verdade (só CSS, sem textura bitmap, sem cor nova)**
 _Feedback Vinicius 26/10: (1) 1ª versão = "cartão com espiral"; (2) cor peach/`primaria-100` feia; (3) etiqueta **não** pode ficar para fora da capa — foi erro._
 - Fundo = mesa `#7A5A3E`. A capa **não** usa a cor da mesa.
-- **Silhueta:** uma peça só, proporção de caderno universitário BR. **Altura da capa FIXA** — igual em Entrar e Criar conta e em todos os estados (`normal` / `erro` / `carregando`). Trocar de modo **não** redimensiona o caderno. O 3º campo e as mensagens de erro cabem dentro dessa altura (spacing compacto; scroll interno na etiqueta só se inevitável). Sombra forte sob o objeto.
+- **Silhueta:** uma peça só, proporção de caderno universitário BR. **Altura mínima compartilhada** entre Entrar e Criar conta; o conteúdo pode aumentar a altura da capa, inclusive com erros e fonte do navegador a 200%, sem cortar campos ou exigir scroll interno na etiqueta. Sombra forte sob o objeto.
 - **Capa = cartolina kraft** `neutro-400` (`#B3A38C`), com gradiente leve `neutro-300` → `neutro-400` (caderno escolar/universitário BR). **Não** é folha pautada; **não** é peach/`primaria-100`. Borda escura fina; vinco leve perto da espiral. (Terracota `primaria-600` foi descartada: contraste baixo com a mesa.)
 - **AA do título:** tinta `#2B2420` sobre kraft `#B3A38C` ≈ **6,2:1** (AA). Subtítulo Caveat `caneta` `#1F3A6B` sobre kraft ≈ **4,55:1** (AA).
 - **Bloco de folhas (direita):** faixa estreita oposta à espiral (`folha` / `papel` / `neutro-300`) — espessura do caderno fechado.
 - **Espiral (esquerda):** anéis metálicos que **passam por furos** na capa. CSS puro.
 - **Título na capa** (Fraunces): "Caderno de amigos". Subtítulo Caveat `caneta`: "seu ritmo com as pessoas que importam".
-- **Formulário = etiqueta `.papel` colada NA capa:** 100% **dentro** do retângulo da capa (padding interno generoso; `overflow:hidden` na capa). Sem rotação que cause overflow (rotação zerada na v3). Fita washi CSS (`.fita`, `marca-texto`) no topo, também dentro. Toggle Entrar | Criar conta (Caveat), campos Inter, botão primário pill terracota. **Nunca** a etiqueta invade a mesa nem ultrapassa a borda inferior/direita.
-- Mobile: capa quase full-width com margem na mesa. Desktop: ~380×560 (largura×altura fixas). Mobile: altura fixa ~500–520.
+- **Formulário = etiqueta pautada colada NA capa:** 100% **dentro** do retângulo da capa (padding interno generoso; `overflow:hidden` na capa). Sem rotação que cause overflow (rotação zerada na v3). Fita washi CSS (`.fita`, `marca-texto`) no topo, também dentro. Toggle Entrar | Criar conta em Inter, rótulos Caveat, campos sublinhados em Inter e botão primário em carimbo terracota. **Nunca** a etiqueta invade a mesa nem ultrapassa a borda inferior/direita.
+- Mobile: capa quase full-width com margem na mesa. Desktop: largura máxima de 30rem. Altura cresce com o conteúdo quando necessário.
 - Contraste AA em todos os textos/botões (tokens já checados em `identidade.md`).
 
 **Estados**
@@ -141,7 +143,7 @@ _Feedback Vinicius 26/10: (1) 1ª versão = "cartão com espiral"; (2) cor peach
   - Entrar: **"E-mail ou senha incorretos."** (credenciais inválidas — mensagem genérica, sem dizer qual campo).
   - Criar: **"Este e-mail já tem conta."** · **"As senhas não são iguais."** · **"A senha precisa ter pelo menos 8 caracteres."** (senha curta = menos de 8).
 - **Carregando:** botão primário `disabled` + texto "Entrando…" / "Criando…", `aria-busy="true"` (spinner opcional `loader-2` 16px, largura fixa do botão).
-- **Foco:** anel AA `var(--anel-foco)` em campos e botões/links.
+- **Foco:** faixa de marca-texto e traço de foco nos campos; anel AA nos botões e links.
 
 **A11y**
 - Um `<h1>` com o título do produto (ou "Entrar" / "Criar conta" se o título da capa for decorativo — preferir um `h1` visível no form).
@@ -262,7 +264,7 @@ Todo o resto é CSS nos `<style scoped>` do FriendForm.vue e do GroupPicker.vue,
 | Editar amigo (`/amigos/:id` com `is_editing`, `FriendDetailView`) | O mesmo FriendForm, preenchido, com "Cancelar edição" ao lado do carimbo (`?tela=editar`) |
 | Grupos (`GroupPicker`, dentro do form) | Chips viram **adesivos**. Modo editar, editor de grupo e confirmação de apagar seguem a mesma pauta |
 | Config (`/config`, 3.7.1) | Não tem campo no MVP; o "Sair" não muda. Se entrar algum campo, segue esta anatomia |
-| **Fora:** capa `/entrar` (3.8), sheet de registro (3.6), modais | Continuam como estão. Mudar exige decisão nova |
+| **Fora da CRM-22 original:** capa `/entrar` (3.8), sheet de registro (3.6), modais | Auth ganhou extensão solicitada em 29/10/2026 (3.8); sheet e modais continuam como estão |
 
 **Anatomia (pauta de 32px; tudo em rem)**
 ```

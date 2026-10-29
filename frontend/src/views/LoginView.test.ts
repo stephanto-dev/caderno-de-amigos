@@ -11,6 +11,8 @@ describe('account cover', () => {
     auth_state.current_email = null
     auth_state.is_initialized = false
     auth_state.error = null
+    auth_state.error_field = null
+    auth_state.is_loading = false
   })
   afterEach(() => vi.unstubAllGlobals())
 
@@ -49,6 +51,30 @@ describe('account cover', () => {
 
     expect(auth_state.current_email).toBe('ana@example.com')
     expect(router.currentRoute.value.path).toBe('/quadro')
+  })
+
+  it('disables account fields and announces loading until login finishes', async () => {
+    let finish_login!: (response: Response) => void
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise<Response>((complete) => { finish_login = complete })))
+    const router = createRouter({ history: createMemoryHistory(), routes })
+    await router.push('/entrar')
+    const wrapper = mount(LoginView, { global: { plugins: [router] } })
+
+    await wrapper.get('input[name="email"]').setValue('ana@example.com')
+    await wrapper.get('input[name="password"]').setValue('senha-segura')
+    await wrapper.get('form').trigger('submit')
+
+    expect(wrapper.get('fieldset').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('button[type="submit"]').attributes('aria-busy')).toBe('true')
+    expect(wrapper.get('button[type="submit"]').text()).toBe('Entrando…')
+
+    finish_login(Response.json({ detail: 'E-mail ou senha incorretos.' }, { status: 401 }))
+    await flushPromises()
+
+    expect(wrapper.get('fieldset').attributes('disabled')).toBeUndefined()
+    expect(wrapper.get('button[type="submit"]').attributes('aria-busy')).toBe('false')
+    expect(wrapper.get<HTMLInputElement>('input[name="email"]').element.value).toBe('ana@example.com')
+    wrapper.unmount()
   })
 
   it('links a register error to the affected field', async () => {
