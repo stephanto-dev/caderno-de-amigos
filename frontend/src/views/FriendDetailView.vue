@@ -2,12 +2,13 @@
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { get_friend_for_board, send_friend_deletion_for_owner } from '../api/friends'
-import type { BoardFriend, FriendGroup, RecordedContact } from '../api/friends'
+import type { BoardFriend, FriendContact, FriendGroup, RecordedContact } from '../api/friends'
 import { ApiError } from '../api/http'
 import FriendCadence from '../components/FriendCadence.vue'
 import GroupBadge from '../components/GroupBadge.vue'
 import ContactSheet from '../components/ContactSheet.vue'
 import FriendForm from '../components/FriendForm.vue'
+import FriendHistory from '../components/FriendHistory.vue'
 import { set_friend_for_list, remove_friend_for_list } from '../friends'
 
 const NOT_FOUND_STATUS = 404
@@ -25,6 +26,7 @@ const is_not_found = ref(false)
 const is_contact_sheet_open = ref(false)
 const contact_button = ref<HTMLButtonElement | null>(null)
 const contact_announcement = ref('')
+const newest_contact = ref<FriendContact | null>(null)
 const is_editing = ref(false)
 const is_delete_confirmation_open = ref(false)
 const is_deleting = ref(false)
@@ -113,6 +115,7 @@ async function close_contact_sheet_for_profile(): Promise<void> {
 function set_recorded_contact_for_profile(contact: RecordedContact): void {
   if (contact.id !== friend.value?.id) return
   friend.value = contact
+  newest_contact.value = contact.contact
   set_friend_for_list(contact)
   contact_announcement.value = 'Contato registrado. Boa conversa!'
   void close_contact_sheet_for_profile()
@@ -130,6 +133,7 @@ async function get_friend_for_view(): Promise<void> {
   friend_announcement.value = ''
   contact_announcement.value = ''
   friend.value = null
+  newest_contact.value = null
   is_loading.value = true
   has_error.value = false
   is_not_found.value = false
@@ -187,7 +191,6 @@ onBeforeUnmount(() => { request_version += 1 })
             <dt>Último contato</dt>
             <dd><time v-if="friend.last_contact_at" :datetime="friend.last_contact_at">{{ CONTACT_DATE_FORMAT.format(new Date(friend.last_contact_at)) }}</time><span v-else>Nenhum contato registrado ainda.</span></dd>
           </div>
-          <div><dt>Última nota</dt><dd class="profile-note handwritten-note">{{ friend.last_note || 'Nenhuma nota registrada ainda.' }}</dd></div>
         </dl>
         <div class="profile-actions">
           <button ref="edit_button" type="button" name="edit-friend" :disabled="is_deleting" @click="open_friend_editor">Editar amigo</button>
@@ -203,6 +206,7 @@ onBeforeUnmount(() => { request_version += 1 })
         </div>
         <ContactSheet v-if="is_contact_sheet_open" :friend="friend" @close="close_contact_sheet_for_profile" @recorded="set_recorded_contact_for_profile" />
       </template>
+      <FriendHistory v-show="!is_editing" :key="friend.id" :friend="friend" :newest_contact="newest_contact" />
     </template>
   </div>
 </template>
@@ -219,7 +223,6 @@ dt { color: var(--neutral-700); font-size: .875rem; font-weight: 600; }
 dd { margin: 0; overflow-wrap: anywhere; }
 .profile-groups { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: var(--notebook-line); }
 .profile-groups .group-badge { max-width: 100%; }
-.profile-note { white-space: pre-wrap; }
 .profile-state { margin: var(--notebook-line) 0; }
 .profile-state p { margin: 0 0 var(--notebook-line); }
 .profile-state .stamp { box-sizing: border-box; min-height: 44px; }

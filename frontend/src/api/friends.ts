@@ -3,6 +3,7 @@ import { send_api_request } from './http'
 const BOARD_COLUMNS = ['overdue', 'this_week', 'on_track', 'just_talked'] as const
 const CADENCE_UNITS = ['day', 'week', 'month', 'year'] as const
 const GROUP_COLORS = ['family', 'college', 'work', 'neighborhood', 'neutral'] as const
+const CONTACT_KINDS = ['message', 'call', 'meeting'] as const
 
 export interface FriendGroup {
   id: string
@@ -40,13 +41,34 @@ export interface FriendWriteData {
 
 /** Input accepted by Django's ContactWriteSerializer; the server sets the date. */
 export interface ContactWriteData {
-  kind: 'message' | 'call' | 'meeting'
+  kind: typeof CONTACT_KINDS[number]
   note: string
 }
 
-/** Updated board friend plus the ID required by the contact deletion endpoint. */
+/** ContactReadSerializer fields; the recording date always comes from Django. */
+export interface FriendContact extends ContactWriteData {
+  id: string
+  date: string
+}
+
+/** The continuation token is opaque; null means the history has no next page. */
+export interface FriendContactPage {
+  next: string | null
+  results: FriendContact[]
+}
+
+/** Updated friend, the saved history item, and the ID used by the board's undo. */
 export interface RecordedContact extends BoardFriend {
   contact_id: string
+  contact: FriendContact
+}
+
+function is_friend_contact(body: unknown): body is FriendContact {
+  return typeof body === 'object' && body !== null
+    && 'id' in body && typeof body.id === 'string'
+    && 'kind' in body && CONTACT_KINDS.some((kind) => kind === body.kind)
+    && 'date' in body && typeof body.date === 'string' && Number.isFinite(Date.parse(body.date))
+    && 'note' in body && typeof body.note === 'string'
 }
 
 function is_friend_group(body: unknown): body is FriendGroup {
@@ -112,15 +134,28 @@ export async function send_friend_deletion_for_owner(friend_id: string): Promise
   await send_api_request(`/api/friends/${friend_id}/`, { method: 'DELETE' })
 }
 
-/** Record a contact and validate the updated friend and ID used by the undo action. */
+/** Read history in Django's order, returning the next cursor unchanged. */
+export async function get_contacts_for_friend(friend_id: string, cursor: string | null = null): Promise<FriendContactPage> {
+  const query = cursor === null ? '' : `?${new URLSearchParams({ cursor })}`
+  const body = await send_api_request(`/api/friends/${friend_id}/contacts/${query}`)
+  if (typeof body !== 'object' || body === null
+    || !('next' in body) || (body.next !== null && typeof body.next !== 'string')
+    || !('results' in body) || !Array.isArray(body.results) || !body.results.every(is_friend_contact)) {
+    throw new Error('Invalid contact history response')
+  }
+  return { next: body.next, results: body.results }
+}
+
+/** Validate the saved history item alongside the friend and ID used by undo. */
 export async function send_contact_for_friend(friend_id: string, contact: ContactWriteData): Promise<RecordedContact> {
   const body = await send_api_request(`/api/friends/${friend_id}/contacts/`, {
     method: 'POST', body: contact,
   })
-  if (!is_board_friend(body) || !('contact_id' in body) || typeof body.contact_id !== 'string') {
+  if (!is_board_friend(body) || !('contact_id' in body) || typeof body.contact_id !== 'string'
+    || !('contact' in body) || !is_friend_contact(body.contact)) {
     throw new Error('Invalid recorded contact response')
   }
-  return { ...body, contact_id: body.contact_id }
+  return { ...body, contact_id: body.contact_id, contact: body.contact }
 }
 
 /** Delete one owned contact. Django returns 204; refresh the friend separately. */

@@ -3,6 +3,7 @@ import { nextTick, onMounted, ref } from 'vue'
 import { send_contact_for_friend } from '../api/friends'
 import type { BoardFriend, ContactWriteData, RecordedContact } from '../api/friends'
 import { ApiError } from '../api/http'
+import { CONTACT_OPTIONS } from '../contact-options'
 
 const props = defineProps<{ friend: BoardFriend }>()
 const emit = defineEmits<{ close: []; recorded: [contact: RecordedContact] }>()
@@ -10,15 +11,10 @@ const NOTE_AUTOFOCUS_MIN_WIDTH = 1024
 const DISMISS_DRAG_DISTANCE = 80
 const VALIDATION_ERROR_STATUS = 400
 const NOT_FOUND_STATUS = 404
-const CONTACT_OPTIONS: { value: ContactWriteData['kind']; label: string; icon: string }[] = [
-  { value: 'message', label: 'Mensagem', icon: 'M21 11a9 9 0 0 1-9 9 10 10 0 0 1-4-1l-5 2 2-5a10 10 0 0 1-1-4 9 9 0 0 1 17-1Z' },
-  { value: 'call', label: 'Ligação', icon: 'm7 3 3 5-3 3a15 15 0 0 0 6 6l3-3 5 3v3a2 2 0 0 1-2 2A19 19 0 0 1 2 5a2 2 0 0 1 2-2Z' },
-  { value: 'meeting', label: 'Encontro', icon: 'M4 8h12v7a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5ZM16 8h2a3 3 0 0 1 0 6h-2M7 2v3M12 2v3M2 22h18' },
-]
 const dialog = ref<HTMLDialogElement | null>(null)
 const note_input = ref<HTMLTextAreaElement | null>(null)
 const keep_note_button = ref<HTMLButtonElement | null>(null)
-const kind = ref<ContactWriteData['kind']>(CONTACT_OPTIONS[0].value)
+const kind = ref<ContactWriteData['kind']>(CONTACT_OPTIONS.message.value)
 const note = ref('')
 const is_saving = ref(false)
 const is_confirming_discard = ref(false)
