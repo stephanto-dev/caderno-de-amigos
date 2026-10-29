@@ -28,6 +28,8 @@ DRF_STANDARDIZED_ERRORS = {"ENABLE_IN_DEBUG_FOR_UNHANDLED_EXCEPTIONS": True}
 - A autenticação padrão é **SessionAuthentication**, porque a SPA Vue é servida na mesma origem que a API Django (WhiteNoise). O cookie de sessão funciona sem configuração CORS, e o Django já protege contra CSRF. Veja [`docs/ADRs/2026-10-20-autenticacao-por-sessao.md`](../../ADRs/2026-10-20-autenticacao-por-sessao.md) para o contexto completo.
 - O padrão é exigir autenticação. Um endpoint aberto (`AllowAny`) declara isso explicitamente.
 - Limite de requisições por tipo de usuário fica em `DEFAULT_THROTTLE_RATES` e numa classe de throttle do app.
+- Login e cadastro usam `AccountIPRateThrottle`, com contadores separados por endpoint e IP, inclusive depois de autenticar ou criar uma conta. Os demais endpoints de dados continuam usando `ScopedRateThrottle` por usuário.
+- `NUM_PROXIES` vem de `DJANGO_TRUSTED_PROXY_COUNT` (inteiro não negativo, default `0`). O default ignora `X-Forwarded-For`; confiar nesse header exige conferir a cadeia de proxies e impedir acesso público direto ao backend. Veja as limitações operacionais no [README](../../../README.md#limites-de-requisições).
 
 ## Views
 

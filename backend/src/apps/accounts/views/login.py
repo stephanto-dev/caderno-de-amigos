@@ -6,11 +6,11 @@ from rest_framework import permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.accounts.serializers.session import LoginSerializer, SessionStatusSerializer
 from apps.accounts.services.session import SessionService
+from apps.accounts.throttling import AccountIPRateThrottle
 
 
 # SessionAuthentication does not enforce CSRF for anonymous requests.
@@ -19,7 +19,7 @@ class LoginView(APIView):
     """Create a session after checking credentials and the CSRF token."""
 
     permission_classes = [permissions.AllowAny]
-    throttle_classes = [ScopedRateThrottle]
+    throttle_classes = [AccountIPRateThrottle]
     throttle_scope = "login"
 
     def post(self, request: Request) -> Response:

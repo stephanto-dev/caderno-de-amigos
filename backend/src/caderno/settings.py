@@ -94,6 +94,8 @@ STORAGES = {
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
+    # Trust forwarded IPs only after verifying the deployment's proxy chain.
+    "NUM_PROXIES": ENV.django_trusted_proxy_count,
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
     ],
