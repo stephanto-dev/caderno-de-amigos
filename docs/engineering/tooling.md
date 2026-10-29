@@ -1,109 +1,39 @@
 # Tooling
 
+As dependências e configurações Python ficam em
+[`backend/pyproject.toml`](../../backend/pyproject.toml), com versões travadas em
+`backend/uv.lock`. O frontend usa
+[`frontend/package.json`](../../frontend/package.json) e `frontend/package-lock.json`.
+
 | Ferramenta | Para quê |
 | --- | --- |
-| `uv` | Dependências e execução (`uv sync`, `uv run ...`). Versões fixadas no `pyproject.toml`. |
-| `ruff` | Lint e formatação (`ruff check --fix`, `ruff format`). |
-| `mypy` | Tipagem estrita. |
-| `pre-commit` | Roda tudo antes do commit. |
-| `pytest` | Testes ([Testes](code-conventions/testing.md)). |
-| Docker Compose | Postgres local, compartilhado. |
+| `uv` | Instala e executa o backend e suas ferramentas (`uv sync --frozen`, `uv run ...`). |
+| Ruff | Lint e formatação Python. |
+| mypy | Verifica tipagem Python com o plugin do Django. |
+| pytest + pytest-django | Testa o backend com PostgreSQL. |
+| vue-tsc | Verifica os tipos do frontend Vue e TypeScript. |
+| Vitest | Testa o frontend. |
+| Vite | Serve o frontend em desenvolvimento e gera o build de produção. |
+| Docker Compose | Inicia PostgreSQL, Django e Vite no ambiente local. |
 
-## `pyproject.toml`
+## Desenvolvimento local
 
-```toml
-[dependency-groups]
-dev = ["rich", "watchdog"]
-typecheck = ["mypy[faster-cache]", "django-types", "djangorestframework-types"]
-lint = ["ruff"]
-tests = ["faker", "freezegun", "pytest", "pytest-django", "pytest-xdist", "pytest-cov"]
+Siga os comandos e pré-requisitos do [README](../../README.md#desenvolvimento).
+Comandos Python rodam em `backend/`; comandos npm rodam em `frontend/`.
+O banco do Compose usa a porta `5433` na máquina e `5432` entre containers.
 
-[tool.uv]
-package = false
-default-groups = ["dev", "lint", "typecheck", "tests"]
-
-[tool.ruff]
-target-version = "py311"
-
-[tool.ruff.lint]
-select = [
-    "E",    # pycodestyle errors
-    "W",    # pycodestyle warnings
-    "F",    # pyflakes
-    "I",    # isort
-    "C",    # flake8-comprehensions
-    "B",    # flake8-bugbear
-    "Q",    # flake8-quotes
-    "DJ",   # flake8-django
-    "UP",   # pyupgrade
-    "D",    # pydocstyle
-    "T201", # no print statements
-]
-ignore = ["D100", "D104", "D401", "E501", "C901", "D1", "D203", "D213"]
-
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]
-
-[tool.mypy]
-explicit_package_bases = true
-packages = "src"
-namespace_packages = true
-mypy_path = ["src"]
-ignore_missing_imports = true
-exclude = ["manage.py", "/migrations/*"]
-plugins = ["pydantic.mypy"]
-enable_error_code = ["possibly-undefined"]
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-no_implicit_optional = true
-check_untyped_defs = true
-warn_return_any = true
-show_error_codes = true
-
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "caderno.settings"
-python_files = ["test_*.py"]
-
-[tool.coverage.run]
-omit = ["*/migrations/*", "*/tests/*", "*/__init__.py", "src/manage.py"]
-```
-
-## `.pre-commit-config.yaml`
-
-```yaml
-repos:
-  - repo: local
-    hooks:
-      - id: mypy
-        name: mypy
-        entry: uv run --no-sync
-        language: system
-        pass_filenames: false
-        types: [python]
-        args: [mypy, --config-file, pyproject.toml, "src"]
-      - id: django-check-untracked-migrations
-        name: django-check-untracked-migrations
-        entry: uv run --no-sync
-        language: system
-        pass_filenames: false
-        types: [python]
-        args: [python, src/manage.py, makemigrations, --check]
-      - id: ruff
-        name: ruff
-        entry: uv run --no-sync
-        language: system
-        pass_filenames: false
-        types: [python]
-        args: [ruff, check, "src", --fix]
-      - id: ruff-format
-        name: ruff-format
-        entry: uv run --no-sync
-        language: system
-        pass_filenames: false
-        types: [python]
-        args: [ruff, format, "src"]
-```
+O grupo `dev` do backend reúne as ferramentas de lint, tipagem e testes.
+Não há configuração de pre-commit ou pytest-xdist no repositório; execute as
+verificações do README antes de enviar um PR.
 
 ## CI
 
-O CI repete o pre-commit (lint, tipagem, migrations) e roda `uv run pytest src`. PR só vai para review com tudo verde.
+O workflow [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) roda em
+pull requests e em pushes para `main`, com três jobs:
+
+- Backend: dependências travadas, Ruff, mypy, verificação de migrations e pytest
+  com PostgreSQL 16.
+- Frontend: `npm ci`, `npm run typecheck` e `npm test`, com Node.js 22.
+- Docker: construção da imagem, que também compila o frontend com Vite.
+
+As verificações precisam passar antes de solicitar revisão.

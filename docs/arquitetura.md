@@ -15,8 +15,8 @@ Visão geral da arquitetura do sistema.
 
 ### Desenvolvimento local
 
-- `docker compose up`: sobe Postgres e Django
-- `npm run dev`: Vite dev server com proxy de `/api` para Django
+- `docker compose up --build`: sobe Postgres, Django e o servidor de desenvolvimento Vite
+- Vite em `http://localhost:5173`, com proxy de `/api` para Django
 
 ## Stack
 
