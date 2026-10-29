@@ -27,7 +27,6 @@ const route = useRoute()
           <SheetHeader />
           <RouterView name="detail" v-slot="{ Component }">
             <component :is="Component" v-if="Component" />
-            <p v-else class="handwritten-note page-prompt">Esta página é de cada amigo.</p>
           </RouterView>
         </div>
       </section>
