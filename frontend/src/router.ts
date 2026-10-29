@@ -2,6 +2,7 @@ import type { RouteRecordRaw, Router } from 'vue-router'
 import { auth_state, get_session_for_browser } from './auth'
 import BoardView from './views/BoardView.vue'
 import FriendsView from './views/FriendsView.vue'
+import NewFriendDraft from './components/NewFriendDraft.vue'
 import NewFriendView from './views/NewFriendView.vue'
 import FriendDetailView from './views/FriendDetailView.vue'
 import LoginView from './views/LoginView.vue'
@@ -11,7 +12,7 @@ export const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/quadro' },
   { path: '/quadro', name: 'board', component: BoardView },
   { path: '/amigos', name: 'friends', component: FriendsView },
-  { path: '/amigos/novo', name: 'new-friend', component: NewFriendView },
+  { path: '/amigos/novo', name: 'new-friend', components: { default: NewFriendView, detail: NewFriendDraft } },
   {
     path: '/amigos/:id',
     name: 'friend-detail',

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watchEffect } from 'vue'
 import { send_friend_creation_for_owner, send_friend_update_for_owner } from '../api/friends'
 import type { BoardFriend, FriendGroup, FriendWriteData } from '../api/friends'
 import { ApiError } from '../api/http'
+import { clear_new_friend_draft, new_friend_draft } from '../new-friend-draft'
 import GroupPicker from './GroupPicker.vue'
 
 const DEFAULT_CADENCE_AMOUNT = 1
@@ -34,6 +35,16 @@ const error_message = ref('')
 const error_field = ref<string | null>(null)
 const selected_group_ids = ref<string[]>(props.friend?.groups.map((group) => group.id) ?? [])
 const is_group_saving = ref(false)
+const selected_groups = ref<FriendGroup[]>([])
+
+watchEffect(() => {
+  if (props.friend) return
+  Object.assign(new_friend_draft, {
+    name: name.value, cadence_amount: cadence_amount.value, cadence_unit: cadence_unit.value,
+    birthday: birthday.value, groups: selected_groups.value,
+  })
+})
+onBeforeUnmount(() => { if (!props.friend) clear_new_friend_draft() })
 
 /** Format digits without validating dates; deletion must not reinsert the slash. */
 function set_birthday_for_form(event: Event): void {
@@ -128,7 +139,7 @@ onMounted(() => { name_input.value?.focus() })
       </div>
       <div class="friend-groups" :aria-invalid="error_field === 'groups' ? 'true' : undefined"
         :aria-describedby="error_field === 'groups' ? 'friend-groups-error' : undefined">
-        <GroupPicker v-model="selected_group_ids" @busy="is_group_saving = $event"
+        <GroupPicker v-model="selected_group_ids" @busy="is_group_saving = $event" @selection_changed="selected_groups = $event"
           @updated="emit('group_updated', $event)" @deleted="emit('group_deleted', $event)" />
         <p v-if="error_field === 'groups'" id="friend-groups-error" class="field-error" role="alert">{{ error_message }}</p>
       </div>

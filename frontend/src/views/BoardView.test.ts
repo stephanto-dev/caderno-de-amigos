@@ -83,6 +83,8 @@ describe('Board', () => {
 
     await flushPromises()
 
+    expect(wrapper.get('[aria-label="Legenda de grupos"]').attributes('role')).toBe('group')
+
     expect(wrapper.get('.board-header h1').text()).toBe('Quadro')
     expect(wrapper.get('.board-header h1').classes()).not.toContain('sr-only')
     expect(wrapper.get('.board-header').isVisible()).toBe(true)
