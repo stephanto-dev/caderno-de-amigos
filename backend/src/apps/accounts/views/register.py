@@ -5,7 +5,6 @@ from django.views.decorators.csrf import csrf_protect
 from rest_framework import permissions, status
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.accounts.serializers.session import (
@@ -13,6 +12,7 @@ from apps.accounts.serializers.session import (
     SessionStatusSerializer,
 )
 from apps.accounts.services.session import SessionService
+from apps.accounts.throttling import AccountIPRateThrottle
 
 
 # SessionAuthentication does not enforce CSRF for anonymous requests.
@@ -21,7 +21,7 @@ class RegisterView(APIView):
     """Create an email account and start its session after CSRF validation."""
 
     permission_classes = [permissions.AllowAny]
-    throttle_classes = [ScopedRateThrottle]
+    throttle_classes = [AccountIPRateThrottle]
     throttle_scope = "register"
 
     def post(self, request: Request) -> Response:
