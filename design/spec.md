@@ -18,6 +18,7 @@ _Substitui a spec v1 (direção A). Referências: `tokens.css`, `tailwind.config
 7. **Abas em minúsculas:** "quadro" e "amigos" (hoje "Quadro" e "Amigos" no `App.vue` e no `App.test.ts`). P2.
 8. **Erro do Quadro (achado na revisão):** o `BoardView.vue` ainda diz "Verifique sua conexão e tente de novo." e "Tentar de novo"; trocar por "tente novamente" e "Tentar novamente" (7.6).
 9. **Seletor de cor do grupo (PR seguinte, junto com o item 5):** voltar as pills de 44px com radio nativo e label Pêssego/Amarelo/Azul/Verde/Creme (3.13), no lugar do círculo desenhado à mão do 9d3110b. Decidido em 29/10/2026.
+10. **Erro na capa do login (96bf90c):** `.field-error`, `.form-error` e o traço de erro do campo passam de `--error` para `primaria-800` sobre o verde (de 3,98:1 para 5,24:1; 3.8). PR a definir pelo Vinicius.
 
 ## 0. O que mudou em relação à v1 (resumo para o Tech Lead)
 | Antes (v1) | Agora (v2) |
@@ -135,6 +136,14 @@ Página simples diretamente na folha, sem cartão ao redor da conta e sem tema n
 _Conta própria no MVP (produto.md, 26/10): self-signup na **capa do caderno**. UI de login/cadastro = caderno **fechado** (capa frontal), não a folha aberta das telas autenticadas. Ideia do Vinicius. Protótipo: `direcoes/auth-capa.html`. Prints: `prints/desktop-auth-entrar.png`, `prints/desktop-auth-criar.png`, `prints/mobile-auth-entrar.png`, `prints/mobile-auth-criar.png`, `prints/auth-capa-estados.png`._
 
 **Atualização de escopo solicitada em 29/10/2026:** Entrar, Criar conta e Configurações passam a acompanhar os formulários na pauta. A capa kraft permanece; apenas a etiqueta recebe pauta, rótulos Caveat, campos sublinhados com valores Inter ≥16px e botão em carimbo. Esta extensão está fora da CRM-22 original. Os prints anteriores de auth continuam como histórico.
+
+**Atualização 29/10/2026 (commit 96bf90c, feito pelo Vinicius; vale por cima do que está abaixo):**
+- **Capa verde:** fundo liso `tab-green` (#B9CBB0), sem o gradiente kraft. Título `tinta` 8,89:1; subtítulo Caveat `caneta` 6,52:1.
+- **Sem etiqueta:** o form (`.cover-form`) fica direto na capa, sem pauta própria, sem sombra e sem a fita washi.
+- **Toggle "Entrar / Criar conta" e link de troca em Caveat 22/700** (`neutro-700`, 5,51:1); o modo ativo é `primaria-700` com sublinhado 2px (4,08:1, que passa porque é texto grande em negrito).
+- **Botão = carimbo vazado** (sem fundo `primaria`): texto `primaria` Caveat 26px, 3,16:1, que passa porque é texto grande. Hover e foco com a canetinha padrão de 3.16 e o texto em `primaria-800`, como no item 4 do card do TL. A regra da caneta `primaria-800` para carimbo cheio, mais abaixo, deixa de valer aqui.
+- **Erro (ajuste pendente):** `--error` #9B3B36 Inter 14 sobre o verde dá **3,98:1, abaixo do AA**. Sobre a capa, a mensagem de erro (`.field-error`, `.form-error`) e o traço de erro do campo usam `primaria-800` #7C3221 (5,24:1). Ver item 10 do card do TL.
+- Prints de auth anteriores a esta data ficam como histórico.
 
 **Conceito capa vs folha**
 - **Não autenticado:** mesa + um **caderno fechado** (objeto físico, uma peça). Capa de cartolina na frente; **bloco de folhas** visível na borda direita (espessura); espiral metálica à esquerda passando por furos. **Sem** duas páginas abertas, **sem** dobra central, **sem** abas de divisória, **sem** pauta na cartolina; a etiqueta do formulário é pautada.

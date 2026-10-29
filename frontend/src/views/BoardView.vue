@@ -176,7 +176,7 @@ onBeforeUnmount(stop_contact_feedback_timeout)
       <h1 class="view-title" tabindex="-1">Quadro</h1>
       <p class="board-introduction">As colunas se arrumam sozinhas, pelo último contato e pelo ritmo de cada amigo.</p>
     </header>
-    <div v-if="!is_loading && !has_error" class="board-legend" aria-label="Legenda de grupos">
+    <div v-if="!is_loading && !has_error" class="board-legend" role="group" aria-label="Legenda de grupos">
       <p>Seus grupos. O post-it usa a cor do primeiro grupo em ordem alfabética, e todos vêm escritos nele:</p>
       <div class="legend-badges">
         <GroupBadge v-for="group in groups" :key="group.id" :group="group" />
@@ -297,6 +297,7 @@ h2, .skeleton-label { margin: 0; font: 600 1.1875rem/var(--notebook-line) var(--
 @media (min-width: 1280px) {
   .board-view, .state-columns { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 112px minmax(0, 1fr) minmax(0, 1fr); }
   .board-legend { grid-column: 4 / 6; }
+  .board-error { grid-column: 1 / 3; }
   .board-column[data-column="on_track"] { grid-column: 4; }
   .board-column[data-column="just_talked"] { grid-column: 5; }
 }

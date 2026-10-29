@@ -1,3 +1,4 @@
+import login_source from './LoginView.vue?raw'
 import { mount, flushPromises } from '@vue/test-utils'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -15,6 +16,14 @@ describe('account cover', () => {
     auth_state.is_loading = false
   })
   afterEach(() => vi.unstubAllGlobals())
+
+  it('uses the accessible cover error color for messages and underline strokes', () => {
+    expect(login_source).toContain('class="field-error"')
+    expect(login_source).toContain('class="form-error"')
+    expect(login_source).toMatch(/\.field-error, \.form-error \{[^}]*color: var\(--primary-800\)/)
+    expect(login_source.match(/linear-gradient\(var\(--primary-800\), var\(--primary-800\)\)/g)).toHaveLength(2)
+    expect(login_source).not.toContain('var(--error)')
+  })
 
   it('logs in by email and opens the board', async () => {
     vi.stubGlobal('fetch', vi.fn()

@@ -54,7 +54,7 @@ onBeforeUnmount(() => group_observer?.disconnect())
   <li class="friend-postit" :class="[`group-${friend.groups[0]?.color ?? 'neutral'}`, { 'two-group-rows': has_two_group_rows }]"
     :aria-labelledby="`friend-${friend.id}${friend.is_birthday_today ? ` birthday-${friend.id}` : ''}`">
     <h3 :id="`friend-${friend.id}`" :title="friend.name">
-      <RouterLink :to="`/amigos/${friend.id}`">{{ friend.name }}</RouterLink>
+      <RouterLink :to="`/amigos/${friend.id}`"><span>{{ friend.name }}</span></RouterLink>
     </h3>
     <span class="sr-only">Grupos:</span>
     <div ref="group_box" class="friend-groups">
@@ -87,8 +87,10 @@ onBeforeUnmount(() => group_observer?.disconnect())
 .friend-postit:nth-child(4n + 4) { --rotation: -1deg; }
 .friend-postit:hover, .friend-postit:focus-within { transform: rotate(0); }
 .friend-postit::before { content: ''; position: absolute; inset: 0 0 auto; height: 10px; background: rgb(43 36 32 / 5%); pointer-events: none; }
-h3 { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 1.1875rem/1.75rem var(--font-title); }
-h3 a { color: inherit; text-decoration: none; }
+h3 { margin: 0; min-width: 0; font: 600 1.1875rem/1.75rem var(--font-title); }
+h3 a { position: relative; display: block; color: inherit; text-decoration: none; }
+h3 a::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; min-height: 44px; height: 100%; }
+h3 a span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 h3 a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .friend-groups { display: flex; flex-wrap: wrap; gap: 4px; max-height: 40px; margin: 2px 0; overflow: hidden; }
 svg { width: 12px; height: 12px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }

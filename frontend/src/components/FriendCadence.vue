@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { BoardFriend } from '../api/friends'
 
-defineProps<{ friend: BoardFriend }>()
+defineProps<{ friend: Pick<BoardFriend, 'cadence_amount' | 'cadence_unit'> }>()
 
 const CADENCE_LABELS = {
   day: { one: 'dia', many: 'dias' },

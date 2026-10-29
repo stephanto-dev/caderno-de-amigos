@@ -1,3 +1,4 @@
+import group_picker_source from './GroupPicker.vue?raw'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { friends_state } from '../friends'
@@ -8,6 +9,21 @@ const CREATED_GROUP = { id: '00000000-0000-4000-8000-000000000004', name: 'Escal
 
 describe('Group selection and creation', () => {
   afterEach(() => { vi.unstubAllGlobals(); friends_state.friends = [] })
+
+  it('renders labeled native radios in 44px pills with visible focus', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json([])))
+    const wrapper = mount(GroupPicker, { props: { modelValue: [] } })
+    await flushPromises()
+    await wrapper.get('[name="new-group"]').trigger('click')
+    const choices = wrapper.findAll('label.group-color-choice')
+    expect(choices.map((choice) => choice.text())).toEqual(['Pêssego', 'Amarelo', 'Azul', 'Verde', 'Creme'])
+    for (const choice of choices) expect(choice.get('input').attributes('type')).toBe('radio')
+    expect(group_picker_source).toMatch(/\.group-color-choice\{[^}]*height:2\.75rem;[^}]*border-radius:var\(--radius-pill\)/)
+    expect(group_picker_source).toMatch(/\.group-color-choice input\{width:1\.125rem;height:1\.125rem;margin:0;accent-color:var\(--primary\)/)
+    expect(group_picker_source).toContain('.group-color-choice:has(input:focus-visible){box-shadow:var(--focus-ring)}')
+    expect(group_picker_source).not.toContain('.group-color-choice:has(input:checked)::before')
+    wrapper.unmount()
+  })
 
   it('loads existing groups without selecting any and emits the selected IDs', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json([EXISTING_GROUP])))
@@ -94,6 +110,7 @@ describe('Group selection and creation', () => {
     await flushPromises()
 
     expect(wrapper.get('[role="alert"]').text()).toContain('Tente novamente')
+    expect(wrapper.get('button[name="retry-groups"]').classes()).toEqual(['stamp'])
     await wrapper.get('button[name="retry-groups"]').trigger('click')
     await flushPromises()
 

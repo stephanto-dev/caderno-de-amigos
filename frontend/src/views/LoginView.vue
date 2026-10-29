@@ -233,12 +233,12 @@ async function send_account_for_browser(): Promise<void> {
   background: linear-gradient(var(--focus), var(--focus)) no-repeat 0 calc(100% - .25rem)/100% 3px,
     linear-gradient(var(--highlight-50), var(--highlight-50)) no-repeat 0 calc(100% - .3125rem)/100% 1.6875rem;
 }
-.form-field input[aria-invalid] { background: linear-gradient(var(--error), var(--error)) no-repeat 0 calc(100% - .25rem)/100% 2.5px; }
+.form-field input[aria-invalid] { background: linear-gradient(var(--primary-800), var(--primary-800)) no-repeat 0 calc(100% - .25rem)/100% 2.5px; }
 .form-field input[aria-invalid]:focus {
-  background: linear-gradient(var(--error), var(--error)) no-repeat 0 calc(100% - .25rem)/100% 3px,
+  background: linear-gradient(var(--primary-800), var(--primary-800)) no-repeat 0 calc(100% - .25rem)/100% 3px,
     linear-gradient(var(--highlight-50), var(--highlight-50)) no-repeat 0 calc(100% - .3125rem)/100% 1.6875rem;
 }
-.field-error, .form-error { margin: 0; color: var(--error); font: 400 .875rem/var(--notebook-line) var(--font-ui); overflow-wrap: anywhere; }
+.field-error, .form-error { margin: 0; color: var(--primary-800); font: 400 .875rem/var(--notebook-line) var(--font-ui); overflow-wrap: anywhere; }
 .form-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1rem; }
 .form-actions button { min-height: 3rem; max-width: 100%; height: auto; padding: .5rem 1.375rem; font-size: 1.625rem; line-height: var(--notebook-line); }
 .form-actions button:disabled { opacity: .6; cursor: wait; }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 import { get_groups_for_form, send_group_creation_for_owner, send_group_update_for_owner, send_group_deletion_for_owner } from '../api/friends'
 import type { FriendGroup, GroupWithFriendCount } from '../api/friends'
 import { ApiError } from '../api/http'
@@ -15,6 +15,7 @@ const GROUP_COLOR_CHOICES = [
 ] as const
 const selected_group_ids = defineModel<string[]>({ required: true })
 const emit = defineEmits<{
+  selection_changed: [groups: FriendGroup[]]
   busy: [is_busy: boolean]
   updated: [group: FriendGroup]
   deleted: [group_id: string]
@@ -154,6 +155,10 @@ async function send_group_deletion_for_picker(): Promise<void> {
   }
 }
 
+watch(() => groups.value.filter((group) => selected_group_ids.value.includes(group.id))
+  .sort((first, second) => first.name.localeCompare(second.name, 'pt-BR', { sensitivity: 'base' })),
+(selected_groups) => emit('selection_changed', selected_groups), { deep: true })
+
 onMounted(get_groups_for_picker)
 </script>
 
@@ -162,7 +167,7 @@ onMounted(get_groups_for_picker)
     <p v-if="is_loading" role="status">Carregando grupos…</p>
     <div v-else-if="has_load_error" role="alert">
       <p>Não foi possível carregar os grupos. Tente novamente.</p>
-      <button type="button" name="retry-groups" class="group-action" @click="get_groups_for_picker">Tentar novamente</button>
+      <button type="button" name="retry-groups" class="stamp" @click="get_groups_for_picker">Tentar novamente</button>
     </div>
     <fieldset v-else class="group-fields" :disabled="is_saving" :aria-busy="is_saving">
       <legend class="group-heading">
@@ -223,6 +228,7 @@ onMounted(get_groups_for_picker)
 .group-picker>p{margin:0;line-height:var(--notebook-line)}
 .group-fields,.group-colors{min-width:0;margin:0;padding:0;border:0}
 .group-fields:disabled{opacity:.45}
+button[name="retry-groups"]{min-height:2.75rem}
 .group-heading{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:.5rem;width:100%;font:700 1.375rem/var(--notebook-line) var(--font-handwriting);color:var(--pen-ink)}
 .edit-groups{flex:none;height:2.75rem;min-height:0;margin:-.75rem 0 0;padding:.75rem .25rem 0;border:0;background:none;cursor:pointer;
  font:500 .875rem/var(--notebook-line) var(--font-ui);color:var(--neutral-700);text-decoration:underline;text-underline-offset:3px}
@@ -251,11 +257,10 @@ onMounted(get_groups_for_picker)
 .group-editor .field[aria-invalid="true"]{background:linear-gradient(var(--error),var(--error)) no-repeat 0 calc(100% - .25rem)/100% 2.5px}
 .group-colors{display:flex;flex-wrap:wrap;gap:1.25rem .5rem;padding:0 0 .625rem}
 .group-colors>legend{width:100%;padding:0 0 .625rem}
-.group-color-choice{position:relative;display:inline-flex;align-items:center;min-height:2.75rem;padding:0 .5rem;cursor:pointer}
-.group-color-choice input{position:absolute;width:1px;height:1px;margin:0;opacity:0}
-.group-color-choice:has(input:checked)::before{content:"";position:absolute;inset:0;border:2px solid var(--pen-ink);border-radius:50% 46% 52% 44%/60% 50% 55% 45%;transform:rotate(-2deg)}
-.group-color-choice:has(input:focus-visible){box-shadow:var(--focus-ring);border-radius:var(--radius-sm)}
-.group-color-choice:hover :deep(.group-badge){color:var(--pen-ink)}
+.group-color-choice{display:inline-flex;align-items:center;gap:.5rem;height:2.75rem;padding:0 .875rem 0 .625rem;border:1.5px solid var(--neutral-500);border-radius:var(--radius-pill);background:var(--sheet);cursor:pointer}
+.group-color-choice input{width:1.125rem;height:1.125rem;margin:0;accent-color:var(--primary)}
+.group-color-choice:has(input:checked){border:2px solid var(--primary);background:var(--primary-50)}
+.group-color-choice:has(input:focus-visible){box-shadow:var(--focus-ring)}
 .group-color-choice :deep(.group-badge){height:1.5rem;padding:0 .5rem;font:500 .875rem/1.5rem var(--font-ui);color:var(--ink)}
 .group-editor-actions{display:flex;flex-wrap:wrap;gap:1.25rem 1rem;padding:.625rem 0}
 .group-editor-actions>.group-action{height:2.75rem;min-height:0;padding:0 1rem;border:1.5px solid var(--neutral-500);border-radius:var(--radius-pill);background:var(--sheet);cursor:pointer;
