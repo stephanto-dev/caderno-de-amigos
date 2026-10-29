@@ -1,8 +1,16 @@
-"""Input contract for recording a contact."""
+"""Input and output contracts for contact history."""
 
 from rest_framework import serializers
 
 from apps.friends.models import Contact
+
+
+class ContactReadSerializer(serializers.ModelSerializer[Contact]):
+    """Expose the same contact fields in history and recording responses."""
+
+    class Meta:
+        model = Contact
+        fields = ("id", "kind", "date", "note")
 
 
 class ContactWriteSerializer(serializers.Serializer):

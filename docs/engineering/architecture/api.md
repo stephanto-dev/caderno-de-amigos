@@ -55,7 +55,8 @@ class RecordContactView(BaseAPIView):
         return Response(
             {
                 **BoardFriendSerializer(recorded_contact.board_friend).data,
-                "contact_id": recorded_contact.contact_id,
+                "contact_id": str(recorded_contact.contact.id),
+                "contact": ContactReadSerializer(recorded_contact.contact).data,
             },
             status=status.HTTP_201_CREATED,
         )

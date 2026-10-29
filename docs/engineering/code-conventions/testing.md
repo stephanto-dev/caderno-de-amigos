@@ -41,7 +41,7 @@ class TestRecordContact:
 
         # Assert
         assert recorded_contact.board_friend.last_contact is not None
-        assert recorded_contact.contact_id > 0
+        assert recorded_contact.contact.friend_id == friend.id
 ```
 
 ## O que testar

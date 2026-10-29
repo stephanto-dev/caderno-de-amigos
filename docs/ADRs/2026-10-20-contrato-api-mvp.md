@@ -12,6 +12,8 @@ Status: Aceito
 
 **Atualização 2026-10-26 (CRM-20)**: Cadastro próprio e login por e-mail. Contas novas usam o e-mail em minúsculas como `username` interno; a API recebe `email`.
 
+**Atualização 2026-10-29 (CRM-25)**: Histórico de contatos incluído no MVP, com paginação por cursor. O POST também retorna o contato completo, preservando o amigo atualizado e `contact_id`.
+
 ## Contexto
 
 Definição dos endpoints da API REST do Django REST Framework que o frontend Vue consome.
@@ -65,12 +67,19 @@ Aniversário (CRM-23):
 
 ### Contatos (nested routes)
 
+- `GET /api/friends/{id}/contacts/` — lista o histórico do amigo, retorna `200`
+  - Ordenação do mais recente para o mais antigo por `-date`, com desempate por `-id`
+  - Paginação com `CursorPagination` do DRF, 20 contatos por página
+  - Resposta: `{"next": "<cursor ou null>", "results": [{"id": "<uuid>", "kind": "message|call|meeting", "date": "<data e hora ISO 8601>", "note": "..."}]}`
+  - `next` contém somente o cursor, sem URL. Para continuar, enviar esse valor no parâmetro `cursor` da mesma rota (`?cursor=...`), com codificação de query string
+  - Na última página, `next` é `null`. Amigo sem contatos retorna `{"next": null, "results": []}`
 - `POST /api/friends/{id}/contacts/` — registra contato, retorna `201` com amigo atualizado
   - Corpo: `{"kind": "message|call|meeting", "note": "..."}` (`note` é opcional; `date` é setado pelo servidor para o momento atual)
-  - Resposta: amigo com `last_contact_at` e `last_note` atualizados, mais `contact_id` do novo contato
+  - Resposta: amigo com `last_contact_at` e `last_note` atualizados, mais `contact_id` e `contact` do novo contato
+  - `contact` contém `id`, `kind`, `date` e `note`, no mesmo formato dos itens do GET; `contact_id` continua presente e é igual a `contact.id`
 - `DELETE /api/friends/{id}/contacts/{contact_id}/` — desfaz contato (qualquer contato daquele amigo), retorna `204`
 
-A view sempre confere que o amigo pertence ao usuário (`owner`).
+Todas as rotas exigem sessão autenticada (`403` sem sessão). O serviço confere que o amigo pertence ao usuário (`owner`); amigo inexistente ou de outro dono retorna `404`. Cursor inválido também retorna `404`, conforme o DRF.
 
 ### Grupos
 
@@ -94,7 +103,7 @@ Colunas possíveis: `just_talked`, `on_track`, `this_week`, `overdue`.
 
 ### Fora do MVP
 
-- Listar ou editar contatos (nenhuma tela mostra histórico completo)
+- Editar contatos; a interface do histórico será implementada na CRM-26
 - Telefone (decisão de produto, não existe no modelo)
 
 ## Consequências
