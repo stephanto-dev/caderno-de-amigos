@@ -8,6 +8,7 @@ import { friends_state } from '../friends'
 const FRIEND = {
   id: '00000000-0000-4000-8000-000000000001', name: 'Ana Lima',
   cadence_amount: 3, cadence_unit: 'week', column: 'on_track',
+  birthday: null, is_birthday_today: false,
   last_contact_at: '2026-10-25T15:00:00Z', last_note: 'Perguntar sobre a viagem',
   groups: [{ id: '00000000-0000-4000-8000-000000000002', name: 'Faculdade', color: 'college' }],
 }
@@ -37,6 +38,43 @@ afterAll(() => { Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal'
 
 describe('Friend profile', () => {
   afterEach(() => { vi.unstubAllGlobals(); friends_state.friends = [] })
+
+  it('prefills the birthday and clears its date and API error before submitting null', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json({ ...FRIEND, birthday: '29/02' }))
+      .mockResolvedValueOnce(Response.json([]))
+      .mockResolvedValueOnce(Response.json({
+        type: 'validation_error', errors: [{ code: 'invalid', attr: 'birthday', detail: 'Essa data não existe. Ex.: 12/03.' }],
+      }, { status: 400 }))
+      .mockResolvedValueOnce(Response.json(FRIEND))
+    vi.stubGlobal('fetch', fetch)
+    const { wrapper } = await get_profile_for_test()
+    await flushPromises()
+    await wrapper.get('button[name="edit-friend"]').trigger('click')
+    await flushPromises()
+    const input = wrapper.get<HTMLInputElement>('input[name="birthday"]')
+    const focus = vi.spyOn(input.element, 'focus')
+    expect(input.element.value).toBe('29/02')
+
+    await input.setValue('31/04')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.find('#friend-birthday-error').exists()).toBe(true)
+    await wrapper.get('button[aria-label="Apagar aniversário"]').trigger('click')
+
+    expect(input.element.value).toBe('')
+    expect(focus).toHaveBeenCalledOnce()
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+    expect(input.attributes('aria-describedby')).toBeUndefined()
+    expect(wrapper.find('#friend-birthday-error').exists()).toBe(false)
+    expect(wrapper.find('.clear-birthday').exists()).toBe(false)
+
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(fetch).toHaveBeenLastCalledWith(`/api/friends/${FRIEND.id}/`, expect.objectContaining({
+      body: JSON.stringify({ name: FRIEND.name, cadence_amount: 3, cadence_unit: 'week', groups: [FRIEND.groups[0]!.id], birthday: null }),
+    }))
+    expect(wrapper.find('form').exists()).toBe(false)
+  })
 
   it('shows the owned friend fields returned by Django', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json(FRIEND))
@@ -82,7 +120,7 @@ describe('Friend profile', () => {
     await flushPromises()
 
     expect(fetch).toHaveBeenLastCalledWith(`/api/friends/${FRIEND.id}/`, expect.objectContaining({
-      method: 'PATCH', body: JSON.stringify({ name: 'Ana Silva', cadence_amount: 2, cadence_unit: 'week', groups: [FRIEND.groups[0]!.id] }),
+      method: 'PATCH', body: JSON.stringify({ name: 'Ana Silva', cadence_amount: 2, cadence_unit: 'week', groups: [FRIEND.groups[0]!.id], birthday: null }),
     }))
     expect(wrapper.get('h1').text()).toBe('Ana Silva')
     expect(wrapper.text()).toContain('a cada 2 semanas')

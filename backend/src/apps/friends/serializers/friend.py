@@ -18,9 +18,7 @@ class FriendWriteSerializer(serializers.Serializer):
     cadence_amount = serializers.IntegerField(min_value=1)
     cadence_unit = serializers.ChoiceField(choices=Friend.CadenceUnit.choices)
     BIRTHDAY_VALIDATION_YEAR: ClassVar[int] = 2000
-    BIRTHDAY_ERROR: ClassVar[str] = (
-        "Aniversário inválido. Informe uma data no formato dd/mm ou null para limpar."
-    )
+    BIRTHDAY_ERROR: ClassVar[str] = "Essa data não existe. Ex.: 12/03."
     birthday = serializers.RegexField(
         regex=r"\A[0-9]{2}/[0-9]{2}\Z",
         required=False,

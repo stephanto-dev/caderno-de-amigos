@@ -21,6 +21,8 @@ const FRIEND_WITH_GROUPS = {
   column: 'overdue',
   cadence_amount: 3,
   cadence_unit: 'week',
+  birthday: null,
+  is_birthday_today: false,
   last_contact_at: null,
   last_note: 'Perguntar sobre a viagem',
   groups: [
@@ -48,6 +50,27 @@ describe('Board', () => {
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
     vi.useRealTimers()
+  })
+
+  it('shows the birthday stamp only for the API flag and keeps contact registration available', async () => {
+    const friends = [
+      { ...FRIEND_WITH_GROUPS, birthday: '29/02', is_birthday_today: true },
+      { ...FRIEND_WITH_GROUPS, id: '00000000-0000-4000-8000-000000000009', name: 'Ana', birthday: '29/10' },
+    ]
+    set_fetch_for_board_test(vi.fn().mockResolvedValue(Response.json(friends)))
+    const wrapper = mount(BoardView, { global: { stubs: { RouterLink: RouterLinkStub } } })
+    await flushPromises()
+
+    const cards = wrapper.findAll('.friend-postit')
+    expect(wrapper.findAll('.birthday-stamp')).toHaveLength(1)
+    expect(cards[0]!.get('.birthday-stamp').text()).toBe('Aniversário hoje')
+    expect(cards[0]!.attributes('aria-labelledby')).toBe(`friend-${friends[0]!.id} birthday-${friends[0]!.id}`)
+    expect(cards[0]!.get('.birthday-stamp svg').attributes('aria-hidden')).toBe('true')
+    expect(cards[1]!.find('.birthday-stamp').exists()).toBe(false)
+    expect(cards[1]!.attributes('aria-labelledby')).toBe(`friend-${friends[1]!.id}`)
+
+    await cards[0]!.get('button').trigger('click')
+    expect(wrapper.get('dialog[open]').text()).toContain('Falei com Bruno')
   })
 
   it('lists all account groups in the legend including a group without friends', async () => {
@@ -501,6 +524,8 @@ describe('Board', () => {
       id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
       cadence_amount: 3,
       cadence_unit: 'week',
+      birthday: null,
+      is_birthday_today: false,
       last_contact_at: null,
       last_note: null,
       groups: [],

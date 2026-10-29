@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import FriendsView from './FriendsView.vue'
 
 const FRIENDS = [
-  { id: '00000000-0000-4000-8000-000000000001', name: 'Ana Lima', cadence_amount: 1, cadence_unit: 'month', column: 'on_track', last_contact_at: '2026-10-25T15:00:00Z', last_note: null, groups: [] },
-  { id: '00000000-0000-4000-8000-000000000002', name: 'Bruno', cadence_amount: 2, cadence_unit: 'week', column: 'overdue', last_contact_at: null, last_note: null, groups: [] },
+  { id: '00000000-0000-4000-8000-000000000001', name: 'Ana Lima', cadence_amount: 1, cadence_unit: 'month', column: 'on_track', birthday: null, is_birthday_today: false, last_contact_at: '2026-10-25T15:00:00Z', last_note: null, groups: [] },
+  { id: '00000000-0000-4000-8000-000000000002', name: 'Bruno', cadence_amount: 2, cadence_unit: 'week', column: 'overdue', birthday: null, is_birthday_today: false, last_contact_at: null, last_note: null, groups: [] },
 ]
 const MOUNT_OPTIONS = { global: { stubs: { RouterLink: RouterLinkStub } } }
 

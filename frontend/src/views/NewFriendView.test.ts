@@ -6,6 +6,7 @@ import NewFriendView from './NewFriendView.vue'
 const SAVED_FRIEND = {
   id: '00000000-0000-4000-8000-000000000001', name: 'Ana',
   cadence_amount: 1, cadence_unit: 'month', column: 'overdue',
+  birthday: null, is_birthday_today: false,
   last_contact_at: null, last_note: null, groups: [],
 }
 
@@ -27,6 +28,73 @@ async function get_new_friend_view() {
 describe('New friend form', () => {
   afterEach(() => vi.unstubAllGlobals())
 
+  it('adds the slash after the day and removes it when deleting', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json([])))
+    const { wrapper } = await get_new_friend_view()
+    const input = wrapper.get<HTMLInputElement>('input[name="birthday"]')
+
+    expect(wrapper.find('.clear-birthday').exists()).toBe(false)
+    expect(input.attributes()).toMatchObject({ inputmode: 'numeric', maxlength: '5', placeholder: 'dd/mm' })
+    await input.setValue('12')
+    expect(input.element.value).toBe('12/')
+
+    input.element.value = '12'
+    input.element.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'deleteContentBackward' }))
+    await flushPromises()
+    expect(input.element.value).toBe('12')
+    wrapper.unmount()
+  })
+
+  it('formats pasted digits and submits the birthday without the readonly flag', async () => {
+    const saved_friend = { ...SAVED_FRIEND, birthday: '12/03' }
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json([]))
+      .mockResolvedValueOnce(Response.json(saved_friend, { status: 201 }))
+    vi.stubGlobal('fetch', fetch)
+    const { wrapper } = await get_new_friend_view()
+
+    await wrapper.get('input[name="name"]').setValue('Ana')
+    const input = wrapper.get<HTMLInputElement>('input[name="birthday"]')
+    await input.setValue('a120345')
+    expect(input.element.value).toBe('12/03')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(fetch).toHaveBeenLastCalledWith('/api/friends/', expect.objectContaining({
+      body: JSON.stringify({ name: 'Ana', cadence_amount: 1, cadence_unit: 'month', groups: [], birthday: '12/03' }),
+    }))
+    wrapper.unmount()
+  })
+
+  it.each(['31/04', '12/3'])('submits %s for the API to validate and displays its field error without a suffix', async (birthday) => {
+    const detail = 'Essa data não existe. Ex.: 12/03.'
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json([]))
+      .mockResolvedValue(Response.json({
+        type: 'validation_error', errors: [{ code: 'invalid', attr: 'birthday', detail }],
+      }, { status: 400 }))
+    vi.stubGlobal('fetch', fetch)
+    const { wrapper, router } = await get_new_friend_view()
+
+    await wrapper.get('input[name="name"]').setValue('Ana')
+    const input = wrapper.get<HTMLInputElement>('input[name="birthday"]')
+    await input.setValue(birthday)
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(JSON.parse(fetch.mock.calls[1]![1].body).birthday).toBe(birthday)
+    expect(input.attributes()).toMatchObject({ 'aria-invalid': 'true', 'aria-describedby': 'friend-birthday-error' })
+    expect(wrapper.get('#friend-birthday-error').text()).toBe(detail)
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(input.element.value).toBe(birthday)
+    expect(router.currentRoute.value.path).toBe('/amigos/novo')
+
+    await input.setValue('')
+    expect(wrapper.find('#friend-birthday-error').exists()).toBe(false)
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+    expect(input.attributes('aria-describedby')).toBeUndefined()
+    expect(wrapper.find('.clear-birthday').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it('creates a friend with a monthly default cadence and opens the saved profile', async () => {
     const fetch = vi.fn().mockResolvedValueOnce(Response.json([])).mockResolvedValue(Response.json(SAVED_FRIEND, { status: 201 }))
     vi.stubGlobal('fetch', fetch)
@@ -37,7 +105,7 @@ describe('New friend form', () => {
     await flushPromises()
 
     expect(fetch).toHaveBeenLastCalledWith('/api/friends/', expect.objectContaining({
-      method: 'POST', body: JSON.stringify({ name: 'Ana', cadence_amount: 1, cadence_unit: 'month', groups: [] }),
+      method: 'POST', body: JSON.stringify({ name: 'Ana', cadence_amount: 1, cadence_unit: 'month', groups: [], birthday: null }),
     }))
     expect(router.currentRoute.value.path).toBe(`/amigos/${SAVED_FRIEND.id}`)
     wrapper.unmount()
@@ -80,7 +148,7 @@ describe('New friend form', () => {
     await flushPromises()
 
     expect(fetch).toHaveBeenCalledWith('/api/friends/', expect.objectContaining({
-      body: JSON.stringify({ name: 'Ana', cadence_amount: 2, cadence_unit: 'week', groups: [] }),
+      body: JSON.stringify({ name: 'Ana', cadence_amount: 2, cadence_unit: 'week', groups: [], birthday: null }),
     }))
     wrapper.unmount()
   })
@@ -132,7 +200,7 @@ describe('New friend form', () => {
     await flushPromises()
 
     expect(fetch).toHaveBeenLastCalledWith('/api/friends/', expect.objectContaining({
-      body: JSON.stringify({ name: 'Ana', cadence_amount: 1, cadence_unit: 'month', groups: [group.id] }),
+      body: JSON.stringify({ name: 'Ana', cadence_amount: 1, cadence_unit: 'month', groups: [group.id], birthday: null }),
     }))
     wrapper.unmount()
   })
