@@ -174,7 +174,7 @@ onMounted(get_groups_for_picker)
           :aria-pressed="is_editing_groups ? undefined : selected_group_ids.includes(group.id)"
           :aria-label="is_editing_groups ? `Editar grupo ${group.name}` : undefined"
           @click="is_editing_groups ? open_group_editor(group) : set_group_selection(group.id)">
-          <svg v-if="selected_group_ids.includes(group.id)" class="selected-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+          <svg v-if="!is_editing_groups && selected_group_ids.includes(group.id)" class="selected-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
           <GroupBadge :group="group" />
         </button>
         <button ref="new_group_button" type="button" name="new-group" class="group-action" :aria-expanded="is_editor_open && !edited_group" @click="open_group_editor()">+ novo grupo</button>

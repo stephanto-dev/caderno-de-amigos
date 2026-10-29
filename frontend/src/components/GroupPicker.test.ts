@@ -25,6 +25,24 @@ describe('Group selection and creation', () => {
     wrapper.unmount()
   })
 
+  it('hides the selection check while editing groups and restores it when returning to selection', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json([EXISTING_GROUP])))
+    const wrapper = mount(GroupPicker, { props: { modelValue: [EXISTING_GROUP.id] } })
+    await flushPromises()
+    expect(wrapper.find('.selected-check').exists()).toBe(true)
+
+    await wrapper.get('button[name="edit-groups"]').trigger('click')
+
+    expect(wrapper.find('.selected-check').exists()).toBe(false)
+    expect(wrapper.get('button.group-chip').attributes('aria-label')).toBe('Editar grupo Faculdade')
+    await wrapper.get('button[name="edit-groups"]').trigger('click')
+
+    expect(wrapper.find('.selected-check').exists()).toBe(true)
+    expect(wrapper.get('button.group-chip').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    wrapper.unmount()
+  })
+
   it('creates a group with its chosen color and selects it after the server saves it', async () => {
     const fetch = vi.fn().mockResolvedValueOnce(Response.json([EXISTING_GROUP]))
       .mockResolvedValueOnce(Response.json(CREATED_GROUP, { status: 201 }))
