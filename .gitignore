@@ -1,6 +1,14 @@
 .DS_Store
 .env
-.env.local
+.env.*
+!.env.example
+*.sql
+*.sql.gz
+*.dump
+*.dump.gz
+*.sqlite3
+*.sqlite3-journal
+backups/
 .venv/
 __pycache__/
 .pytest_cache/

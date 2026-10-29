@@ -1,15 +1,42 @@
 # Caderno de amigos
 
-CRM pessoal para lembrar de falar com os amigos. Projeto de estudo de Django.
+[![CI](https://github.com/stephanto-dev/caderno-de-amigos/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/stephanto-dev/caderno-de-amigos/actions/workflows/ci.yml)
+
+CRM pessoal para lembrar de falar com os amigos. Cadastre amigos, escolha o
+ritmo de contato, organize grupos e registre quando vocês conversaram. O Quadro
+mostra quem está em dia e de quem faz tempo que você não tem notícias.
+
+Cada conta tem seus próprios amigos, grupos e contatos. O projeto nasceu como
+estudo de Django e ainda está em desenvolvimento. Não envia lembretes por e-mail
+nem notificações automáticas.
+
+## Stack
+
+- Backend: Python 3.11+, Django 5 e Django REST Framework.
+- Frontend: Vue 3, TypeScript, Vite e Tailwind CSS.
+- Banco: PostgreSQL 16.
+- Produção: Gunicorn e WhiteNoise servem API e frontend na mesma origem.
+- Qualidade: pytest, Vitest, Ruff, mypy e vue-tsc; dependências Python com `uv`.
 
 ## Desenvolvimento
 
-Copie `.env.example` para `.env` antes de iniciar. Esse arquivo contém apenas
-valores de desenvolvimento e não entra no Git. O backend também aceita
-`.env.local` para sobrescrever valores só na máquina local.
+Instale Git e Docker com o plugin Compose. Na primeira execução, o Docker baixa
+as imagens e instala as dependências; Python e Node não precisam estar
+instalados na máquina para usar esse caminho.
 
-Com Docker disponível, rode `docker compose up --build` uma vez para subir o
-PostgreSQL, o Django (`http://localhost:8000`) e o Vite (`http://localhost:5173`).
+```sh
+git clone https://github.com/stephanto-dev/caderno-de-amigos.git
+cd caderno-de-amigos
+cp .env.example .env
+docker compose up --build
+```
+
+O `.env.example` contém somente valores fictícios de desenvolvimento. A cópia
+`.env` não entra no Git. O backend também aceita `.env.local` para sobrescrever
+valores só na máquina local; variáveis do processo têm prioridade sobre ambos.
+O Compose lê `.env` e define o endereço do banco dentro dos containers.
+
+O Compose inicia PostgreSQL, Django (`http://localhost:8000`) e Vite (`http://localhost:5173`).
 Durante o desenvolvimento, abra o app em `http://localhost:5173`: mudanças em
 Vue e CSS aparecem ao salvar, e o Vite repassa `/api` ao Django. Mudanças em
 Python também são recarregadas pelo Django. Não é preciso reconstruir a imagem
@@ -24,9 +51,68 @@ Depois de atualizar um checkout já em execução, aplique os novos bindings com
 `docker compose up -d --force-recreate`. Esse comando recria os containers e
 interrompe brevemente conexões existentes, mantendo os volumes de dados.
 
-O backend usa Python 3.11+ e `uv`. Em `backend/`, rode `uv sync` para instalar as
-dependências, `uv run pytest src` para os testes e `uv run python src/manage.py check`
-para verificar a configuração. O teste do backend requer o PostgreSQL do Compose.
+Na tela inicial em `http://localhost:5173`, escolha **Criar conta**. O banco
+começa sem amigos ou contas de demonstração. Para acessar o Django Admin, crie
+um superusuário separadamente:
+
+```sh
+docker compose exec web python src/manage.py createsuperuser
+```
+
+O admin fica em `http://localhost:8000/admin/` e permite acesso global aos dados;
+use a conta comum para utilizar o CRM. Para parar os serviços, use
+`docker compose down`. Os dados permanecem no volume do PostgreSQL.
+
+### Variáveis de ambiente
+
+Os valores abaixo são os exemplos locais de [`.env.example`](.env.example).
+As credenciais são públicas e servem apenas para o banco de desenvolvimento.
+
+| Variável | Exemplo local | Para que serve |
+| --- | --- | --- |
+| `DJANGO_DEBUG` | `1` | Liga a depuração local; o padrão do backend é `0`. |
+| `DJANGO_TRUST_X_FORWARDED_PROTO` | `0` | Confia no protocolo informado pelo proxy somente quando configurado e verificado. |
+| `DJANGO_SECRET_KEY` | `development-only-secret-key` | Chave fictícia local; produção exige uma chave aleatória exclusiva. |
+| `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Hosts aceitos pelo Django, separados por vírgula. |
+| `DJANGO_TRUSTED_PROXY_COUNT` | `0` | Quantidade de proxies confiáveis usada na identificação do IP para os limites de requisições. |
+| `POSTGRES_DB` | `caderno` | Nome do banco. |
+| `POSTGRES_USER` | `caderno` | Usuário do banco. |
+| `POSTGRES_PASSWORD` | `caderno` | Senha fictícia local, recusada pelo Django em produção. |
+| `POSTGRES_HOST` | `localhost` | Endereço do banco; o Compose usa `db` dentro do container. |
+| `POSTGRES_PORT` | `5433` | Porta publicada na máquina; o Compose usa `5432` entre containers. |
+
+### Testes e verificações
+
+Para rodar os testes Python na máquina, instale Python 3.11+ e `uv` e mantenha
+o banco local ligado com `docker compose up -d db`. A partir da raiz:
+
+```sh
+cd backend
+uv sync --frozen
+uv run ruff check src
+uv run ruff format src --check
+uv run mypy --config-file pyproject.toml src
+uv run python src/manage.py check
+uv run python src/manage.py makemigrations --check --dry-run
+uv run pytest src
+```
+
+Os testes usam um banco de testes separado. O usuário do PostgreSQL precisa
+de permissão para criá-lo; o usuário local criado pelo Compose já tem essa
+permissão. Nunca aponte os testes para um banco de produção.
+
+Para o frontend, instale Node.js 22 e rode, a partir da raiz:
+
+```sh
+cd frontend
+npm ci
+npm run typecheck
+npm test
+npm run build
+```
+
+O CI verifica backend, frontend e a construção da imagem Docker. Para conferir
+a imagem localmente, use `docker build -t caderno-de-amigos .` na raiz.
 
 ## Produção
 
@@ -94,3 +180,11 @@ limites e precisam ser configuradas e verificadas na hospedagem.
 - [Arquitetura do sistema](docs/arquitetura.md)
 - [ADRs (Architecture Decision Records)](docs/ADL.md)
 - [Guias de engenharia](docs/engineering/README.md)
+- [Como contribuir](CONTRIBUTING.md)
+- [Código de conduta](CODE_OF_CONDUCT.md)
+- [Como reportar vulnerabilidades](SECURITY.md)
+
+## Licença
+
+Distribuído sob a [licença MIT](LICENSE). A licença do código não autoriza
+o acesso a dados privados de usuários.
