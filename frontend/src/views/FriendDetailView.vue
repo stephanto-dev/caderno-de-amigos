@@ -209,7 +209,7 @@ onBeforeUnmount(() => { request_version += 1 })
 
 <style scoped>
 .friend-profile .view-title { overflow-wrap: anywhere; }
-.back-link { min-height: 44px; }
+.back-link { display: flex; width: fit-content; min-width: 2.75rem; align-items: flex-end; height: 2.75rem; margin-top: -.75rem; font: 500 .875rem/var(--notebook-line) var(--font-ui); color: var(--neutral-700); text-decoration: underline; text-underline-offset: 3px; }
 .profile-cadence { margin: 0; color: var(--neutral-600); }
 .profile-contact-button { box-sizing: border-box; min-height: 44px; margin-top: 12px; }
 .profile-feedback { margin: var(--notebook-line) 0 0; color: var(--success-700); }

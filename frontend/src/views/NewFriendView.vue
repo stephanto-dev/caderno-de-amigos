@@ -18,6 +18,6 @@ async function open_saved_friend_profile(friend: BoardFriend): Promise<void> {
 </template>
 
 <style scoped>
-.cancel-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--neutral-700); text-decoration: underline; text-underline-offset: 3px; }
+.cancel-link { display: flex; width: fit-content; min-width: 2.75rem; align-items: flex-end; height: 2.75rem; margin-top: -.75rem; font: 500 .875rem/var(--notebook-line) var(--font-ui); color: var(--neutral-700); text-decoration: underline; text-underline-offset: 3px; }
 .new-friend-help { margin: 0; color: var(--neutral-600); }
 </style>
