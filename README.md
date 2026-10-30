@@ -5,6 +5,10 @@
 Um CRM pessoal com cara de caderno, feito para lembrar de falar com os amigos.
 Não é um painel de vendas: não tem placar, não tem "atrasado" em vermelho, não tem culpa.
 
+![Demonstração do caderno de amigos: registrar uma conversa com a Marina pelo post-it e ver o quadro se reorganizar](docs/media/crm-cenas-2-3.gif)
+
+[Assista ao vídeo completo (38 s)](docs/media/crm-promo.mp4). O vídeo e o GIF usam só dados fictícios.
+
 ## Por que existe
 
 Dá para gostar dos amigos e mesmo assim não puxar conversa. Com o tempo a gente
