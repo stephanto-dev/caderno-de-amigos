@@ -258,6 +258,8 @@ button[name="retry-groups"]{min-height:2.75rem}
 .group-colors{display:flex;flex-wrap:wrap;gap:1.25rem .5rem;padding:0 0 .625rem}
 .group-colors>legend{width:100%;padding:0 0 .625rem}
 .group-color-choice{display:inline-flex;align-items:center;gap:.5rem;height:2.75rem;padding:0 .875rem 0 .625rem;border:1.5px solid var(--neutral-500);border-radius:var(--radius-pill);background:var(--sheet);cursor:pointer}
+.group-color-choice:hover:not(:has(input:checked)):not(:has(input:disabled)){border-color:var(--neutral-700)}
+.group-color-choice:has(input:disabled){cursor:default}
 .group-color-choice input{width:1.125rem;height:1.125rem;margin:0;accent-color:var(--primary)}
 .group-color-choice:has(input:checked){border:2px solid var(--primary);background:var(--primary-50)}
 .group-color-choice:has(input:focus-visible){box-shadow:var(--focus-ring)}

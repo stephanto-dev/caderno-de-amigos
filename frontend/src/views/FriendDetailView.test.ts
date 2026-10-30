@@ -43,6 +43,23 @@ afterAll(() => { Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal'
 describe('Friend profile', () => {
   afterEach(() => { vi.unstubAllGlobals(); friends_state.friends = [] })
 
+  it('shows the birthday immediately after the cadence', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ ...FRIEND, birthday: '29/10' })))
+    const { wrapper } = await get_profile_for_test()
+    await flushPromises()
+
+    expect(wrapper.get('.profile-birthday').text()).toBe('29/out')
+    expect(wrapper.get('.profile-cadence').element.nextElementSibling).toBe(wrapper.get('.profile-birthday').element)
+  })
+
+  it('hides the birthday when absent', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(FRIEND)))
+    const { wrapper } = await get_profile_for_test()
+    await flushPromises()
+
+    expect(wrapper.find('.profile-birthday').exists()).toBe(false)
+  })
+
   it('prefills the birthday and clears its date and API error before submitting null', async () => {
     const fetch = vi.fn().mockResolvedValueOnce(Response.json({ ...FRIEND, birthday: '29/02' }))
       .mockResolvedValueOnce(Response.json([]))
