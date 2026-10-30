@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { new_friend_draft } from '../new-friend-draft'
+import FriendBirthday from './FriendBirthday.vue'
 import FriendCadence from './FriendCadence.vue'
 import GroupBadge from './GroupBadge.vue'
 </script>
@@ -8,8 +9,8 @@ import GroupBadge from './GroupBadge.vue'
   <div class="new-friend-draft" aria-hidden="true">
     <p class="nota">rascunho: a página aparece aqui enquanto você escreve.</p>
     <h1 class="draft-name" :class="{ 'is-empty': !new_friend_draft.name.trim() }">{{ new_friend_draft.name.trim() || 'Novo amigo' }}</h1>
-    <p class="profile-cadence">a cada <FriendCadence :friend="new_friend_draft" /></p>
-    <p v-if="new_friend_draft.birthday" class="draft-birthday">Aniversário: {{ new_friend_draft.birthday }}</p>
+    <p v-if="new_friend_draft.cadence_amount > 0" class="profile-cadence">a cada <FriendCadence :friend="new_friend_draft" /></p>
+    <FriendBirthday class="draft-birthday" :birthday="new_friend_draft.birthday" />
     <div class="profile-groups">
       <GroupBadge v-for="group in new_friend_draft.groups" :key="group.id" :group="group" />
       <GroupBadge v-if="!new_friend_draft.groups.length" :group="{ name: 'sem grupo', color: 'neutral' }" />

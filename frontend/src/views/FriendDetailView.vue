@@ -4,6 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { get_friend_for_board, send_friend_deletion_for_owner } from '../api/friends'
 import type { BoardFriend, FriendContact, FriendGroup, RecordedContact } from '../api/friends'
 import { ApiError } from '../api/http'
+import FriendBirthday from '../components/FriendBirthday.vue'
 import FriendCadence from '../components/FriendCadence.vue'
 import GroupBadge from '../components/GroupBadge.vue'
 import ContactSheet from '../components/ContactSheet.vue'
@@ -176,6 +177,7 @@ onBeforeUnmount(() => { request_version += 1 })
         @cancel="close_friend_editor" @group_updated="set_updated_group_for_profile" @group_deleted="remove_group_for_profile" />
       <template v-else>
         <p class="profile-cadence">a cada <FriendCadence :friend="friend" /></p>
+        <FriendBirthday class="profile-birthday" :birthday="friend.birthday" />
         <button ref="contact_button" type="button" name="record-contact" class="stamp profile-contact-button" :disabled="is_deleting" @click="contact_announcement = ''; is_contact_sheet_open = true">registrar contato</button>
         <p v-if="contact_announcement" class="profile-feedback" role="status">{{ contact_announcement }}</p>
         <dl class="profile-details">
@@ -214,7 +216,7 @@ onBeforeUnmount(() => { request_version += 1 })
 <style scoped>
 .friend-profile .view-title { overflow-wrap: anywhere; }
 .back-link { display: flex; width: fit-content; min-width: 2.75rem; align-items: flex-end; height: 2.75rem; margin-top: -.75rem; font: 500 .875rem/var(--notebook-line) var(--font-ui); color: var(--neutral-700); text-decoration: underline; text-underline-offset: 3px; }
-.profile-cadence { margin: 0; color: var(--neutral-600); }
+.profile-cadence, .profile-birthday { margin: 0; color: var(--neutral-600); }
 .profile-contact-button { box-sizing: border-box; min-height: 44px; margin-top: 12px; }
 .profile-feedback { margin: var(--notebook-line) 0 0; color: var(--success-700); }
 .profile-details { margin: var(--notebook-line) 0 0; }

@@ -61,12 +61,14 @@ describe('App navigation', () => {
     await router.push('/amigos/novo')
     await flushPromises()
     expect(wrapper.get('h1').text()).toBe('Novo amigo')
+    expect(wrapper.get('section.page-right').attributes('aria-label')).toBe('Rascunho do novo amigo')
     expect(wrapper.get('a[aria-current="page"]').text()).toBe('amigos')
 
     await router.push('/amigos/123')
     await flushPromises()
     expect(wrapper.get('.page-left h1').text()).toBe('Amigos')
     expect(wrapper.get('.page-right h1').text()).toBe('Perfil do amigo')
+    expect(wrapper.get('section.page-right').attributes('aria-label')).toBe('Perfil')
     expect(wrapper.get('.page-right a').attributes('href')).toBe('/amigos')
     expect(wrapper.get('a[aria-current="page"]').text()).toBe('amigos')
 

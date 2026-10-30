@@ -89,7 +89,7 @@ onBeforeUnmount(() => group_observer?.disconnect())
 .friend-postit::before { content: ''; position: absolute; inset: 0 0 auto; height: 10px; background: rgb(43 36 32 / 5%); pointer-events: none; }
 h3 { margin: 0; min-width: 0; font: 600 1.1875rem/1.75rem var(--font-title); }
 h3 a { position: relative; display: block; color: inherit; text-decoration: none; }
-h3 a::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; min-height: 44px; height: 100%; }
+h3 a::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); min-height: 44px; height: 100%; }
 h3 a span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 h3 a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .friend-groups { display: flex; flex-wrap: wrap; gap: 4px; max-height: 40px; margin: 2px 0; overflow: hidden; }
