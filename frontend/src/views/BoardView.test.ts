@@ -178,7 +178,51 @@ describe('Board', () => {
     expect(wrapper.get('section[aria-labelledby="column-overdue"]').text()).toContain('Bruno')
   })
 
+  it('prefills today in São Paulo and limits the picker to that day', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-28T01:00:00Z'))
+    set_fetch_for_board_test(vi.fn().mockResolvedValue(Response.json([FRIEND_WITH_GROUPS])))
+    const wrapper = mount(BoardView, { global: { stubs: { RouterLink: RouterLinkStub } } })
+    await flushPromises()
+    await wrapper.get('button[aria-label="Falei agora com Bruno"]').trigger('click')
+
+    const date = wrapper.get<HTMLInputElement>('input[type="date"]')
+    expect(date.element.value).toBe('2026-10-27')
+    expect(date.attributes('max')).toBe('2026-10-27')
+    expect(date.attributes('required')).toBeDefined()
+    await date.setValue('2026-10-28')
+    expect(date.element.validity.rangeOverflow).toBe(true)
+    await date.setValue('')
+    expect(date.element.validity.valueMissing).toBe(true)
+  })
+
+  it('sends a chosen earlier day and preserves it with the note after an API date error', async () => {
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(Response.json([FRIEND_WITH_GROUPS]))
+      .mockResolvedValueOnce(Response.json({ errors: [{ attr: 'date', detail: 'Data inválida. Escolha hoje ou um dia anterior.' }] }, { status: 400 }))
+    set_fetch_for_board_test(fetch)
+    const wrapper = mount(BoardView, { global: { stubs: { RouterLink: RouterLinkStub } } })
+    await flushPromises()
+    await wrapper.get('button[aria-label="Falei agora com Bruno"]').trigger('click')
+    await wrapper.get('input[type="date"]').setValue('2026-10-24')
+    await wrapper.get('textarea').setValue('Conversa de sábado')
+    await wrapper.get('dialog form').trigger('submit')
+    await flushPromises()
+
+    expect(fetch).toHaveBeenLastCalledWith(`/api/friends/${FRIEND_WITH_GROUPS.id}/contacts/`, expect.objectContaining({
+      method: 'POST', body: JSON.stringify({ kind: 'message', note: 'Conversa de sábado', date: '2026-10-24' }),
+    }))
+    const date = wrapper.get<HTMLInputElement>('input[type="date"]')
+    expect(date.element.value).toBe('2026-10-24')
+    expect(date.attributes('aria-invalid')).toBe('true')
+    expect(date.attributes('aria-describedby')).toContain('contact-error')
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('Conversa de sábado')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Data inválida')
+  })
+
   it('submits the contact and updates the friend in the column returned by Django', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-28T01:00:00Z')) // Still October 27 in São Paulo.
     const updated_friend = {
       ...FRIEND_WITH_GROUPS, column: 'just_talked', last_note: 'Falamos da viagem',
       last_contact_at: '2026-10-27T15:00:00Z',
@@ -199,7 +243,7 @@ describe('Board', () => {
     await flushPromises()
 
     expect(fetch).toHaveBeenLastCalledWith(`/api/friends/${FRIEND_WITH_GROUPS.id}/contacts/`, expect.objectContaining({
-      method: 'POST', body: JSON.stringify({ kind: 'call', note: updated_friend.last_note }),
+      method: 'POST', body: JSON.stringify({ kind: 'call', note: updated_friend.last_note, date: '2026-10-27' }),
     }))
     expect(wrapper.find('dialog').exists()).toBe(false)
     expect(wrapper.get('[data-column="overdue"]').text()).not.toContain('Bruno')

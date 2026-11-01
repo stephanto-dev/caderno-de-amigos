@@ -1144,7 +1144,7 @@ class TestContactsAPI:
         )
         assert not Contact.objects.filter(friend=friend).exists()
 
-    def test_record_contact_ignores_date_in_request(self) -> None:
+    def test_record_contact_uses_selected_date_for_board_and_history(self) -> None:
         # Arrange
         owner = User.objects.create_user(username="ana")
         friend = create_friend_for_owner(owner, "Bia")
@@ -1154,14 +1154,110 @@ class TestContactsAPI:
         # Act
         response = client.post(
             reverse("record_contact", args=[friend.id]),
-            {"kind": Contact.Kind.MESSAGE, "date": "2000-01-01T00:00:00Z"},
+            {"kind": Contact.Kind.MESSAGE, "date": "2026-10-19"},
         )
 
         # Assert
         assert response.status_code == 201
         contact = Contact.objects.get(friend=friend)
-        assert contact.date == timezone.now()
+        assert (
+            timezone.localtime(contact.date).isoformat() == "2026-10-19T00:00:00-03:00"
+        )
         assert contact.note == ""
+        assert response.data["column"] == "on_track"
+        assert response.data["last_contact_at"] == response.data["contact"]["date"]
+        history_response = client.get(reverse("record_contact", args=[friend.id]))
+        assert history_response.data["results"][0] == response.data["contact"]
+
+    def test_record_contact_today_keeps_current_time(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("record_contact", args=[friend.id]),
+            {"kind": Contact.Kind.MESSAGE, "date": "2026-10-22"},
+        )
+
+        # Assert
+        assert response.status_code == 201
+        assert Contact.objects.get(friend=friend).date == timezone.now()
+
+    def test_record_older_contact_preserves_latest_contact_and_note(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia", days_since_contact=1)
+        latest_contact = Contact.objects.get(friend=friend)
+        latest_contact.note = "Conversa mais recente"
+        latest_contact.save()
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("record_contact", args=[friend.id]),
+            {
+                "kind": Contact.Kind.MESSAGE,
+                "date": "2026-10-19",
+                "note": "Conversa antiga",
+            },
+        )
+
+        # Assert
+        assert response.status_code == 201
+        assert (
+            response.data["last_contact_at"]
+            == timezone.localtime(latest_contact.date).isoformat()
+        )
+        assert response.data["last_note"] == latest_contact.note
+        assert response.data["column"] == "just_talked"
+
+    def test_record_contact_rejects_future_day_in_sao_paulo(self) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act: UTC has reached the next day, but São Paulo has not.
+        with time_machine.travel(datetime(2026, 10, 23, 1, tzinfo=UTC), tick=False):
+            response = client.post(
+                reverse("record_contact", args=[friend.id]),
+                {"kind": Contact.Kind.MESSAGE, "date": "2026-10-23"},
+            )
+
+        # Assert
+        assert response.status_code == 400
+        assert response.data["errors"][0]["attr"] == "date"
+        assert response.data["errors"][0]["detail"] == (
+            "O contato não pode estar no futuro. Escolha hoje ou um dia anterior."
+        )
+        assert not Contact.objects.filter(friend=friend).exists()
+
+    @pytest.mark.parametrize(
+        "contact_date", ["2026-02-30", "", "ontem", "2026-10-19T12:00:00Z"]
+    )
+    def test_record_contact_rejects_invalid_date(self, contact_date: str) -> None:
+        # Arrange
+        owner = User.objects.create_user(username="ana")
+        friend = create_friend_for_owner(owner, "Bia")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        # Act
+        response = client.post(
+            reverse("record_contact", args=[friend.id]),
+            {"kind": Contact.Kind.MESSAGE, "date": contact_date},
+            format="json",
+        )
+
+        # Assert
+        assert response.status_code == 400
+        assert response.data["errors"][0]["attr"] == "date"
+        assert not Contact.objects.filter(friend=friend).exists()
 
     def test_record_contact_for_other_owner_returns_404(self) -> None:
         # Arrange

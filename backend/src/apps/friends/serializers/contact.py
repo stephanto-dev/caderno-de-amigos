@@ -14,7 +14,7 @@ class ContactReadSerializer(serializers.ModelSerializer[Contact]):
 
 
 class ContactWriteSerializer(serializers.Serializer):
-    """Accept a contact type and optional note, leaving the date to the server."""
+    """Accept a contact type, an optional calendar date, and an optional note."""
 
     kind = serializers.ChoiceField(
         choices=Contact.Kind.choices,
@@ -24,3 +24,10 @@ class ContactWriteSerializer(serializers.Serializer):
         },
     )
     note = serializers.CharField(required=False, allow_blank=True)
+    date = serializers.DateField(
+        required=False,
+        error_messages={
+            "invalid": "Data inválida. Informe o dia do contato no formato AAAA-MM-DD.",
+            "null": "Informe o dia do contato ou use a data de hoje.",
+        },
+    )

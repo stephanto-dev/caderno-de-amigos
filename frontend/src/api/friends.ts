@@ -39,13 +39,14 @@ export interface FriendWriteData {
   groups?: string[]
 }
 
-/** Input accepted by Django's ContactWriteSerializer; the server sets the date. */
+/** Input accepts a calendar date (YYYY-MM-DD); omitting it records today. */
 export interface ContactWriteData {
   kind: typeof CONTACT_KINDS[number]
   note: string
+  date?: string
 }
 
-/** ContactReadSerializer fields; the recording date always comes from Django. */
+/** ContactReadSerializer returns the saved date as a timestamp with a time zone. */
 export interface FriendContact extends ContactWriteData {
   id: string
   date: string

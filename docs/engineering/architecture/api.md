@@ -51,6 +51,7 @@ class RecordContactView(BaseAPIView):
             friend_id=friend_id,
             kind=cast(str, serializer.validated_data["kind"]),
             note=cast(str, serializer.validated_data.get("note", "")),
+            contact_date=cast(date | None, serializer.validated_data.get("date")),
         )
         return Response(
             {
@@ -75,6 +76,13 @@ urlpatterns = [
 ```
 
 ## Serializers
+
+O registro de contato aceita `date` opcional no formato `AAAA-MM-DD`, até o dia
+atual no fuso de São Paulo. Sem esse campo, ou com a data de hoje, mantém o horário
+atual. Dias anteriores são salvos à meia-noite local, pois o formulário não pede
+horário. A resposta continua trazendo `date` como data e hora com fuso. O Quadro
+usa o contato de data mais recente, mesmo quando uma conversa antiga é registrada
+depois.
 
 - Entrada que não é um model inteiro usa `serializers.Serializer` com os campos declarados. `ModelSerializer` só quando a entrada ou a saída é de fato o model.
 - Campo com valores fixos usa `ChoiceField` com o `TextChoices` do model ou do domínio, nunca strings soltas.

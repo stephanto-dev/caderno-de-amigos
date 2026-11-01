@@ -11,16 +11,29 @@ const NOTE_AUTOFOCUS_MIN_WIDTH = 1024
 const DISMISS_DRAG_DISTANCE = 80
 const VALIDATION_ERROR_STATUS = 400
 const NOT_FOUND_STATUS = 404
+const CONTACT_DATE_FORMAT = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
+})
 const dialog = ref<HTMLDialogElement | null>(null)
 const note_input = ref<HTMLTextAreaElement | null>(null)
 const keep_note_button = ref<HTMLButtonElement | null>(null)
 const kind = ref<ContactWriteData['kind']>(CONTACT_OPTIONS.message.value)
 const note = ref('')
+const contact_date = ref(get_today_for_contact())
 const is_saving = ref(false)
 const is_confirming_discard = ref(false)
 const error_message = ref('')
 const invalid_field = ref<string | null>(null)
 let drag_start_y = 0
+
+/** Use the board's São Paulo calendar day regardless of the browser's time zone. */
+function get_today_for_contact(): string {
+  const parts = CONTACT_DATE_FORMAT.formatToParts(new Date())
+  const year = parts.find((part) => part.type === 'year')?.value
+  const month = parts.find((part) => part.type === 'month')?.value
+  const day = parts.find((part) => part.type === 'day')?.value
+  return `${year}-${month}-${day}`
+}
 
 /** Keep unsaved text until the owner explicitly discards it; wait for pending writes. */
 async function request_sheet_close(): Promise<void> {
@@ -59,7 +72,9 @@ async function send_contact_for_sheet(): Promise<void> {
   error_message.value = ''
   invalid_field.value = null
   try {
-    const contact = await send_contact_for_friend(props.friend.id, { kind: kind.value, note: note.value })
+    const contact = await send_contact_for_friend(props.friend.id, {
+      kind: kind.value, note: note.value, date: contact_date.value,
+    })
     emit('recorded', contact)
   } catch (error) {
     invalid_field.value = error instanceof ApiError ? error.field : null
@@ -108,6 +123,10 @@ onMounted(() => {
             <span>{{ option.label }}</span>
           </label>
         </div>
+        <label for="contact-date" class="note-label">Dia do contato</label>
+        <input id="contact-date" v-model="contact_date" class="field contact-date" name="date" type="date" required :max="get_today_for_contact()"
+          :aria-invalid="invalid_field === 'date' ? true : undefined"
+          :aria-describedby="invalid_field === 'date' ? 'contact-error' : undefined">
         <label for="contact-note" class="note-label">Nota rápida <span>(opcional)</span></label>
         <textarea id="contact-note" ref="note_input" v-model="note" class="field" rows="3" placeholder="O que ficou da conversa?" :aria-invalid="invalid_field === 'note' ? true : undefined" :aria-describedby="invalid_field === 'note' ? 'contact-error' : undefined"></textarea>
       </fieldset>
@@ -144,6 +163,7 @@ fieldset { min-width: 0; margin: 16px 0 0; padding: 0; border: 0; }
 .contact-option input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: inherit; }
 .note-label { display: block; margin-top: 16px; font-size: .875rem; font-weight: 500; }
 .note-label span { color: var(--neutral-600); font-weight: 400; }
+.contact-date { box-sizing: border-box; width: 100%; min-width: 0; margin-top: 8px; }
 textarea.field { box-sizing: border-box; height: auto; min-height: 104px; max-height: 35dvh; margin-top: 8px; padding: 12px 16px; resize: vertical; caret-color: var(--pen-ink); }
 textarea.field::placeholder { color: var(--neutral-600); }
 .keyboard-hint { display: none; margin: 8px 0 0; color: var(--neutral-600); font-size: .75rem; }

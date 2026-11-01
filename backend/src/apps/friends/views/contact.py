@@ -1,5 +1,6 @@
 """Endpoints for reading, recording and undoing contacts."""
 
+from datetime import date
 from typing import cast
 from urllib.parse import parse_qs, urlsplit
 from uuid import UUID
@@ -58,6 +59,7 @@ class RecordContactView(BaseAPIView):
             friend_id=friend_id,
             kind=cast(str, serializer.validated_data["kind"]),
             note=cast(str, serializer.validated_data.get("note", "")),
+            contact_date=cast(date | None, serializer.validated_data.get("date")),
         )
         return Response(
             {

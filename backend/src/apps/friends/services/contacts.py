@@ -1,11 +1,14 @@
 """Read, record and undo contacts for friends owned by the current user."""
 
 from dataclasses import dataclass
+from datetime import date, datetime, time
 from uuid import UUID
 
 from django.contrib.auth.models import User
 from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 
 from apps.friends.models import Contact, Friend
 from apps.friends.services.friends import BoardFriend, FriendsService
@@ -36,11 +39,36 @@ class ContactsService:
         )
         return Contact.objects.filter(friend=friend)
 
-    def record_contact(self, friend_id: UUID, kind: str, note: str) -> RecordedContact:
-        """Record a contact now and return it with recalculated board fields."""
+    def record_contact(
+        self, friend_id: UUID, kind: str, note: str, contact_date: date | None = None
+    ) -> RecordedContact:
+        """Record a past or current contact and recalculate the friend's board fields.
+
+        Omitted dates and today retain the current time. Earlier calendar dates
+        use local midnight because the form does not collect a time of day.
+        Future dates are rejected before saving any contact.
+        """
         friends_for_owner = Friend.objects.filter(owner=self.owner)
         friend = get_object_or_404(friends_for_owner, pk=friend_id)
-        contact = Contact.objects.create(friend=friend, kind=kind, note=note)
+        now = timezone.now()
+        today = timezone.localdate(now)
+        if contact_date is not None and contact_date > today:
+            raise ValidationError(
+                {
+                    "date": (
+                        "O contato não pode estar no futuro. "
+                        "Escolha hoje ou um dia anterior."
+                    )
+                }
+            )
+        recorded_at = (
+            timezone.make_aware(datetime.combine(contact_date, time.min))
+            if contact_date is not None and contact_date < today
+            else now
+        )
+        contact = Contact.objects.create(
+            friend=friend, kind=kind, note=note, date=recorded_at
+        )
         return RecordedContact(
             board_friend=FriendsService(
                 friends_for_owner, self.owner

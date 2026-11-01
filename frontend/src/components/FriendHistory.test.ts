@@ -27,6 +27,25 @@ function get_pending_page_for_test() {
 }
 
 describe('Friend history', () => {
+  it('keeps a backdated registration in date order when older pages arrive', async () => {
+    const backdated_contact = { ...NEW_CONTACT, date: '2025-01-01T03:00:00Z' }
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(Response.json({ next: 'original-cursor', results: [CONTACT] }))
+      .mockResolvedValueOnce(Response.json({ next: null, results: [OLDER_CONTACT, backdated_contact] })))
+    const wrapper = get_history_for_test()
+    await flushPromises()
+
+    await wrapper.setProps({ newest_contact: backdated_contact })
+    expect(wrapper.findAll('.history-item').map((item) => item.attributes('data-contact-id')))
+      .toEqual([CONTACT.id, backdated_contact.id])
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.findAll('.history-item').map((item) => item.attributes('data-contact-id')))
+      .toEqual([CONTACT.id, OLDER_CONTACT.id, backdated_contact.id])
+    expect(wrapper.get('.history-item--new').attributes('data-contact-id')).toBe(backdated_contact.id)
+  })
+
   it('shows four skeletons without blocking the profile and leaves initial focus unchanged', async () => {
     const pending = get_pending_page_for_test()
     vi.stubGlobal('fetch', vi.fn().mockReturnValue(pending.response))

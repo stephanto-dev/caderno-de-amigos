@@ -27,12 +27,14 @@ const retry_button = ref<HTMLButtonElement | null>(null)
 const highlighted_contact_id = ref<string | null>(null)
 let request_version = 0
 
-const displayed_contacts = computed(() => contacts.value.map((contact) => ({
-  ...contact,
-  option: CONTACT_OPTIONS[contact.kind],
-  short_date: get_date_for_history(contact.date),
-  full_date: HISTORY_FULL_DATE_FORMAT.format(new Date(contact.date)),
-})))
+const displayed_contacts = computed(() => [...contacts.value]
+  .sort((first, second) => Date.parse(second.date) - Date.parse(first.date) || second.id.localeCompare(first.id))
+  .map((contact) => ({
+    ...contact,
+    option: CONTACT_OPTIONS[contact.kind],
+    short_date: get_date_for_history(contact.date),
+    full_date: HISTORY_FULL_DATE_FORMAT.format(new Date(contact.date)),
+  })))
 
 /** Read both years in São Paulo so midnight in another zone cannot change the label. */
 function get_date_for_history(date: string): string {
