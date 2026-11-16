@@ -122,15 +122,6 @@ onMounted(get_friends_for_view);
   justify-content: space-between;
   gap: 8px 16px;
 }
-.import-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.75rem;
-  color: var(--neutral-700);
-  font: 500 0.875rem/var (--notebook-line) var(--font-ui);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
 .friends-header .stamp {
   display: inline-flex;
   align-items: center;

@@ -36,7 +36,9 @@ banco continua sendo a proteção definitiva contra conflito.
 
 ## Tela e salvamento individual
 
-`/amigos/importar` pertence à aba Amigos. Arquivos abrem uma lista com busca,
+`/amigos/importar` pertence à aba Amigos. O atalho de importação fica somente na
+tela Novo amigo, por decisão de produto; a lista de Amigos não mostra esse link.
+Arquivos abrem uma lista com busca,
 inicialmente desmarcada. `AgendaContactList` usa o virtualizador sobre a rolagem
 da `.page-content`, mede alturas variáveis e mantém a seleção fora das linhas
 renderizadas. As setas, Home e End percorrem os contatos disponíveis; `/` abre
