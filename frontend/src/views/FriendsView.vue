@@ -48,7 +48,7 @@ onMounted(get_friends_for_view);
     <RouterLink to="/amigos/importar" class="import-link">{{
       !is_loading && !has_error && !friends.length
         ? "ou importar da agenda do celular"
-        : "importar da agenda"
+        : "importar da agenda do celular"
     }}</RouterLink>
     <label class="friends-search">
       <span class="sr-only">Buscar amigos por nome</span>
