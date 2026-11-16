@@ -17,6 +17,12 @@ O app é um caderno espiral aberto sobre uma mesa de madeira. A folha é pautada
 7. **A mesa é sólida (`#7A5A3E`)**, com sombra na página. Sem textura.
 
 ## Paleta e papéis
+
+**Ajuste após teste no PWA Android:** no celular, as abas ficam ancoradas à borda
+inferior do livro, com espaço reservado abaixo da folha e respeito à área segura
+do sistema. Não usam posição fixa em relação à janela, que sobrepunha o conteúdo
+no modo instalado.
+
 | Token | Hex | Papel |
 |---|---|---|
 | `primaria-600` | `#B04A32` | Botão primário, carimbo, aba ativa |

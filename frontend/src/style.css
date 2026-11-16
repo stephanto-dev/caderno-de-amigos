@@ -30,7 +30,7 @@ body {
   box-sizing: border-box;
   height: 100dvh;
   overflow: hidden;
-  padding: 28px 12px 64px;
+  padding: calc(28px + env(safe-area-inset-top)) 12px calc(64px + env(safe-area-inset-bottom));
 }
 
 .book {
@@ -92,10 +92,11 @@ body {
 }
 
 .tabs {
-  position: fixed;
+  /* Keep mobile tabs attached to the book in browser and standalone PWA mode. */
+  position: absolute;
   z-index: 4;
-  bottom: 22px;
-  left: 12px;
+  top: calc(100% - 2px);
+  left: 0;
   display: flex;
   gap: 4px;
 }

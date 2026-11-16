@@ -761,6 +761,12 @@ _Hoje (9d3110b), em `/amigos/novo` no livro aberto, a página direita aparece s�
   controles; a folha continua sendo a área de rolagem.
 
 ## 4. Motion
+
+No mobile, as abas inferiores são ancoradas ao caderno com posicionamento
+absoluto, com espaço reservado na cena e área segura inferior. Substitui o
+posicionamento fixo à janela, que sobrepunha a folha no teste em PWA Android.
+No desktop, continuam na borda direita.
+
 | Elemento | Duração | Curva |
 |---|---|---|
 | Hover de carimbo, botão e aba | 120ms | `ease-saida` |
