@@ -6,7 +6,7 @@ import { send_contact_deletion_for_friend } from '../api/friends'
 
 const FRIEND: BoardFriend = {
   id: 'friend-ana', name: 'Ana', cadence_amount: 3, cadence_unit: 'week',
-  birthday: null, is_birthday_today: false, column: 'on_track',
+  birthday: null, phone: null, is_birthday_today: false, column: 'on_track',
   last_contact_at: null, last_note: null, groups: [],
 }
 const CONTACT: FriendContact = { id: 'contact-one', kind: 'meeting', date: '2026-10-29T15:00:00Z', note: 'Uma nota inteira\ncom outra linha.' }

@@ -1,0 +1,4 @@
+First Name,Middle Name,Last Name,Name Prefix,Name Suffix,Birthday,Phone 1 - Label,Phone 1 - Value,Phone 2 - Label,Phone 2 - Value,Email 1 - Value,Notes
+Ana,Beatriz,Silva,,,1988-03-12,Home,+55 11 2345-6789,Mobile,+55 11 99999-9999,ignored@example.test,"Fictional contact, with a comma
+and a second line."
+João,,Costa,,,--02-29,Mobile,+55 21 98888-7777,,,,"Quoted ""note"", ignored."

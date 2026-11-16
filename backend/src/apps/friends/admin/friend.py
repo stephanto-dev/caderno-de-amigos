@@ -2,6 +2,7 @@
 
 from django.contrib import admin
 
+from apps.friends.admin.forms import FriendAdminForm
 from apps.friends.models import Friend
 
 
@@ -12,3 +13,4 @@ class FriendAdmin(admin.ModelAdmin):
     list_display = ("name", "owner", "cadence_amount", "cadence_unit")
     search_fields = ("name",)
     autocomplete_fields = ("owner", "groups")
+    form = FriendAdminForm

@@ -730,6 +730,36 @@ _Hoje (9d3110b), em `/amigos/novo` no livro aberto, a página direita aparece s�
 - **Abaixo de 1280:** não aparece; o cadastro ocupa a página única, como hoje.
 - **Plano B, se o rascunho não couber no card:** a página direita mostra só a `.nota` "a página do novo amigo aparece aqui depois de salvar." Nunca fica vazia.
 
+### 3.18 Importação da agenda (CRM-30, implementação em etapas)
+
+- `/amigos/importar` usa a aba Amigos e a identidade de `identidade.md`. As
+  referências de tela orientam o fluxo; o formulário, as fontes e os tokens do
+  produto continuam sendo a base visual.
+- Arquivo `.vcf` ou CSV do Google abre uma lista com busca, desmarcada, com nomes
+  em Fraunces e dados/controles em Inter. Telefones existentes ficam bloqueados;
+  múltiplos números permitem trocar o escolhido. A lista virtualizada rola na
+  folha, com alturas medidas para nomes longos.
+- Seleção nativa do Android vai direto ao cartão. O botão aparece por detecção
+  de suporte. Cancelar mantém a escolha de arquivo disponível, sem erro.
+- Cada cartão reaproveita o formulário na pauta. Começa com um mês e sem grupo.
+  Pular informa seu efeito junto à ação: salva com um mês e sem grupo, mantendo
+  nome, telefone e aniversário editados (desvio aprovado). O seletor existente
+  permite criar grupos (desvio aprovado).
+- Desktop: segunda página com prévia da seleção e depois rascunho existente;
+  Voltar à lista também está disponível nessa largura. Após o teste físico no
+  celular, as ações dos cartões ficam depois dos grupos, na rolagem normal da
+  folha, sem fixação sobre os campos. Essa decisão substitui o rodapé fixo
+  anterior. Os botões podem ocupar mais de uma linha, sem diminuir o texto.
+- Voltar preserva rascunhos; após salvar alguém, uma confirmação explica que os
+  amigos já criados continuam no caderno. Conclusão conta apenas respostas
+  confirmadas e oferece links para os perfis e para a lista.
+- Salvar os restantes mostra uma confirmação com quantidade e regra de um mês
+  e nenhum grupo. Preserva as edições pessoais dos rascunhos. Durante o pedido,
+  bloqueia envio repetido e cancelamento; erro mantém os cartões e recebe foco.
+  O resumo separa criados e ignorados, com links de pelo menos duas linhas de
+  pauta para manter alvos de toque amplos. A moldura externa não rola ao focar
+  controles; a folha continua sendo a área de rolagem.
+
 ## 4. Motion
 | Elemento | Duração | Curva |
 |---|---|---|

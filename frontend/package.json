@@ -10,12 +10,16 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@tanstack/vue-virtual": "^3.13.52",
+    "libphonenumber-js": "^1.13.16",
+    "papaparse": "^5.7.1",
     "vue": "^3.5.0",
     "vue-router": "^5.4.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^22.0.0",
+    "@types/papaparse": "^5.5.2",
     "@vitejs/plugin-vue": "^6.0.0",
     "@vue/test-utils": "^2.4.0",
     "jsdom": "^26.0.0",

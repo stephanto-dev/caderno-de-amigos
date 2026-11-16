@@ -55,6 +55,11 @@ if not DEBUG and (
     )
 
 SESSION_COOKIE_SECURE = not DEBUG
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in ENV.django_csrf_trusted_origins.split(",")
+    if origin.strip()
+]
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_SSL_REDIRECT = not DEBUG
 SECURE_HSTS_SECONDS = 3600 if not DEBUG else 0
@@ -132,6 +137,10 @@ STORAGES = {
 WHITENOISE_MIMETYPES = {".webmanifest": "application/manifest+json"}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# 5,000 names of 100 Unicode characters still fit when JSON escapes each codepoint.
+MAX_JSON_REQUEST_BYTES = 8 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_JSON_REQUEST_BYTES
 
 REST_FRAMEWORK = {
     # Trust forwarded IPs only after verifying the deployment's proxy chain.

@@ -6,6 +6,7 @@ export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/static/' : '/',
   plugins: [vue(), tailwindcss()],
   server: {
+    allowedHosts: ['nongenetically-semiserious-kelley.ngrok-free.dev'],
     proxy: {
       '/api': {
         target: process.env.API_PROXY_TARGET ?? 'http://localhost:8000',

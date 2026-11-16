@@ -8,7 +8,7 @@ import { friends_state } from '../friends'
 const FRIEND = {
   id: '00000000-0000-4000-8000-000000000001', name: 'Ana Lima',
   cadence_amount: 3, cadence_unit: 'week', column: 'on_track',
-  birthday: null, is_birthday_today: false,
+  birthday: null, phone: null, is_birthday_today: false,
   last_contact_at: '2026-10-25T15:00:00Z', last_note: 'Perguntar sobre a viagem',
   groups: [{ id: '00000000-0000-4000-8000-000000000002', name: 'Faculdade', color: 'college' }],
 }
@@ -42,6 +42,36 @@ afterAll(() => { Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal'
 
 describe('Friend profile', () => {
   afterEach(() => { vi.unstubAllGlobals(); friends_state.friends = [] })
+
+  it('shows the saved phone and prefills the same number when editing', async () => {
+    const phone = '+351912345678'
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((path: string) =>
+      Promise.resolve(Response.json(path === '/api/groups/' ? [] : { ...FRIEND, phone }))))
+    const { wrapper } = await get_profile_for_test()
+    await flushPromises()
+
+    expect(wrapper.get('.profile-phone').text()).toBe('+351 912 345 678')
+    await wrapper.get('[name="edit-friend"]').trigger('click')
+    expect(wrapper.get<HTMLInputElement>('[name="phone"]').element.value).toBe(phone)
+  })
+
+  it('opens the editor to add a phone and sends null when the phone is cleared', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json(FRIEND))
+      .mockResolvedValueOnce(Response.json([])).mockResolvedValueOnce(Response.json(FRIEND))
+    vi.stubGlobal('fetch', fetch)
+    const { wrapper } = await get_profile_for_test()
+    await flushPromises()
+
+    await wrapper.get('[name="add-friend-phone"]').trigger('click')
+    await wrapper.get('[name="phone"]').setValue('(11) 99999-9999')
+    await wrapper.get('[name="phone"]').setValue('')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(JSON.parse(fetch.mock.calls[2]![1].body).phone).toBeNull()
+    expect(wrapper.find('form').exists()).toBe(false)
+    expect(wrapper.find('[name="add-friend-phone"]').exists()).toBe(true)
+  })
 
   it('shows the birthday immediately after the cadence', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ ...FRIEND, birthday: '29/10' })))
@@ -92,7 +122,7 @@ describe('Friend profile', () => {
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     expect(fetch).toHaveBeenLastCalledWith(`/api/friends/${FRIEND.id}/`, expect.objectContaining({
-      body: JSON.stringify({ name: FRIEND.name, cadence_amount: 3, cadence_unit: 'week', groups: [FRIEND.groups[0]!.id], birthday: null }),
+      body: JSON.stringify({ name: FRIEND.name, cadence_amount: 3, cadence_unit: 'week', groups: [FRIEND.groups[0]!.id], birthday: null, phone: null }),
     }))
     expect(wrapper.find('form').exists()).toBe(false)
   })
@@ -141,7 +171,7 @@ describe('Friend profile', () => {
     await flushPromises()
 
     expect(fetch).toHaveBeenLastCalledWith(`/api/friends/${FRIEND.id}/`, expect.objectContaining({
-      method: 'PATCH', body: JSON.stringify({ name: 'Ana Silva', cadence_amount: 2, cadence_unit: 'week', groups: [FRIEND.groups[0]!.id], birthday: null }),
+      method: 'PATCH', body: JSON.stringify({ name: 'Ana Silva', cadence_amount: 2, cadence_unit: 'week', groups: [FRIEND.groups[0]!.id], birthday: null, phone: null }),
     }))
     expect(wrapper.get('h1').text()).toBe('Ana Silva')
     expect(wrapper.text()).toContain('a cada 2 semanas')

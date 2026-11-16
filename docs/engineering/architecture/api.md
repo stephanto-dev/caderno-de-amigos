@@ -77,6 +77,40 @@ urlpatterns = [
 
 ## Serializers
 
+### Importação de amigos em lote
+
+`POST /api/friends/bulk-import/` exige sessão e CSRF, como o cadastro individual.
+Recebe `{"friends": [{"name": "Ana", "phone": "+5511999999999", "birthday": "29/02"}]}`,
+com 1 a 5.000 entradas. Telefone e aniversário são opcionais; a mesma validação
+do cadastro é reaproveitada. O servidor define ritmo de um mês e nenhum grupo.
+Limite do corpo JSON: 8 MiB; acima disso retorna 413 com erro padronizado.
+
+A resposta 201 tem `created: [{index, friend}]` e
+`ignored: [{index, reason, friend_id}]`. `friend` usa o contrato completo do
+Quadro; `index` é a posição original, começando em zero. Os motivos são
+`existing_phone` e `duplicate_phone`. Todos os IDs pertencem ao dono da sessão.
+Nomes iguais e telefones ausentes não são duplicação.
+
+Campos inválidos retornam 400 (`friends.1.birthday`, por exemplo) e rejeitam o
+lote inteiro, mesmo quando aquela entrada usa um telefone existente. Telefones
+repetidos são ignorados sem alterar amigos cadastrados. A transação e a
+constraint protegem também contra importações simultâneas. Veja o
+[serviço de importação](../../../backend/src/apps/friends/services/bulk_import.md).
+
+### Cadastro e edição
+
+O amigo aceita `phone` opcional, normalizado localmente pelo `PhoneService` para
+E.164 (`+` seguido de país e número). Sem país explícito, usa Brasil; códigos
+internacionais são preservados. Vazio vira `null`, telefone inválido retorna 400
+no campo `phone`, e no PATCH omitir o campo preserva o valor atual. A API não
+confirma que o número está ativo nem consulta a agenda em um serviço externo.
+
+O telefone é único por dono quando preenchido. `FriendsService` checa o conflito
+e a constraint protege também requisições concorrentes; ambos retornam 409 no
+campo `phone`, sem consultar amigos de outro dono. Lista, detalhe, criação,
+edição e registro de contato retornam `phone` como E.164 ou `null`. O admin usa
+a mesma normalização antes de validar o model.
+
 O registro de contato aceita `date` opcional no formato `AAAA-MM-DD`, até o dia
 atual no fuso de São Paulo. Sem esse campo, ou com a data de hoje, mantém o horário
 atual. Dias anteriores são salvos à meia-noite local, pois o formulário não pede

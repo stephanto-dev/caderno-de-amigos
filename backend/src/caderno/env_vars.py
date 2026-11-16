@@ -20,6 +20,7 @@ class EnvironmentSettings(BaseSettings):
     django_trust_x_forwarded_proto: bool = False
     django_secret_key: SecretStr | None = None
     django_allowed_hosts: str = "localhost,127.0.0.1"
+    django_csrf_trusted_origins: str = ""
     django_trusted_proxy_count: int = Field(default=0, ge=0)
     postgres_db: str = "caderno"
     postgres_user: str = "caderno"

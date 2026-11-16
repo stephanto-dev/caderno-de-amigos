@@ -9,13 +9,16 @@ from typing import TYPE_CHECKING, ClassVar, NotRequired, TypedDict
 from uuid import UUID
 
 from django.contrib.auth.models import User
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Max, OuterRef, Prefetch, QuerySet, Subquery
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from rest_framework import status
+from rest_framework.exceptions import ValidationError
 
 from apps.friends.models import Contact, Friend, Group
+from apps.friends.models.friend import FRIEND_PHONE_UNIQUE_CONSTRAINT
 from apps.friends.services.board import BoardService, Column
 
 if TYPE_CHECKING:
@@ -33,6 +36,7 @@ class FriendWriteData(TypedDict):
     """Validated friend fields received by the write use cases."""
 
     name: NotRequired[str]
+    phone: NotRequired[str | None]
     cadence_amount: NotRequired[int]
     cadence_unit: NotRequired[str]
     groups: NotRequired[list[Group]]
@@ -50,9 +54,18 @@ class BoardFriend:
     is_birthday_today: bool
 
 
+class FriendPhoneConflict(ValidationError):
+    """Expose an owner-scoped phone conflict as a standardized field error."""
+
+    status_code = status.HTTP_409_CONFLICT
+
+
 class FriendsService:
     """Read and change friends through the view's owner-scoped queryset."""
 
+    DUPLICATE_PHONE_MESSAGE = (
+        "Esse telefone já está no caderno. Use outro ou apague o campo."
+    )
     COLUMN_ORDER: ClassVar[dict[Column, int]] = {
         Column.OVERDUE: 0,
         Column.THIS_WEEK: 1,
@@ -81,14 +94,27 @@ class FriendsService:
     def create_friend_for_owner(self, friend_data: FriendWriteData) -> BoardFriend:
         """Create a friend for the authenticated owner and return its board fields."""
         birthday = friend_data.get("birthday")
-        friend = Friend.objects.create(
-            owner=self.owner,
-            name=friend_data["name"],
-            cadence_amount=friend_data["cadence_amount"],
-            cadence_unit=friend_data["cadence_unit"],
-            birthday_day=birthday.day if birthday is not None else None,
-            birthday_month=birthday.month if birthday is not None else None,
-        )
+        phone = friend_data.get("phone")
+        self._check_phone_available_for_owner(phone)
+        try:
+            with transaction.atomic():
+                friend = Friend.objects.create(
+                    owner=self.owner,
+                    name=friend_data["name"],
+                    phone=phone,
+                    cadence_amount=friend_data["cadence_amount"],
+                    cadence_unit=friend_data["cadence_unit"],
+                    birthday_day=birthday.day if birthday is not None else None,
+                    birthday_month=birthday.month if birthday is not None else None,
+                )
+        except IntegrityError as error:
+            # Like groups, the constraint catches concurrent writes after the check.
+            if FRIEND_PHONE_UNIQUE_CONSTRAINT not in str(error):
+                raise
+            self._check_phone_available_for_owner(phone)
+            raise FriendPhoneConflict(
+                {"phone": self.DUPLICATE_PHONE_MESSAGE}
+            ) from error
         if "groups" in friend_data:
             friend.groups.set(friend_data["groups"])
         return self.get_friend_for_owner(friend.id)
@@ -97,12 +123,14 @@ class FriendsService:
     def update_friend_for_owner(
         self, friend_id: UUID, friend_data: FriendWriteData
     ) -> BoardFriend:
-        """Apply supplied fields, preserving omitted birthday and groups.
+        """Apply supplied fields, preserving omitted phone, birthday and groups.
 
         An explicit None birthday clears both columns; its validation year
         is never persisted.
         """
         friend = get_object_or_404(self.friends_for_owner, pk=friend_id)
+        if "phone" in friend_data:
+            self._check_phone_available_for_owner(friend_data["phone"], friend.id)
         updated_fields = set(friend_data) - {"groups", "birthday"}
         if "birthday" in friend_data:
             birthday = friend_data["birthday"]
@@ -111,11 +139,21 @@ class FriendsService:
             updated_fields.update({"birthday_day", "birthday_month"})
         if updated_fields:
             friend.name = friend_data.get("name", friend.name)
+            friend.phone = friend_data.get("phone", friend.phone)
             friend.cadence_amount = friend_data.get(
                 "cadence_amount", friend.cadence_amount
             )
             friend.cadence_unit = friend_data.get("cadence_unit", friend.cadence_unit)
-            friend.save(update_fields=updated_fields)
+            try:
+                with transaction.atomic():
+                    friend.save(update_fields=updated_fields)
+            except IntegrityError as error:
+                if FRIEND_PHONE_UNIQUE_CONSTRAINT not in str(error):
+                    raise
+                self._check_phone_available_for_owner(friend.phone, friend.id)
+                raise FriendPhoneConflict(
+                    {"phone": self.DUPLICATE_PHONE_MESSAGE}
+                ) from error
         if "groups" in friend_data:
             friend.groups.set(friend_data["groups"])
         return self.get_friend_for_owner(friend.id)
@@ -124,6 +162,24 @@ class FriendsService:
         """Delete one owned friend and its contacts while retaining shared groups."""
         friend = get_object_or_404(self.friends_for_owner, pk=friend_id)
         friend.delete()
+
+    def _check_phone_available_for_owner(
+        self, phone: str | None, friend_id: UUID | None = None
+    ) -> None:
+        """Reject another owned friend's number without disclosing other owners."""
+        if phone is None:
+            return
+        matching_friends = self.friends_for_owner.filter(phone=phone)
+        if friend_id is not None:
+            matching_friends = matching_friends.exclude(pk=friend_id)
+        matching_friend = matching_friends.first()
+        if matching_friend is not None:
+            raise FriendPhoneConflict(
+                {
+                    "phone": f"Esse telefone já está com {matching_friend.name}. "
+                    "Use outro ou apague o campo."
+                }
+            )
 
     def _get_friends_with_board_fields(
         self,

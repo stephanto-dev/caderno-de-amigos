@@ -4,6 +4,8 @@ const BOARD_COLUMNS = ['overdue', 'this_week', 'on_track', 'just_talked'] as con
 const CADENCE_UNITS = ['day', 'week', 'month', 'year'] as const
 const GROUP_COLORS = ['family', 'college', 'work', 'neighborhood', 'neutral'] as const
 const CONTACT_KINDS = ['message', 'call', 'meeting'] as const
+const PHONE_E164_PATTERN = /^\+[1-9][0-9]{1,14}$/
+const IMPORT_IGNORE_REASONS = ['existing_phone', 'duplicate_phone'] as const
 
 export interface FriendGroup {
   id: string
@@ -20,6 +22,7 @@ export interface GroupWithFriendCount extends FriendGroup {
 export interface BoardFriend {
   id: string
   name: string
+  phone: string | null
   cadence_amount: number
   cadence_unit: typeof CADENCE_UNITS[number]
   birthday: string | null
@@ -33,10 +36,30 @@ export interface BoardFriend {
 /** Input accepted by Django's FriendWriteSerializer; owner comes from the session. */
 export interface FriendWriteData {
   name: string
+  phone?: string | null
   cadence_amount: number
   cadence_unit: BoardFriend['cadence_unit']
   birthday?: string | null
   groups?: string[]
+}
+
+/** Bulk import accepts only personal fields; Django supplies cadence and groups. */
+export type FriendImportData = Pick<FriendWriteData, 'name' | 'phone' | 'birthday'>
+
+export interface ImportedFriend {
+  index: number
+  friend: BoardFriend
+}
+
+export interface IgnoredFriend {
+  index: number
+  reason: typeof IMPORT_IGNORE_REASONS[number]
+  friend_id: string
+}
+
+export interface FriendImportResult {
+  created: ImportedFriend[]
+  ignored: IgnoredFriend[]
 }
 
 /** Input accepts a calendar date (YYYY-MM-DD); omitting it records today. */
@@ -89,6 +112,7 @@ function is_board_friend(body: unknown): body is BoardFriend {
   return typeof body === 'object' && body !== null
     && 'id' in body && typeof body.id === 'string'
     && 'name' in body && typeof body.name === 'string'
+    && 'phone' in body && (body.phone === null || (typeof body.phone === 'string' && PHONE_E164_PATTERN.test(body.phone)))
     && 'cadence_amount' in body && typeof body.cadence_amount === 'number'
     && Number.isInteger(body.cadence_amount) && body.cadence_amount > 0
     && 'cadence_unit' in body && CADENCE_UNITS.some((unit) => unit === body.cadence_unit)
@@ -121,6 +145,26 @@ export async function send_friend_creation_for_owner(friend: FriendWriteData): P
   const body = await send_api_request('/api/friends/', { method: 'POST', body: friend })
   if (!is_board_friend(body)) throw new Error('Invalid board friend response')
   return body
+}
+
+/** Reject incomplete/ambiguous responses rather than claiming a partial batch succeeded. */
+export async function send_friends_import_for_owner(friends: FriendImportData[]): Promise<FriendImportResult> {
+  const body = await send_api_request('/api/friends/bulk-import/', { method: 'POST', body: { friends } })
+  if (typeof body !== 'object' || body === null || !('created' in body) || !Array.isArray(body.created)
+    || !('ignored' in body) || !Array.isArray(body.ignored)) throw new Error('Invalid import response')
+  const created: unknown[] = body.created
+  const ignored: unknown[] = body.ignored
+  if (!created.every((entry): entry is ImportedFriend => typeof entry === 'object' && entry !== null
+    && 'index' in entry && typeof entry.index === 'number' && Number.isInteger(entry.index) && entry.index >= 0 && entry.index < friends.length
+    && 'friend' in entry && is_board_friend(entry.friend))
+    || !ignored.every((entry): entry is IgnoredFriend => typeof entry === 'object' && entry !== null
+    && 'index' in entry && typeof entry.index === 'number' && Number.isInteger(entry.index) && entry.index >= 0 && entry.index < friends.length
+    && 'reason' in entry && IMPORT_IGNORE_REASONS.some((reason) => reason === entry.reason)
+    && 'friend_id' in entry && typeof entry.friend_id === 'string' && entry.friend_id.length > 0)) throw new Error('Invalid import entries')
+  const positions = [...created, ...ignored].map((entry) => entry.index)
+  if (positions.length !== friends.length || new Set(positions).size !== friends.length
+    || new Set(created.map((entry) => entry.friend.id)).size !== created.length) throw new Error('Incomplete import result')
+  return { created, ignored }
 }
 
 /** Update supplied fields only; omitted groups retain links and an empty list clears them. */

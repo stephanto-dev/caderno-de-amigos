@@ -22,7 +22,7 @@ const FRIEND_WITH_GROUPS = {
   cadence_amount: 3,
   cadence_unit: 'week',
   birthday: null,
-  is_birthday_today: false,
+  phone: null, is_birthday_today: false,
   last_contact_at: null,
   last_note: 'Perguntar sobre a viagem',
   groups: [
@@ -578,7 +578,7 @@ describe('Board', () => {
       cadence_amount: 3,
       cadence_unit: 'week',
       birthday: null,
-      is_birthday_today: false,
+      phone: null, is_birthday_today: false,
       last_contact_at: null,
       last_note: null,
       groups: [],

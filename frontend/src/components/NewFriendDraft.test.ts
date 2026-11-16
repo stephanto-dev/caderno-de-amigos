@@ -25,6 +25,8 @@ describe('New friend draft', () => {
     expect(draft.get('.profile-cadence').text()).toBe('a cada 1 mês')
     expect(draft.find('.draft-birthday').exists()).toBe(false)
     await wrapper.get('[name="name"]').setValue('  Ana  ')
+    await wrapper.get('[name="phone"]').setValue('+351912345678')
+    expect(draft.get('.draft-phone').text()).toBe('+351 912 345 678')
     await wrapper.get('[name="cadence_amount"]').setValue(2)
     await wrapper.get('[name="cadence_unit"][value="week"]').setValue(true)
     await wrapper.get('[name="cadence_amount"]').setValue('')
@@ -48,6 +50,7 @@ describe('New friend draft', () => {
     await router.push('/config')
     await flushPromises()
     expect(new_friend_draft.name).toBe('')
+    expect(new_friend_draft.phone).toBe('')
     expect(new_friend_draft.groups).toEqual([])
     await router.push('/amigos/novo')
     await flushPromises()
@@ -60,7 +63,7 @@ describe('New friend draft', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json([])))
     const wrapper = mount(FriendForm, { props: { friend: {
       id: 'friend', name: 'Ana', cadence_amount: 1, cadence_unit: 'month', birthday: null,
-      is_birthday_today: false, groups: [], column: 'overdue', last_contact_at: null, last_note: null,
+      phone: null, is_birthday_today: false, groups: [], column: 'overdue', last_contact_at: null, last_note: null,
     } } })
     await wrapper.get('[name="name"]').setValue('Marina')
     expect(new_friend_draft.name).toBe('')

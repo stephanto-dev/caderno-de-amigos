@@ -1,0 +1,19 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Silva;Ana;Beatriz;;
+FN:Ana Beatriz da Silva
+item1.TEL;TYPE=HOME,VOICE:+55 (11) 2345-6789
+item2.TEL;TYPE=CELL,VOICE:+55 (11) 99999-9999
+BDAY:1988-03-12
+NOTE:These fictional contacts exercise an iPhone-style export.
+PHOTO;VALUE=uri:https://example.invalid/private-photo.jpg
+EMAIL:ignored@example.test
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+N:Costa;João;;;
+FN:João da
+  Costa
+TEL;TYPE=CELL:+55 (21) 98888-7777
+BDAY;X-APPLE-OMIT-YEAR=1604:1604-02-29
+END:VCARD

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { get_contacts_for_friend, get_friend_for_board, get_groups_for_form, send_contact_deletion_for_friend, send_contact_for_friend, send_friend_creation_for_owner, send_friend_update_for_owner, send_group_creation_for_owner, send_group_update_for_owner } from './friends'
+import { get_contacts_for_friend, get_friend_for_board, get_groups_for_form, send_contact_deletion_for_friend, send_contact_for_friend, send_friend_creation_for_owner, send_friends_import_for_owner, send_friend_update_for_owner, send_group_creation_for_owner, send_group_update_for_owner } from './friends'
 
 const RECORDED_CONTACT = {
   id: '00000000-0000-4000-8000-000000000001',
@@ -8,7 +8,7 @@ const RECORDED_CONTACT = {
   cadence_unit: 'week',
   column: 'just_talked',
   birthday: null,
-  is_birthday_today: false,
+  phone: null, is_birthday_today: false,
   last_contact_at: '2026-10-27T15:00:00Z',
   last_note: 'Conversamos sobre a viagem',
   groups: [],
@@ -145,6 +145,33 @@ describe('Contact history API', () => {
 describe('Friend writing API', () => {
   afterEach(() => vi.unstubAllGlobals())
 
+  it('sends and returns the saved phone', async () => {
+    const phone = '+5511999999999'
+    const fetch = vi.fn().mockResolvedValue(Response.json({ ...RECORDED_CONTACT, phone }))
+    vi.stubGlobal('fetch', fetch)
+
+    expect((await send_friend_update_for_owner(RECORDED_CONTACT.id, { phone })).phone).toBe(phone)
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(`/api/friends/${RECORDED_CONTACT.id}/`, expect.objectContaining({
+      method: 'PATCH', body: JSON.stringify({ phone }),
+    }))
+  })
+
+  it('sends null to remove a phone', async () => {
+    const fetch = vi.fn().mockResolvedValue(Response.json(RECORDED_CONTACT))
+    vi.stubGlobal('fetch', fetch)
+
+    expect((await send_friend_update_for_owner(RECORDED_CONTACT.id, { phone: null })).phone).toBeNull()
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(`/api/friends/${RECORDED_CONTACT.id}/`, expect.objectContaining({
+      body: JSON.stringify({ phone: null }),
+    }))
+  })
+
+  it.each([undefined, 11999999999, '11999999999', ''])('rejects a response with a missing or noncanonical phone: %s', async (phone) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ ...RECORDED_CONTACT, phone })))
+
+    await expect(get_friend_for_board(RECORDED_CONTACT.id)).rejects.toThrow('Invalid board friend response')
+  })
+
   it('sends and returns the birthday supplied by Django', async () => {
     const friend_data = {
       name: 'Bruno', cadence_amount: 1, cadence_unit: 'month' as const, birthday: '29/02',
@@ -235,6 +262,57 @@ describe('Friend writing API', () => {
 
     await expect(send_friend_update_for_owner(RECORDED_CONTACT.id, { cadence_unit: 'month' }))
       .rejects.toThrow('Invalid board friend response')
+  })
+})
+
+describe('Bulk import API', () => {
+  afterEach(() => { vi.unstubAllGlobals(); document.cookie = 'csrftoken=; Max-Age=0' })
+
+  it('sends only the supplied personal fields with CSRF and returns indexed results', async () => {
+    const result = { created: [{ index: 0, friend: RECORDED_CONTACT }], ignored: [{ index: 1, reason: 'existing_phone', friend_id: 'existing' }] }
+    const fetch = vi.fn().mockResolvedValue(Response.json(result, { status: 201 }))
+    vi.stubGlobal('fetch', fetch)
+    document.cookie = 'csrftoken=import-token'
+    const friends = [{ name: 'Bruno' }, { name: 'Ana', phone: '+5511999999999', birthday: '29/02' }]
+
+    expect(await send_friends_import_for_owner(friends)).toEqual(result)
+    expect(fetch).toHaveBeenCalledExactlyOnceWith('/api/friends/bulk-import/', {
+      method: 'POST', body: JSON.stringify({ friends }), credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'import-token' },
+    })
+  })
+
+  it.each([
+    { created: [], ignored: [] },
+    { created: [{ index: 0, friend: RECORDED_CONTACT }], ignored: [] },
+    { created: [{ index: 0, friend: RECORDED_CONTACT }], ignored: [{ index: 0, reason: 'existing_phone', friend_id: 'existing' }] },
+    { created: [{ index: 2, friend: RECORDED_CONTACT }], ignored: [{ index: 1, reason: 'existing_phone', friend_id: 'existing' }] },
+    { created: [{ index: 0.5, friend: RECORDED_CONTACT }], ignored: [] },
+    { created: [{ index: 0, friend: RECORDED_CONTACT }, { index: 1, friend: RECORDED_CONTACT }], ignored: [] },
+    { created: [{ index: 0, friend: { ...RECORDED_CONTACT, phone: 'invalid' } }], ignored: [{ index: 1, reason: 'existing_phone', friend_id: 'existing' }] },
+    { created: [], ignored: [{ index: 0, reason: 'unknown', friend_id: 'existing' }, { index: 1, reason: 'existing_phone', friend_id: 'existing' }] },
+    { created: [], ignored: [{ index: 0, reason: 'existing_phone', friend_id: '' }, { index: 1, reason: 'existing_phone', friend_id: 'existing' }] },
+    { created: null, ignored: [] },
+  ])('rejects an incomplete or malformed result: %j', async (result) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(result, { status: 201 })))
+
+    await expect(send_friends_import_for_owner([{ name: 'Ana' }, { name: 'Bia' }])).rejects.toThrow()
+  })
+
+  it('accepts a fully ignored reimport', async () => {
+    const result = { created: [], ignored: [{ index: 0, reason: 'existing_phone', friend_id: 'existing' }] }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(result, { status: 201 })))
+
+    expect(await send_friends_import_for_owner([{ name: 'Ana' }])).toEqual(result)
+  })
+
+  it('retains the entry position from standardized validation errors', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ type: 'validation_error', errors: [
+      { code: 'invalid', attr: 'friends.1.birthday', detail: 'Essa data não existe. Ex.: 12/03.' },
+    ] }, { status: 400 })))
+
+    await expect(send_friends_import_for_owner([{ name: 'Ana' }, { name: 'Bia', birthday: '31/04' }]))
+      .rejects.toMatchObject({ status: 400, field: 'friends.1.birthday' })
   })
 })
 

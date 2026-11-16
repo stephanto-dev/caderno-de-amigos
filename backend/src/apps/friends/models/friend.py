@@ -4,13 +4,16 @@ import uuid
 from typing import ClassVar
 
 from django.conf import settings
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 
 _MONTHS_WITH_31_DAYS = (1, 3, 5, 7, 8, 10, 12)
 _MONTHS_WITH_30_DAYS = (4, 6, 9, 11)
 _FEBRUARY = 2
 _FEBRUARY_MAX_BIRTHDAY_DAY = 29
+FRIEND_PHONE_UNIQUE_CONSTRAINT = "friend_phone_unique_per_owner"
+PHONE_MAX_LENGTH = 16
+PHONE_E164_PATTERN = r"\A\+[1-9][0-9]{1,14}\Z"
 
 
 class Friend(models.Model):
@@ -41,6 +44,19 @@ class Friend(models.Model):
         verbose_name="Nome",
         help_text="Nome do amigo.",
     )
+    phone = models.CharField(
+        max_length=PHONE_MAX_LENGTH,
+        null=True,
+        blank=True,
+        validators=[
+            RegexValidator(
+                PHONE_E164_PATTERN,
+                "Informe o telefone com código do país e DDD. Ex.: +5511999999999.",
+            )
+        ],
+        verbose_name="Telefone",
+        help_text="Opcional. Normalizado com código do país, único por dono.",
+    )
     cadence_amount = models.PositiveIntegerField(
         validators=[MinValueValidator(1)],
         verbose_name="Quantidade do ritmo",
@@ -69,6 +85,11 @@ class Friend(models.Model):
     class Meta:
         indexes: ClassVar[list[models.Index]] = []
         constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(
+                fields=("owner", "phone"),
+                condition=models.Q(phone__isnull=False),
+                name=FRIEND_PHONE_UNIQUE_CONSTRAINT,
+            ),
             models.CheckConstraint(
                 condition=models.Q(cadence_amount__gte=1),
                 name="friend_cadence_amount_gte_1",

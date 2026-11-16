@@ -11,6 +11,7 @@ import ContactSheet from '../components/ContactSheet.vue'
 import FriendForm from '../components/FriendForm.vue'
 import FriendHistory from '../components/FriendHistory.vue'
 import { set_friend_for_list, remove_friend_for_list } from '../friends'
+import { format_phone_for_display } from '../phone'
 
 const NOT_FOUND_STATUS = 404
 const CONTACT_DATE_FORMAT = new Intl.DateTimeFormat('pt-BR')
@@ -182,6 +183,11 @@ onBeforeUnmount(() => { request_version += 1 })
         <p v-if="contact_announcement" class="profile-feedback" role="status">{{ contact_announcement }}</p>
         <dl class="profile-details">
           <div>
+            <dt>Telefone</dt>
+            <dd v-if="friend.phone" class="profile-phone">{{ format_phone_for_display(friend.phone) }}</dd>
+            <dd v-else><button type="button" name="add-friend-phone" class="add-phone" :disabled="is_deleting" @click="open_friend_editor">+ adicionar telefone</button></dd>
+          </div>
+          <div>
             <dt>Grupos</dt>
             <dd class="profile-groups">
               <GroupBadge v-for="group in friend.groups" :key="group.id" :group="group" />
@@ -223,6 +229,9 @@ onBeforeUnmount(() => { request_version += 1 })
 .profile-details > div { margin-bottom: var(--notebook-line); }
 dt { color: var(--neutral-700); font-size: .875rem; font-weight: 600; }
 dd { margin: 0; overflow-wrap: anywhere; }
+.profile-phone { font-variant-numeric: tabular-nums; }
+.add-phone { min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--neutral-700); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.add-phone:disabled { opacity: .45; cursor: wait; }
 .profile-groups { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: var(--notebook-line); }
 .profile-groups .group-badge { max-width: 100%; }
 .profile-state { margin: var(--notebook-line) 0; }

@@ -1,0 +1,9 @@
+BEGIN:VCARD
+VERSION:4.0
+FN:Maria, dos Santos
+N:Santos;Maria;;;
+TEL;VALUE=uri;TYPE="home,voice":tel:+55-11-2345-6789
+TEL;VALUE=uri;TYPE=cell:tel:+351912345678
+BDAY:--0229
+ORG:Ignored company
+END:VCARD

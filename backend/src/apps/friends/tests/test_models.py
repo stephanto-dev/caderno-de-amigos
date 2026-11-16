@@ -165,6 +165,7 @@ class TestFriendBirthdayMigration:
         previous_migration = [("friends", "0001_initial")]
         birthday_migration = [("friends", "0002_friend_birthday")]
         executor = MigrationExecutor(connection)
+        latest_migrations = executor.loader.graph.leaf_nodes()
         executor.migrate(previous_migration)
         try:
             previous_apps = executor.loader.project_state(previous_migration).apps
@@ -181,7 +182,10 @@ class TestFriendBirthdayMigration:
             # Act
             executor = MigrationExecutor(connection)
             executor.migrate(birthday_migration)
-            migrated_friend = Friend.objects.get(pk=friend.pk)
+            birthday_apps = executor.loader.project_state(birthday_migration).apps
+            migrated_friend = birthday_apps.get_model("friends", "Friend").objects.get(
+                pk=friend.pk
+            )
 
             # Assert
             assert migrated_friend.owner_id == owner.pk
@@ -192,7 +196,7 @@ class TestFriendBirthdayMigration:
             assert migrated_friend.birthday_month is None
         finally:
             # Restore the schema even if an assertion fails, for the next tests.
-            MigrationExecutor(connection).migrate(birthday_migration)
+            MigrationExecutor(connection).migrate(latest_migrations)
 
 
 @pytest.mark.django_db

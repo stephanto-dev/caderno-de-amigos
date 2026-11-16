@@ -4,6 +4,13 @@ import { auth_state } from './auth'
 import { install_auth_guard_for_router, routes } from './router'
 
 describe('authentication guard', () => {
+  it('matches agenda import before the friend UUID route', async () => {
+    const router = createRouter({ history: createMemoryHistory(), routes })
+
+    await router.push('/amigos/importar')
+
+    expect(router.currentRoute.value.name).toBe('import-friends')
+  })
   beforeEach(() => {
     auth_state.current_user = null
     auth_state.current_email = null
