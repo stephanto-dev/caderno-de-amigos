@@ -45,11 +45,6 @@ onMounted(get_friends_for_view);
       <h1 class="view-title">Amigos</h1>
       <RouterLink to="/amigos/novo" class="stamp">novo amigo</RouterLink>
     </header>
-    <RouterLink to="/amigos/importar" class="import-link">{{
-      !is_loading && !has_error && !friends.length
-        ? "ou importar da agenda do celular"
-        : "importar da agenda do celular"
-    }}</RouterLink>
     <label class="friends-search">
       <span class="sr-only">Buscar amigos por nome</span>
       <svg viewBox="0 0 24 24" aria-hidden="true">
