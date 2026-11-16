@@ -27,9 +27,11 @@ body {
 .group-badge > span { overflow: hidden; text-overflow: ellipsis; }
 
 .scene {
+  /* Keep the notebook bounded in standalone windows without relying on dvh. */
+  position: fixed;
+  inset: 0;
   box-sizing: border-box;
-  height: 100dvh;
-  overflow: hidden;
+  overflow: clip;
   padding: calc(28px + env(safe-area-inset-top)) 12px calc(64px + env(safe-area-inset-bottom));
 }
 
@@ -43,7 +45,8 @@ body {
 .page {
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  /* Only page-content scrolls, including when focusing a field or button. */
+  overflow: clip;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-page);
   --margin-line-x: 36px;
@@ -53,6 +56,7 @@ body {
   box-sizing: border-box;
   height: 100%;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
   padding: calc(var(--notebook-line)) 16px calc(var(--notebook-line) * 2) 52px;
 }
 

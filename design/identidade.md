@@ -22,6 +22,9 @@ O app é um caderno espiral aberto sobre uma mesa de madeira. A folha é pautada
 inferior do livro, com espaço reservado abaixo da folha e respeito à área segura
 do sistema. Não usam posição fixa em relação à janela, que sobrepunha o conteúdo
 no modo instalado.
+O limite externo do caderno fica preso às bordas da janela, descontando os
+respiros e áreas seguras, sem depender de `100dvh`. Só o conteúdo interno da
+folha rola; a moldura mantém a borda inferior visível, inclusive ao receber foco.
 
 | Token | Hex | Papel |
 |---|---|---|
