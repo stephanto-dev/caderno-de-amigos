@@ -103,6 +103,27 @@ describe('Group selection and creation', () => {
     wrapper.unmount()
   })
 
+  it('refreshes the available suggestions if the group already exists on the server', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json([]))
+      .mockResolvedValueOnce(Response.json({ errors: [
+        { code: 'invalid', attr: 'name', detail: 'Você já tem um grupo com esse nome.' },
+      ] }, { status: 400 }))
+      .mockResolvedValueOnce(Response.json([EXISTING_GROUP]))
+    vi.stubGlobal('fetch', fetch)
+    const wrapper = mount(GroupPicker, { props: { modelValue: [], should_suggest_groups: true } })
+    await flushPromises()
+
+    const college_suggestion = '[aria-label="Criar e selecionar grupo Faculdade"]'
+    await wrapper.get(college_suggestion).trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find(college_suggestion).exists()).toBe(false)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Selecione-o na lista de grupos.')
+    await wrapper.get('button.group-chip[aria-pressed="false"]').trigger('click')
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([[EXISTING_GROUP.id]])
+    wrapper.unmount()
+  })
+
   it('offers a retry when the group list fails to load', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(new TypeError('Failed to fetch'))
       .mockResolvedValueOnce(Response.json([EXISTING_GROUP])))
