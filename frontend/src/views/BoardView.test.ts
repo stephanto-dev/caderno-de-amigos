@@ -196,6 +196,52 @@ describe('Board', () => {
     expect(date.element.validity.valueMissing).toBe(true)
   })
 
+  it('keeps the post-it friend selected, updates the entire group and undoes it together', async () => {
+    const second_friend = { ...FRIEND_WITH_GROUPS, id: 'friend-2', name: 'João' }
+    const third_friend = { ...FRIEND_WITH_GROUPS, id: 'friend-3', name: 'Teresa' }
+    const participants = [FRIEND_WITH_GROUPS, second_friend, third_friend]
+    const batch = {
+      batch_id: 'meeting-batch',
+      contacts: participants.map((friend) => ({ ...RECORDED_CONTACT, id: friend.id, name: friend.name })),
+    }
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(Response.json(participants))
+      .mockResolvedValueOnce(Response.json(batch, { status: 201 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(Response.json(participants))
+    set_fetch_for_board_test(fetch)
+    const wrapper = mount(BoardView, { global: { stubs: { RouterLink: RouterLinkStub } } })
+    await flushPromises()
+
+    await wrapper.get('button[aria-label="Falei agora com Bruno"]').trigger('click')
+    await wrapper.get('.add-participants').trigger('click')
+    const first_friend = wrapper.get<HTMLInputElement>(`input[value="${FRIEND_WITH_GROUPS.id}"]`)
+    expect(first_friend.element.checked).toBe(true)
+    await wrapper.get('input[type="search"]').setValue('joao')
+    await wrapper.get('input[value="friend-2"]').setValue(true)
+    await wrapper.get('input[type="search"]').setValue('tere')
+    await wrapper.get('input[value="friend-3"]').setValue(true)
+    await wrapper.get('input[value="meeting"]').setValue()
+    await wrapper.get('textarea').setValue('Falamos da viagem')
+    await wrapper.get('dialog form').trigger('submit')
+    await flushPromises()
+
+    expect(fetch).toHaveBeenLastCalledWith('/api/friends/contact-batches/', expect.objectContaining({
+      method: 'POST', body: expect.stringContaining('"friend_ids":'),
+    }))
+    const [, request] = fetch.mock.lastCall!
+    expect(JSON.parse(request.body)).toMatchObject({
+      friend_ids: participants.map(({ id }) => id), kind: 'meeting', note: 'Falamos da viagem',
+    })
+    expect(wrapper.findAll('[data-column="just_talked"] .friend-postit')).toHaveLength(3)
+
+    await wrapper.get('button[name="undo-contact"]').trigger('click')
+    await flushPromises()
+
+    expect(fetch).toHaveBeenCalledWith('/api/friends/contact-batches/meeting-batch/', expect.objectContaining({ method: 'DELETE' }))
+    expect(wrapper.findAll('[data-column="overdue"] .friend-postit')).toHaveLength(3)
+  })
+
   it('sends a chosen earlier day and preserves it with the note after an API date error', async () => {
     const fetch = vi.fn()
       .mockResolvedValueOnce(Response.json([FRIEND_WITH_GROUPS]))

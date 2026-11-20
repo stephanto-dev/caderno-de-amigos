@@ -2,10 +2,12 @@
 
 from dataclasses import dataclass
 from datetime import date, datetime, time
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import QuerySet
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -20,6 +22,14 @@ class RecordedContact:
 
     board_friend: BoardFriend
     contact: Contact
+
+
+@dataclass(frozen=True)
+class RecordedContactBatch:
+    """One interaction and the saved history entries for its participants."""
+
+    id: UUID
+    contacts: list[RecordedContact]
 
 
 class ContactsService:
@@ -42,14 +52,48 @@ class ContactsService:
     def record_contact(
         self, friend_id: UUID, kind: str, note: str, contact_date: date | None = None
     ) -> RecordedContact:
-        """Record a past or current contact and recalculate the friend's board fields.
+        """Record a contact for one friend and return their updated board fields."""
+        return self._record_contacts_for_friends([friend_id], kind, note, contact_date)[
+            0
+        ]
+
+    def record_contact_batch(
+        self, friend_ids: list[UUID], kind: str, note: str, contact_date: date | None
+    ) -> RecordedContactBatch:
+        """Record the interaction once per participant, linked for a single undo."""
+        batch_id = uuid4()
+        return RecordedContactBatch(
+            id=batch_id,
+            contacts=self._record_contacts_for_friends(
+                friend_ids, kind, note, contact_date, batch_id
+            ),
+        )
+
+    @transaction.atomic
+    def _record_contacts_for_friends(
+        self,
+        friend_ids: list[UUID],
+        kind: str,
+        note: str,
+        contact_date: date | None,
+        batch_id: UUID | None = None,
+    ) -> list[RecordedContact]:
+        """Save all participants with a shared timestamp and return their board fields.
 
         Omitted dates and today retain the current time. Earlier calendar dates
         use local midnight because the form does not collect a time of day.
         Future dates are rejected before saving any contact.
         """
-        friends_for_owner = Friend.objects.filter(owner=self.owner)
-        friend = get_object_or_404(friends_for_owner, pk=friend_id)
+        participant_ids = list(dict.fromkeys(friend_ids))
+        friends_for_owner = Friend.objects.filter(
+            owner=self.owner, pk__in=participant_ids
+        )
+        participants = {
+            friend.id: friend
+            for friend in friends_for_owner.select_for_update().order_by("pk")
+        }
+        if len(participants) != len(participant_ids):
+            raise Http404
         now = timezone.now()
         today = timezone.localdate(now)
         if contact_date is not None and contact_date > today:
@@ -66,15 +110,28 @@ class ContactsService:
             if contact_date is not None and contact_date < today
             else now
         )
-        contact = Contact.objects.create(
-            friend=friend, kind=kind, note=note, date=recorded_at
+        contacts = Contact.objects.bulk_create(
+            [
+                Contact(
+                    friend=participants[friend_id],
+                    kind=kind,
+                    note=note,
+                    date=recorded_at,
+                    batch_id=batch_id,
+                )
+                for friend_id in participant_ids
+            ]
         )
-        return RecordedContact(
-            board_friend=FriendsService(
-                friends_for_owner, self.owner
-            ).get_friend_for_owner(friend_id),
-            contact=contact,
-        )
+        board_friends = {
+            friend.friend.id: friend
+            for friend in FriendsService(friends_for_owner, self.owner).list_friends()
+        }
+        return [
+            RecordedContact(
+                board_friend=board_friends[contact.friend_id], contact=contact
+            )
+            for contact in contacts
+        ]
 
     def undo_contact(self, friend_id: UUID, contact_id: UUID) -> None:
         """Delete a contact only when it belongs to a friend owned by this user."""
@@ -85,3 +142,11 @@ class ContactsService:
             Contact.objects.filter(friend=friend), pk=contact_id
         )
         contact.delete()
+
+    def undo_contact_batch(self, batch_id: UUID) -> None:
+        """Delete all history entries from the interaction owned by this user."""
+        deleted_count, _ = Contact.objects.filter(
+            friend__owner=self.owner, batch_id=batch_id
+        ).delete()
+        if not deleted_count:
+            raise Http404

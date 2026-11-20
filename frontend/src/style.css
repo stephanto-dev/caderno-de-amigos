@@ -119,6 +119,7 @@ body {
 
 .tab-board { background: var(--primary-100); }
 .tab-friends { background: var(--highlight); }
+.tab-register { background: var(--tab-green); }
 .tab-config { background: var(--margin-rule); }
 .tabs .tab[aria-current="page"] { height: 48px; }
 
@@ -129,6 +130,7 @@ body {
   .page { --margin-line-x: 56px; }
   .page-content { padding: var(--notebook-line) 40px calc(var(--notebook-line) * 2) 80px; }
   .tabs {
+    --tab-height: clamp(44px, calc((100dvh - 172px) / 4), 104px);
     position: absolute;
     top: 64px;
     right: -42px;
@@ -138,12 +140,12 @@ body {
   }
   .tabs .tab {
     width: 42px;
-    height: 104px;
+    height: var(--tab-height);
     padding: 0;
     border-radius: 0 8px 8px 0;
     writing-mode: vertical-rl;
   }
-  .tabs .tab[aria-current="page"] { width: 48px; height: 104px; }
+  .tabs .tab[aria-current="page"] { width: 48px; height: var(--tab-height); }
 }
 
 @media (min-width: 1280px) {

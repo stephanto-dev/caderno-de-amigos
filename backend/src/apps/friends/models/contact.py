@@ -39,6 +39,7 @@ class Contact(models.Model):
         verbose_name="Nota",
         help_text="Anotação opcional sobre o contato.",
     )
+    batch_id = models.UUIDField(null=True, db_index=True, editable=False)
 
     class Meta:
         indexes = [models.Index(fields=["friend", "date"])]

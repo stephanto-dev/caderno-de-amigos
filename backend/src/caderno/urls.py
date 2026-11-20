@@ -19,5 +19,6 @@ urlpatterns = [
     path("login", RedirectView.as_view(url="/entrar")),
     path("entrar", frontend_view),
     path("quadro", frontend_view),
+    path("registrar", frontend_view),
     path("", frontend_view, name="home"),
 ]

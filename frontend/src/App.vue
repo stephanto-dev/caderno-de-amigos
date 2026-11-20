@@ -22,7 +22,7 @@ const route = useRoute()
 
       <div class="spiral-center spiral-v" aria-hidden="true"></div>
 
-      <section v-if="route.name !== 'board'" class="page page-right margin-line" :aria-label="route.name === 'new-friend' ? 'Rascunho do novo amigo' : route.name === 'import-friends' ? 'Prévia da importação' : 'Perfil'">
+      <section v-if="route.name !== 'board'" class="page page-right margin-line" :aria-hidden="route.name === 'register-contact' ? true : undefined" :aria-label="route.name === 'new-friend' ? 'Rascunho do novo amigo' : route.name === 'import-friends' ? 'Prévia da importação' : route.name === 'register-contact' ? undefined : 'Perfil'">
         <div class="page-content paper-lined">
           <SheetHeader />
           <RouterView name="detail" v-slot="{ Component }">
@@ -43,6 +43,11 @@ const route = useRoute()
           :aria-current="['friends', 'friend-detail', 'new-friend', 'import-friends'].includes(String(route.name)) ? 'page' : undefined"
         >amigos</RouterLink>
         <RouterLink
+          to="/registrar"
+          class="tab tab-register"
+          :aria-current="route.name === 'register-contact' ? 'page' : undefined"
+        >registrar</RouterLink>
+        <RouterLink
           to="/config"
           class="tab tab-config"
           :aria-current="route.name === 'config' ? 'page' : undefined"
@@ -56,4 +61,7 @@ const route = useRoute()
 .session-error { color: var(--error); }
 /* A viewport-sized gradient becomes a huge raster over 5,000 virtual rows. Repeat one ruling tile instead. */
 .page-content:has(.agenda-import-page) { background-size: 100% var(--notebook-line); }
+@media (max-width: 1023px) {
+  .page-content:has(.register-contact-view) { padding-bottom: 0; }
+}
 </style>
