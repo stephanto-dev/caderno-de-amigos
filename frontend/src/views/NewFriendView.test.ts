@@ -258,6 +258,46 @@ describe('New friend form', () => {
     wrapper.unmount()
   })
 
+  it('offers only missing groups and saves the friend with the suggestion created in one click', async () => {
+    const existing_group = { id: '00000000-0000-4000-8000-000000000003', name: 'fACULDADE', color: 'college', friends_count: 0 }
+    const suggested_group = { id: '00000000-0000-4000-8000-000000000004', name: 'Família', color: 'family', friends_count: 0 }
+    let finish_group_creation!: (response: Response) => void
+    const pending_group = new Promise<Response>((complete) => { finish_group_creation = complete })
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json([existing_group]))
+      .mockReturnValueOnce(pending_group)
+      .mockResolvedValueOnce(Response.json({ ...SAVED_FRIEND, groups: [suggested_group] }, { status: 201 }))
+    vi.stubGlobal('fetch', fetch)
+    const { wrapper } = await get_new_friend_view()
+
+    expect(wrapper.findAll('.group-suggestion').map((chip) => chip.attributes('aria-label'))).toEqual([
+      'Criar e selecionar grupo Família', 'Criar e selecionar grupo Amigos',
+      'Criar e selecionar grupo Escola', 'Criar e selecionar grupo Trabalho',
+    ])
+    expect(fetch).toHaveBeenCalledTimes(1)
+
+    const family_suggestion = '[aria-label="Criar e selecionar grupo Família"]'
+    await wrapper.get('input[name="name"]').setValue('Ana')
+    await wrapper.get(family_suggestion).trigger('click')
+
+    expect(fetch).toHaveBeenLastCalledWith('/api/groups/', expect.objectContaining({
+      method: 'POST', body: JSON.stringify({ name: 'Família', color: 'family' }),
+    }))
+    expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('button.group-chip[aria-pressed="true"]').exists()).toBe(false)
+    finish_group_creation(Response.json(suggested_group, { status: 201 }))
+    await flushPromises()
+
+    expect(wrapper.find(family_suggestion).exists()).toBe(false)
+    expect(wrapper.get('button.group-chip[aria-pressed="true"]').text()).toBe('Família')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(fetch).toHaveBeenLastCalledWith('/api/friends/', expect.objectContaining({
+      method: 'POST', body: JSON.stringify({ name: 'Ana', cadence_amount: 1, cadence_unit: 'month', groups: [suggested_group.id], birthday: null, phone: null }),
+    }))
+    wrapper.unmount()
+  })
+
   it('blocks friend submission while a group is being created', async () => {
     const group = { id: '00000000-0000-4000-8000-000000000003', name: 'Escalada', color: 'neutral', friends_count: 0 }
     let finish_group_creation!: (response: Response) => void

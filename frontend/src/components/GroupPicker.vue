@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { get_groups_for_form, send_group_creation_for_owner, send_group_update_for_owner, send_group_deletion_for_owner } from '../api/friends'
 import type { FriendGroup, GroupWithFriendCount } from '../api/friends'
 import { ApiError } from '../api/http'
 import { set_group_for_friends, remove_group_for_friends } from '../friends'
 import GroupBadge from './GroupBadge.vue'
+
+type GroupData = Pick<FriendGroup, 'name' | 'color'>
 
 const GROUP_COLOR_CHOICES = [
   { value: 'family', label: 'Pêssego' },
@@ -13,6 +15,15 @@ const GROUP_COLOR_CHOICES = [
   { value: 'neighborhood', label: 'Verde' },
   { value: 'neutral', label: 'Creme' },
 ] as const
+const GROUP_SUGGESTIONS = [
+  { name: 'Família', color: 'family' },
+  { name: 'Amigos', color: 'neutral' },
+  { name: 'Escola', color: 'neutral' },
+  { name: 'Faculdade', color: 'college' },
+  { name: 'Trabalho', color: 'work' },
+] as const satisfies readonly GroupData[]
+
+defineProps<{ should_suggest_groups?: boolean }>()
 const selected_group_ids = defineModel<string[]>({ required: true })
 const emit = defineEmits<{
   selection_changed: [groups: FriendGroup[]]
@@ -21,6 +32,10 @@ const emit = defineEmits<{
   deleted: [group_id: string]
 }>()
 const groups = ref<GroupWithFriendCount[]>([])
+const available_group_suggestions = computed(() => {
+  const existing_names = new Set(groups.value.map((group) => group.name.toLowerCase()))
+  return GROUP_SUGGESTIONS.filter((suggestion) => !existing_names.has(suggestion.name.toLowerCase()))
+})
 const is_loading = ref(true)
 const has_load_error = ref(false)
 const is_saving = ref(false)
@@ -94,14 +109,15 @@ async function close_group_deletion_confirmation(): Promise<void> {
   name_input.value?.focus()
 }
 
-async function send_group_for_picker(): Promise<void> {
-  if (is_saving.value || !name_input.value?.reportValidity()) return
+/** Save a suggestion or the editor fields and select newly created groups after confirmation. */
+async function send_group_for_picker(suggestion?: GroupData): Promise<void> {
+  if (is_saving.value || (!suggestion && !name_input.value?.reportValidity())) return
   is_saving.value = true
   emit('busy', true)
   error_message.value = ''
   error_field.value = null
   try {
-    const group_data = { name: group_name.value.trim(), color: group_color.value }
+    const group_data = suggestion ?? { name: group_name.value.trim(), color: group_color.value }
     const saved_group = edited_group.value
       ? await send_group_update_for_owner(edited_group.value.id, group_data)
       : await send_group_creation_for_owner(group_data)
@@ -121,6 +137,10 @@ async function send_group_for_picker(): Promise<void> {
     error_message.value = error instanceof ApiError
       ? `${error.message} Revise o grupo e tente novamente.`
       : 'Não foi possível salvar o grupo. Seus dados continuam aqui. Tente novamente.'
+    if (suggestion && error_field.value === 'name') {
+      await get_groups_for_picker()
+      error_message.value = 'Esse grupo já existe. Selecione-o na lista de grupos.'
+    }
   } finally {
     is_saving.value = false
     emit('busy', false)
@@ -182,6 +202,13 @@ onMounted(get_groups_for_picker)
           <svg v-if="!is_editing_groups && selected_group_ids.includes(group.id)" class="selected-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
           <GroupBadge :group="group" />
         </button>
+        <template v-if="should_suggest_groups && !is_editing_groups && !is_editor_open">
+          <button v-for="suggestion in available_group_suggestions" :key="suggestion.name" type="button"
+            class="group-action group-suggestion" :class="`group-${suggestion.color}`"
+            :aria-label="`Criar e selecionar grupo ${suggestion.name}`" @click="send_group_for_picker(suggestion)">
+            <span aria-hidden="true">+</span> {{ suggestion.name }}
+          </button>
+        </template>
         <button ref="new_group_button" type="button" name="new-group" class="group-action" :aria-expanded="is_editor_open && !edited_group" @click="open_group_editor()">+ novo grupo</button>
       </div>
       <div v-if="is_delete_confirmation_open && edited_group" class="group-editor">
@@ -200,7 +227,7 @@ onMounted(get_groups_for_picker)
         <input id="group-name" ref="name_input" v-model="group_name" class="field" name="group_name" required maxlength="100"
           :aria-invalid="error_field === 'name' ? 'true' : undefined"
           :aria-describedby="error_field === 'name' ? 'group-name-error' : undefined"
-          @keydown.enter.prevent="send_group_for_picker">
+          @keydown.enter.prevent="send_group_for_picker()">
         <p v-if="error_field === 'name'" id="group-name-error" class="group-error" role="alert">{{ error_message }}</p>
         <fieldset class="group-colors"
           :aria-invalid="error_field === 'color' ? 'true' : undefined"
@@ -214,11 +241,12 @@ onMounted(get_groups_for_picker)
         <p v-if="error_field === 'color'" id="group-color-error" class="group-error" role="alert">{{ error_message }}</p>
         <p v-if="error_message && error_field !== 'name' && error_field !== 'color'" class="group-error" role="alert">{{ error_message }}</p>
         <div class="group-editor-actions">
-          <button type="button" name="save-group" class="group-action" @click="send_group_for_picker">{{ is_saving ? 'Salvando…' : (edited_group ? 'Salvar grupo' : 'Criar grupo') }}</button>
+          <button type="button" name="save-group" class="group-action" @click="send_group_for_picker()">{{ is_saving ? 'Salvando…' : (edited_group ? 'Salvar grupo' : 'Criar grupo') }}</button>
           <button v-if="edited_group" type="button" name="delete-group" class="group-action delete-group" @click="open_group_deletion_confirmation">Apagar grupo</button>
           <button type="button" class="group-action" @click="close_group_editor">Cancelar</button>
         </div>
       </div>
+      <p v-else-if="error_message" class="group-error" role="alert">{{ error_message }}</p>
     </fieldset>
     <p class="sr-only" role="status">{{ announcement }}</p>
   </section>
@@ -248,6 +276,9 @@ button[name="retry-groups"]{min-height:2.75rem}
 .group-chip:not([aria-pressed]) :deep(.group-badge){border:2px dashed var(--pen-ink);background:var(--group-color);text-decoration:underline;text-underline-offset:3px}
 .group-chips>.group-action{height:2.75rem;min-height:0;padding:0 .875rem;border:1.5px dashed var(--neutral-500);border-radius:4px;background:none;cursor:pointer;
  font:500 .9375rem/1 var(--font-ui);color:var(--neutral-700)}
+.group-chips>.group-suggestion{background:var(--group-color);color:var(--ink)}
+.group-suggestion:hover:enabled{border-color:var(--primary)}
+.group-suggestion:focus-visible{box-shadow:var(--focus-ring)}
 
 .group-editor{margin:0}
 .group-editor>p:not(.group-error){margin:0;font:400 1rem/var(--notebook-line) var(--font-ui)}

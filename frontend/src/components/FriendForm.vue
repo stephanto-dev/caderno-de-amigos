@@ -186,7 +186,7 @@ onMounted(() => { name_input.value?.focus() })
       </div>
       <div class="friend-groups" :aria-invalid="error_field === 'groups' ? 'true' : undefined"
         :aria-describedby="error_field === 'groups' ? 'friend-groups-error' : undefined">
-        <GroupPicker v-model="selected_group_ids" @busy="is_group_saving = $event" @selection_changed="selected_groups = $event"
+        <GroupPicker v-model="selected_group_ids" :should_suggest_groups="!friend" @busy="is_group_saving = $event" @selection_changed="selected_groups = $event"
           @updated="emit('group_updated', $event)" @deleted="emit('group_deleted', $event)" />
         <p v-if="error_field === 'groups'" id="friend-groups-error" class="field-error" role="alert">{{ error_message }}</p>
       </div>
