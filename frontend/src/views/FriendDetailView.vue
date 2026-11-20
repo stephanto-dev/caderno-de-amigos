@@ -2,7 +2,7 @@
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { get_friend_for_board, send_friend_deletion_for_owner } from '../api/friends'
-import type { BoardFriend, FriendContact, FriendGroup, RecordedContact } from '../api/friends'
+import type { BoardFriend, ContactRecording, FriendContact, FriendGroup } from '../api/friends'
 import { ApiError } from '../api/http'
 import FriendBirthday from '../components/FriendBirthday.vue'
 import FriendCadence from '../components/FriendCadence.vue'
@@ -114,12 +114,15 @@ async function close_contact_sheet_for_profile(): Promise<void> {
   contact_button.value?.focus()
 }
 
-function set_recorded_contact_for_profile(contact: RecordedContact): void {
-  if (contact.id !== friend.value?.id) return
+function set_recorded_contact_for_profile(recording: ContactRecording): void {
+  const contact = recording.contacts.find(({ id }) => id === friend.value?.id)
+  if (!contact) return
   friend.value = contact
   newest_contact.value = contact.contact
-  set_friend_for_list(contact)
-  contact_announcement.value = 'Contato registrado. Boa conversa!'
+  recording.contacts.forEach(set_friend_for_list)
+  contact_announcement.value = recording.batch_id
+    ? `Contato registrado com ${recording.contacts.length} amigos.`
+    : 'Contato registrado. Boa conversa!'
   void close_contact_sheet_for_profile()
 }
 

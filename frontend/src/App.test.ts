@@ -26,7 +26,7 @@ describe('App navigation', () => {
     await router.push('/')
     const wrapper = mount(App, { global: { plugins: [router] } })
 
-    for (const path of ['/', '/quadro', '/amigos', '/amigos/123', '/amigos/novo', '/config']) {
+    for (const path of ['/', '/quadro', '/amigos', '/amigos/123', '/amigos/novo', '/registrar', '/config']) {
       await router.push(path)
       await flushPromises()
 
@@ -72,6 +72,11 @@ describe('App navigation', () => {
     expect(wrapper.get('.page-right a').attributes('href')).toBe('/amigos')
     expect(wrapper.get('a[aria-current="page"]').text()).toBe('amigos')
 
+    await router.push('/registrar')
+    await flushPromises()
+    expect(wrapper.get('h1').text()).toBe('Registrar contato')
+    expect(wrapper.get('a[aria-current="page"]').text()).toBe('registrar')
+
     await router.push('/entrar')
     await flushPromises()
     expect(wrapper.get('h1').text()).toBe('Caderno de amigos')
@@ -88,7 +93,7 @@ describe('App navigation', () => {
     expect(wrapper.get('nav[aria-label="Seções"]').text()).toContain('quadro')
     expect(wrapper.get('nav[aria-label="Seções"]').text()).toContain('amigos')
     expect(Array.from(wrapper.findAll('nav[aria-label="Seções"] a')).map((tab) => tab.text())).toEqual([
-      'quadro', 'amigos', 'config',
+      'quadro', 'amigos', 'registrar', 'config',
     ])
     expect(wrapper.get('a[aria-current="page"]').text()).toBe('quadro')
 

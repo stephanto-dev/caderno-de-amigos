@@ -77,6 +77,20 @@ urlpatterns = [
 
 ## Serializers
 
+### Registro de contato com vários amigos
+
+`POST /api/friends/contact-batches/` aceita os mesmos campos do registro individual
+(`kind`, `note` e `date`) e uma lista `friend_ids` com pelo menos um UUID.
+IDs repetidos contam uma vez. Se algum amigo estiver fora da conta ou não existir,
+a API retorna 404 e não grava nenhum contato.
+
+A resposta 201 traz `batch_id` e `contacts`. Cada item de `contacts` tem o mesmo
+formato da resposta individual, com os campos atualizados do Quadro e a entrada
+salva no histórico. O tipo, a nota e o horário são compartilhados no momento
+do registro. O botão Desfazer do Quadro usa
+`DELETE /api/friends/contact-batches/{batch_id}/` para remover o encontro de todos
+os históricos da conta em uma operação.
+
 ### Importação de amigos em lote
 
 `POST /api/friends/bulk-import/` exige sessão e CSRF, como o cadastro individual.

@@ -1,44 +1,22 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
-import { send_contact_for_friend } from '../api/friends'
-import type { BoardFriend, ContactWriteData, RecordedContact } from '../api/friends'
-import { ApiError } from '../api/http'
-import { CONTACT_OPTIONS } from '../contact-options'
+import type { BoardFriend, ContactRecording } from '../api/friends'
+import ContactForm from './ContactForm.vue'
 
-const props = defineProps<{ friend: BoardFriend }>()
-const emit = defineEmits<{ close: []; recorded: [contact: RecordedContact] }>()
+defineProps<{ friend: BoardFriend; friends?: BoardFriend[] }>()
+const emit = defineEmits<{ close: []; recorded: [recording: ContactRecording] }>()
 const NOTE_AUTOFOCUS_MIN_WIDTH = 1024
 const DISMISS_DRAG_DISTANCE = 80
-const VALIDATION_ERROR_STATUS = 400
-const NOT_FOUND_STATUS = 404
-const CONTACT_DATE_FORMAT = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
-})
 const dialog = ref<HTMLDialogElement | null>(null)
-const note_input = ref<HTMLTextAreaElement | null>(null)
+const form = ref<InstanceType<typeof ContactForm> | null>(null)
 const keep_note_button = ref<HTMLButtonElement | null>(null)
-const kind = ref<ContactWriteData['kind']>(CONTACT_OPTIONS.message.value)
-const note = ref('')
-const contact_date = ref(get_today_for_contact())
-const is_saving = ref(false)
 const is_confirming_discard = ref(false)
-const error_message = ref('')
-const invalid_field = ref<string | null>(null)
 let drag_start_y = 0
-
-/** Use the board's São Paulo calendar day regardless of the browser's time zone. */
-function get_today_for_contact(): string {
-  const parts = CONTACT_DATE_FORMAT.formatToParts(new Date())
-  const year = parts.find((part) => part.type === 'year')?.value
-  const month = parts.find((part) => part.type === 'month')?.value
-  const day = parts.find((part) => part.type === 'day')?.value
-  return `${year}-${month}-${day}`
-}
 
 /** Keep unsaved text until the owner explicitly discards it; wait for pending writes. */
 async function request_sheet_close(): Promise<void> {
-  if (is_saving.value) return
-  if (note.value.trim()) {
+  if (form.value?.is_saving) return
+  if (form.value?.has_note_for_contact()) {
     is_confirming_discard.value = true
     await nextTick()
     keep_note_button.value?.focus()
@@ -62,37 +40,12 @@ function request_sheet_close_from_drag(event: PointerEvent): void {
 async function keep_note_for_contact(): Promise<void> {
   is_confirming_discard.value = false
   await nextTick()
-  note_input.value?.focus()
-}
-
-/** Send once, preserve the draft on failure, and let the calling view apply Django's result. */
-async function send_contact_for_sheet(): Promise<void> {
-  if (is_saving.value || is_confirming_discard.value) return
-  is_saving.value = true
-  error_message.value = ''
-  invalid_field.value = null
-  try {
-    const contact = await send_contact_for_friend(props.friend.id, {
-      kind: kind.value, note: note.value, date: contact_date.value,
-    })
-    emit('recorded', contact)
-  } catch (error) {
-    invalid_field.value = error instanceof ApiError ? error.field : null
-    if (error instanceof ApiError && error.status === NOT_FOUND_STATUS) {
-      error_message.value = 'Este amigo não está mais disponível. Sua nota continua aqui. Atualize os dados deste amigo antes de registrar.'
-    } else if (error instanceof ApiError && error.status === VALIDATION_ERROR_STATUS) {
-      error_message.value = `${error.message} Sua nota continua aqui. Tente novamente após revisar os campos.`
-    } else {
-      error_message.value = 'Não conseguimos confirmar o registro. Sua nota continua aqui. Verifique sua conexão e os dados deste amigo antes de tentar novamente.'
-    }
-  } finally {
-    is_saving.value = false
-  }
+  form.value?.focus_note_for_contact()
 }
 
 onMounted(() => {
   dialog.value?.showModal()
-  if (window.innerWidth >= NOTE_AUTOFOCUS_MIN_WIDTH) note_input.value?.focus()
+  if (window.innerWidth >= NOTE_AUTOFOCUS_MIN_WIDTH) form.value?.focus_note_for_contact()
 })
 </script>
 
@@ -101,7 +54,7 @@ onMounted(() => {
     <div class="sheet-grip" aria-hidden="true" @pointerdown="drag_start_y = $event.clientY; ($event.currentTarget as HTMLElement).setPointerCapture($event.pointerId)" @pointerup="request_sheet_close_from_drag"><span></span></div>
     <header class="sheet-heading">
       <h2 id="contact-sheet-title">Falei com {{ friend.name }}</h2>
-      <button type="button" class="close-button" aria-label="Fechar" :disabled="is_saving" @click="request_sheet_close">
+      <button type="button" class="close-button" aria-label="Fechar" :disabled="form?.is_saving" @click="request_sheet_close">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
       </button>
     </header>
@@ -113,32 +66,8 @@ onMounted(() => {
         <button type="button" name="discard-note" class="primary-button" @click="emit('close')">Descartar nota</button>
       </div>
     </div>
-    <form v-else @submit.prevent="send_contact_for_sheet" @keydown.ctrl.enter.prevent="send_contact_for_sheet" @keydown.meta.enter.prevent="send_contact_for_sheet">
-      <fieldset :disabled="is_saving" :aria-describedby="invalid_field === 'kind' ? 'contact-error' : undefined">
-        <legend class="sr-only">Tipo de contato</legend>
-        <div class="contact-options">
-          <label v-for="option in CONTACT_OPTIONS" :key="option.value" class="contact-option" :class="{ selected: kind === option.value }">
-            <input v-model="kind" type="radio" name="kind" :value="option.value" :aria-invalid="invalid_field === 'kind' ? true : undefined">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="option.icon" /></svg>
-            <span>{{ option.label }}</span>
-          </label>
-        </div>
-        <label for="contact-date" class="note-label">Dia do contato</label>
-        <input id="contact-date" v-model="contact_date" class="field contact-date" name="date" type="date" required :max="get_today_for_contact()"
-          :aria-invalid="invalid_field === 'date' ? true : undefined"
-          :aria-describedby="invalid_field === 'date' ? 'contact-error' : undefined">
-        <label for="contact-note" class="note-label">Nota rápida <span>(opcional)</span></label>
-        <textarea id="contact-note" ref="note_input" v-model="note" class="field" rows="3" placeholder="O que ficou da conversa?" :aria-invalid="invalid_field === 'note' ? true : undefined" :aria-describedby="invalid_field === 'note' ? 'contact-error' : undefined"></textarea>
-      </fieldset>
-      <p class="keyboard-hint">Ctrl + Enter registra · Esc fecha</p>
-      <p v-if="error_message" id="contact-error" class="contact-error" role="alert">{{ error_message }}</p>
-      <div class="sheet-actions">
-        <button type="button" class="secondary-button" :disabled="is_saving" @click="request_sheet_close">Cancelar</button>
-        <button type="submit" class="primary-button" :disabled="is_saving" :aria-busy="is_saving">
-          <span v-if="is_saving" class="saving-spinner" aria-hidden="true"></span>{{ is_saving ? 'Registrando…' : 'Registrar' }}
-        </button>
-      </div>
-    </form>
+    <ContactForm v-show="!is_confirming_discard" ref="form" :friend="friend" :friends="friends"
+      @cancel="request_sheet_close" @recorded="emit('recorded', $event)" />
   </dialog>
 </template>
 
@@ -154,20 +83,6 @@ button:disabled { opacity: .55; cursor: wait; }
 .close-button { display: grid; flex: none; place-items: center; width: 44px; height: 44px; margin-right: -8px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--neutral-700); }
 .close-button:hover:not(:disabled) { background: var(--neutral-300); }
 svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
-fieldset { min-width: 0; margin: 16px 0 0; padding: 0; border: 0; }
-.contact-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.contact-option { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-sizing: border-box; min-height: 80px; border: 1.5px solid var(--ink); border-radius: var(--radius-sm); background: var(--sheet); font-size: .875rem; cursor: pointer; }
-.contact-option.selected { border: 2px solid var(--primary); background: var(--primary-50); color: var(--primary-800); }
-.contact-option:hover { background: var(--primary-50); }
-.contact-option:focus-within { box-shadow: var(--focus-ring); }
-.contact-option input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: inherit; }
-.note-label { display: block; margin-top: 16px; font-size: .875rem; font-weight: 500; }
-.note-label span { color: var(--neutral-600); font-weight: 400; }
-.contact-date { box-sizing: border-box; width: 100%; min-width: 0; margin-top: 8px; }
-textarea.field { box-sizing: border-box; height: auto; min-height: 104px; max-height: 35dvh; margin-top: 8px; padding: 12px 16px; resize: vertical; caret-color: var(--pen-ink); }
-textarea.field::placeholder { color: var(--neutral-600); }
-.keyboard-hint { display: none; margin: 8px 0 0; color: var(--neutral-600); font-size: .75rem; }
-.contact-error { margin: 16px 0 0; padding: 12px; border: 1.5px solid var(--error); border-radius: var(--radius-sm); background: var(--error-50); color: var(--error); font-size: .875rem; }
 .sheet-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .sheet-actions button { flex: 1; min-height: 48px; padding: 8px 16px; border: 1.5px solid var(--ink); border-radius: var(--radius-pill); font-weight: 600; }
 .secondary-button { background: var(--sheet); color: var(--ink); }
@@ -176,15 +91,12 @@ textarea.field::placeholder { color: var(--neutral-600); }
 .primary-button:hover:not(:disabled) { background: var(--primary-hover); }
 .primary-button:active:not(:disabled) { background: var(--primary-pressed); }
 .discard-confirmation p { margin: 16px 0 0; }
-.saving-spinner { width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: saving-spin 1s linear infinite; }
-@keyframes saving-spin { to { transform: rotate(360deg); } }
 @keyframes sheet-enter { from { transform: translateY(100%); } }
-@media (min-width: 1024px) { .keyboard-hint { display: block; } }
 @media (min-width: 1280px) {
   .contact-sheet { inset: 72px calc((100vw - 1120px) / 2 + 24px) auto auto; width: 496px; height: calc(100dvh - 144px); max-width: none; max-height: none; margin: 0; padding: 24px; border-bottom: 2px solid var(--ink); border-radius: var(--radius-md); animation-name: panel-enter; }
   .contact-sheet::backdrop { background: rgb(43 36 32 / 45%); clip-path: inset(48px max(0px, calc((100vw - 1120px) / 2)) 48px 50%); }
   .sheet-grip { display: none; }
 }
 @keyframes panel-enter { from { opacity: 0; transform: translateX(24px); } }
-@media (prefers-reduced-motion: reduce) { .contact-sheet, .saving-spinner { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .contact-sheet { animation: none; } }
 </style>

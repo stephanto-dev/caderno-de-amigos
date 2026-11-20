@@ -1044,6 +1044,86 @@ class TestContactHistoryAPI:
 
 
 @pytest.mark.django_db
+class TestContactBatchAPI:
+    def test_one_meeting_updates_three_friends_and_can_be_undone_together(self) -> None:
+        owner = User.objects.create_user(username="ana")
+        friends = [
+            create_friend_for_owner(owner, name) for name in ("Bia", "Cris", "Dani")
+        ]
+        client = APIClient()
+        client.force_authenticate(owner)
+        friend_ids = [str(friend.id) for friend in friends]
+
+        response = client.post(
+            reverse("record_contact_batch"),
+            {
+                "friend_ids": [*friend_ids, friend_ids[0]],
+                "kind": Contact.Kind.MEETING,
+                "note": "Encontramos no café",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 201
+        recorded_contacts = response.data["contacts"]
+        assert [contact["id"] for contact in recorded_contacts] == friend_ids
+        assert {contact["column"] for contact in recorded_contacts} == {"just_talked"}
+        assert len({contact["last_contact_at"] for contact in recorded_contacts}) == 1
+        for contact in recorded_contacts:
+            history = client.get(reverse("record_contact", args=[contact["id"]]))
+            assert history.data["results"] == [contact["contact"]]
+            assert contact["contact"]["note"] == "Encontramos no café"
+            assert contact["contact"]["kind"] == Contact.Kind.MEETING
+            assert contact["last_contact_at"] == contact["contact"]["date"]
+
+        undo_url = reverse("undo_contact_batch", args=[response.data["batch_id"]])
+        other_owner = User.objects.create_user(username="extra")
+        client.force_authenticate(other_owner)
+        assert client.delete(undo_url).status_code == 404
+        assert Contact.objects.count() == len(friends)
+
+        client.force_authenticate(owner)
+        assert client.delete(undo_url).status_code == 204
+        board = client.get(reverse("list_friends"))
+        assert {friend["column"] for friend in board.data} == {"overdue"}
+        assert not Contact.objects.exists()
+
+    def test_batch_with_another_owners_friend_saves_nothing(self) -> None:
+        owner = User.objects.create_user(username="ana")
+        other_owner = User.objects.create_user(username="bia")
+        friend = create_friend_for_owner(owner, "Cris")
+        unavailable_friend = create_friend_for_owner(other_owner, "Dani")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        response = client.post(
+            reverse("record_contact_batch"),
+            {
+                "friend_ids": [str(friend.id), str(unavailable_friend.id)],
+                "kind": Contact.Kind.CALL,
+            },
+            format="json",
+        )
+
+        assert response.status_code == 404
+        assert not Contact.objects.exists()
+
+    def test_batch_requires_at_least_one_friend(self) -> None:
+        owner = User.objects.create_user(username="ana")
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        response = client.post(
+            reverse("record_contact_batch"),
+            {"friend_ids": [], "kind": Contact.Kind.MEETING},
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert response.data["errors"][0]["attr"] == "friend_ids"
+
+
+@pytest.mark.django_db
 class TestContactsAPI:
     def test_record_contact_updates_board_friend(self) -> None:
         # Arrange

@@ -31,3 +31,18 @@ class ContactWriteSerializer(serializers.Serializer):
             "null": "Informe o dia do contato ou use a data de hoje.",
         },
     )
+
+
+class ContactBatchWriteSerializer(ContactWriteSerializer):
+    """Accept the same contact details with at least one selected friend."""
+
+    friend_ids = serializers.ListField(
+        child=serializers.UUIDField(
+            error_messages={"invalid": "Amigo inválido. Escolha um amigo da lista."}
+        ),
+        allow_empty=False,
+        error_messages={
+            "required": "Escolha pelo menos um amigo para registrar o contato.",
+            "empty": "Escolha pelo menos um amigo para registrar o contato.",
+        },
+    )

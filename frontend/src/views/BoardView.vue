@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { get_friend_for_board, get_friends_for_board, get_groups_for_board, send_contact_deletion_for_friend } from '../api/friends'
-import type { BoardFriend, FriendGroup, RecordedContact } from '../api/friends'
+import { get_friend_for_board, get_friends_for_board, get_groups_for_board, send_contact_batch_deletion_for_owner, send_contact_deletion_for_friend } from '../api/friends'
+import type { BoardFriend, ContactRecording, FriendGroup } from '../api/friends'
 import BoardFriendCard from '../components/BoardFriendCard.vue'
 import ContactSheet from '../components/ContactSheet.vue'
 import GroupBadge from '../components/GroupBadge.vue'
@@ -25,7 +25,7 @@ const selected_friend = ref<BoardFriend | null>(null)
 const sheet_friend_to_focus = ref<string | null>(null)
 const contact_announcement = ref('')
 const toast_element = ref<HTMLElement | null>(null)
-const contact_to_undo = ref<RecordedContact | null>(null)
+const contact_to_undo = ref<ContactRecording | null>(null)
 const contact_undo_state = ref<'ready' | 'deleted' | 'missing'>('ready')
 const is_undoing = ref(false)
 const has_undo_error = ref(false)
@@ -68,12 +68,14 @@ function set_friend_for_board(updated_friend: BoardFriend): void {
   if (!expanded_columns.value.includes(updated_friend.column)) expanded_columns.value.push(updated_friend.column)
 }
 
-function set_recorded_contact_for_board(contact: RecordedContact): void {
-  set_friend_for_board(contact)
-  contact_to_undo.value = contact
+function set_recorded_contact_for_board(recording: ContactRecording): void {
+  recording.contacts.forEach(set_friend_for_board)
+  contact_to_undo.value = recording
   contact_undo_state.value = 'ready'
   has_undo_error.value = false
-  contact_announcement.value = 'Contato registrado. Boa conversa!'
+  contact_announcement.value = recording.batch_id
+    ? `Contato registrado com ${recording.contacts.length} amigos.`
+    : 'Contato registrado. Boa conversa!'
   close_contact_sheet_for_board()
   start_contact_feedback_timeout()
 }
@@ -98,15 +100,17 @@ function start_contact_feedback_timeout(): void {
 
 /** Remember successful deletion so a failed refresh can retry without deleting again. */
 async function undo_contact_for_board(): Promise<void> {
-  const contact = contact_to_undo.value
-  if (!contact || is_undoing.value) return
+  const recording = contact_to_undo.value
+  const contact = recording?.contacts[0]
+  if (!recording || !contact || is_undoing.value) return
   stop_contact_feedback_timeout()
   is_undoing.value = true
   has_undo_error.value = false
   try {
     if (contact_undo_state.value === 'ready') {
       try {
-        await send_contact_deletion_for_friend(contact.id, contact.contact_id)
+        if (recording.batch_id) await send_contact_batch_deletion_for_owner(recording.batch_id)
+        else await send_contact_deletion_for_friend(contact.id, contact.contact_id)
         contact_undo_state.value = 'deleted'
       } catch (error) {
         if (!(error instanceof ApiError) || error.status !== NOT_FOUND_STATUS) throw error
@@ -114,11 +118,21 @@ async function undo_contact_for_board(): Promise<void> {
       }
     }
     try {
-      set_friend_for_board(await get_friend_for_board(contact.id))
+      if (recording.batch_id) {
+        friends.value = await get_friends_for_board()
+        const participant_ids = new Set(recording.contacts.map(({ id }) => id))
+        for (const friend of friends.value) {
+          if (participant_ids.has(friend.id) && !expanded_columns.value.includes(friend.column)) {
+            expanded_columns.value.push(friend.column)
+          }
+        }
+      } else {
+        set_friend_for_board(await get_friend_for_board(contact.id))
+      }
       contact_announcement.value = contact_undo_state.value === 'deleted'
         ? 'Contato desfeito.' : 'O contato já não está disponível. Quadro atualizado.'
     } catch (error) {
-      if (!(error instanceof ApiError) || error.status !== NOT_FOUND_STATUS) throw error
+      if (recording.batch_id || !(error instanceof ApiError) || error.status !== NOT_FOUND_STATUS) throw error
       friends.value = friends.value.filter((friend) => friend.id !== contact.id)
       contact_announcement.value = 'Este amigo não está mais disponível. Quadro atualizado.'
     }
@@ -228,7 +242,7 @@ onBeforeUnmount(stop_contact_feedback_timeout)
       </section>
     </div>
     <Transition name="contact-panel" @after-leave="focus_friend_after_sheet_close">
-      <ContactSheet v-if="selected_friend" :friend="selected_friend" @close="close_contact_sheet_for_board" @recorded="set_recorded_contact_for_board" />
+      <ContactSheet v-if="selected_friend" :friend="selected_friend" :friends="friends" @close="close_contact_sheet_for_board" @recorded="set_recorded_contact_for_board" />
     </Transition>
     <div v-show="contact_announcement" ref="toast_element" class="contact-toast" role="status" aria-atomic="true" @mouseenter="stop_contact_feedback_timeout" @mouseleave="start_contact_feedback_timeout" @focusin="stop_contact_feedback_timeout" @focusout="start_contact_feedback_timeout">
       <svg v-if="!has_undo_error" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>

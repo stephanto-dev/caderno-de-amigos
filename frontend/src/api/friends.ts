@@ -87,12 +87,23 @@ export interface RecordedContact extends BoardFriend {
   contact: FriendContact
 }
 
+/** A single undo ID links the contacts from one interaction with several friends. */
+export interface ContactRecording {
+  batch_id: string | null
+  contacts: RecordedContact[]
+}
+
 function is_friend_contact(body: unknown): body is FriendContact {
   return typeof body === 'object' && body !== null
     && 'id' in body && typeof body.id === 'string'
     && 'kind' in body && CONTACT_KINDS.some((kind) => kind === body.kind)
     && 'date' in body && typeof body.date === 'string' && Number.isFinite(Date.parse(body.date))
     && 'note' in body && typeof body.note === 'string'
+}
+
+function is_recorded_contact(body: unknown): body is RecordedContact {
+  return is_board_friend(body) && 'contact_id' in body && typeof body.contact_id === 'string'
+    && 'contact' in body && is_friend_contact(body.contact)
 }
 
 function is_friend_group(body: unknown): body is FriendGroup {
@@ -196,11 +207,30 @@ export async function send_contact_for_friend(friend_id: string, contact: Contac
   const body = await send_api_request(`/api/friends/${friend_id}/contacts/`, {
     method: 'POST', body: contact,
   })
-  if (!is_board_friend(body) || !('contact_id' in body) || typeof body.contact_id !== 'string'
-    || !('contact' in body) || !is_friend_contact(body.contact)) {
-    throw new Error('Invalid recorded contact response')
+  if (!is_recorded_contact(body)) throw new Error('Invalid recorded contact response')
+  return body
+}
+
+/** Record the same interaction for the selected friends in one request. */
+export async function send_contact_batch_for_friends(friend_ids: string[], contact: ContactWriteData): Promise<ContactRecording> {
+  const body = await send_api_request('/api/friends/contact-batches/', {
+    method: 'POST', body: { ...contact, friend_ids },
+  })
+  if (typeof body !== 'object' || body === null || !('batch_id' in body) || typeof body.batch_id !== 'string'
+    || !('contacts' in body) || !Array.isArray(body.contacts) || !body.contacts.every(is_recorded_contact)) {
+    throw new Error('Invalid recorded contact batch response')
   }
-  return { ...body, contact_id: body.contact_id, contact: body.contact }
+  const { batch_id, contacts } = body
+  const recorded_friend_ids = new Set(contacts.map(({ id }) => id))
+  if (contacts.length !== new Set(friend_ids).size || !friend_ids.every((id) => recorded_friend_ids.has(id))) {
+    throw new Error('Contact batch response does not match selected friends')
+  }
+  return { batch_id, contacts }
+}
+
+/** Delete the recorded interaction from all participant histories. */
+export async function send_contact_batch_deletion_for_owner(batch_id: string): Promise<void> {
+  await send_api_request(`/api/friends/contact-batches/${batch_id}/`, { method: 'DELETE' })
 }
 
 /** Delete one owned contact. Django returns 204; refresh the friend separately. */

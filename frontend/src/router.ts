@@ -9,6 +9,7 @@ import LoginView from './views/LoginView.vue'
 import ConfigView from './views/ConfigView.vue'
 import ImportFriendsView from './views/ImportFriendsView.vue'
 import ImportFriendsPreview from './views/ImportFriendsPreview.vue'
+import RegisterContactView from './views/RegisterContactView.vue'
 
 export const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/quadro' },
@@ -16,6 +17,7 @@ export const routes: RouteRecordRaw[] = [
   { path: '/amigos', name: 'friends', component: FriendsView },
   { path: '/amigos/novo', name: 'new-friend', components: { default: NewFriendView, detail: NewFriendDraft } },
   { path: '/amigos/importar', name: 'import-friends', components: { default: ImportFriendsView, detail: ImportFriendsPreview } },
+  { path: '/registrar', name: 'register-contact', component: RegisterContactView },
   {
     path: '/amigos/:id',
     name: 'friend-detail',
